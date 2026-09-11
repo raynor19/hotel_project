@@ -60,14 +60,48 @@ document.addEventListener('DOMContentLoaded', () => {
     // Auto-play slideshow
     let slideInterval = setInterval(nextSlide, 6000);
 
+    function resetInterval() {
+      clearInterval(slideInterval);
+      slideInterval = setInterval(nextSlide, 6000);
+    }
+
     // Indicator clicks
     indicators.forEach(indicator => {
       indicator.addEventListener('click', () => {
-        clearInterval(slideInterval);
         goToSlide(parseInt(indicator.dataset.slide));
-        slideInterval = setInterval(nextSlide, 6000);
+        resetInterval();
       });
     });
+
+    // Touch swipe for Hero Slideshow on mobile
+    const heroSection = document.getElementById('home');
+    if (heroSection) {
+      let touchStartX = 0;
+      let touchEndX = 0;
+
+      heroSection.addEventListener('touchstart', (e) => {
+        if (!e.touches || e.touches.length === 0) return;
+        touchStartX = e.touches[0].clientX;
+        touchEndX = touchStartX;
+      }, { passive: true });
+
+      heroSection.addEventListener('touchmove', (e) => {
+        if (!e.touches || e.touches.length === 0) return;
+        touchEndX = e.touches[0].clientX;
+      }, { passive: true });
+
+      heroSection.addEventListener('touchend', () => {
+        const diffX = touchEndX - touchStartX;
+        if (Math.abs(diffX) > 40) {
+          if (diffX < 0) {
+            goToSlide((currentSlide + 1) % totalSlides); // swipe left -> next slide
+          } else {
+            goToSlide((currentSlide - 1 + totalSlides) % totalSlides); // swipe right -> prev slide
+          }
+          resetInterval();
+        }
+      }, { passive: true });
+    }
   }
 
   // ==================== LOGIN BACKGROUND SLIDESHOW ====================

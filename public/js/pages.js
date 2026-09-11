@@ -111,15 +111,19 @@ async function initNavbar() {
 function initCarousel(containerEl, photos) {
   if (!containerEl || !photos || photos.length === 0) return;
 
-  let slidesHTML = photos.map((p, i) => `<div class="carousel-slide"><img src="${p}" alt="Foto ${i+1}"></div>`).join('');
+  let activeIndex = 0;
+  let slidesHTML = photos.map((p, i) => `<div class="carousel-slide" data-index="${i}"><img src="${p}" alt="Foto ${i+1}" draggable="false"></div>`).join('');
   let thumbsHTML = photos.map((p, i) => `<img src="${p.replace('w=1200', 'w=200')}" class="${i === 0 ? 'active' : ''}" data-index="${i}" alt="Thumb ${i+1}">`).join('');
+  let dotsHTML = photos.map((_, i) => `<button class="carousel-dot ${i === 0 ? 'active' : ''}" data-index="${i}" aria-label="Foto ${i+1}"></button>`).join('');
 
   containerEl.innerHTML = `
-    <div class="carousel-container">
-      <button class="carousel-arrow carousel-prev"><i class="fas fa-chevron-left"></i></button>
+    <div class="carousel-container" tabindex="0">
+      <button class="carousel-arrow carousel-prev" aria-label="Foto Sebelumnya"><i class="fas fa-chevron-left"></i></button>
       <div class="carousel-track">${slidesHTML}</div>
-      <button class="carousel-arrow carousel-next"><i class="fas fa-chevron-right"></i></button>
+      <button class="carousel-arrow carousel-next" aria-label="Foto Berikutnya"><i class="fas fa-chevron-right"></i></button>
       <div class="carousel-counter">1 / ${photos.length}</div>
+      <div class="carousel-dots">${dotsHTML}</div>
+      <div class="carousel-swipe-hint"><i class="fas fa-arrows-alt-h"></i> Geser kanan / kiri</div>
     </div>
     <div class="carousel-thumbs">${thumbsHTML}</div>
   `;
@@ -127,34 +131,210 @@ function initCarousel(containerEl, photos) {
   const track = containerEl.querySelector('.carousel-track');
   const counter = containerEl.querySelector('.carousel-counter');
   const thumbs = containerEl.querySelectorAll('.carousel-thumbs img');
+  const dots = containerEl.querySelectorAll('.carousel-dot');
   const prevBtn = containerEl.querySelector('.carousel-prev');
   const nextBtn = containerEl.querySelector('.carousel-next');
+  const hint = containerEl.querySelector('.carousel-swipe-hint');
+  const thumbsContainer = containerEl.querySelector('.carousel-thumbs');
 
-  function updateCounter() {
-    const index = Math.round(track.scrollLeft / track.clientWidth);
-    counter.textContent = `${index + 1} / ${photos.length}`;
+  function updateUI(index) {
+    activeIndex = index;
+    if (counter) counter.textContent = `${index + 1} / ${photos.length}`;
     thumbs.forEach((t, i) => t.classList.toggle('active', i === index));
+    dots.forEach((d, i) => d.classList.toggle('active', i === index));
+
+    // Auto scroll thumbnail into view
+    if (thumbs[index] && thumbsContainer) {
+      const thumbLeft = thumbs[index].offsetLeft;
+      const thumbWidth = thumbs[index].clientWidth;
+      const containerWidth = thumbsContainer.clientWidth;
+      thumbsContainer.scrollTo({
+        left: thumbLeft - (containerWidth / 2) + (thumbWidth / 2),
+        behavior: 'smooth'
+      });
+    }
+
+    // Hide swipe hint after first user interaction
+    if (hint && hint.style.opacity !== '0') {
+      hint.style.opacity = '0';
+      setTimeout(() => { if (hint) hint.style.display = 'none'; }, 600);
+    }
   }
 
-  prevBtn.addEventListener('click', () => {
-    track.scrollBy({ left: -track.clientWidth, behavior: 'smooth' });
+  function goToSlide(idx) {
+    if (idx < 0) idx = 0;
+    if (idx >= photos.length) idx = photos.length - 1;
+    activeIndex = idx;
+    const slides = track.querySelectorAll('.carousel-slide');
+    if (slides[activeIndex]) {
+      const slide = slides[activeIndex];
+      const targetScroll = slide.offsetLeft - ((track.clientWidth - slide.clientWidth) / 2);
+      track.scrollTo({
+        left: Math.max(0, targetScroll),
+        behavior: 'smooth'
+      });
+    } else {
+      track.scrollTo({
+        left: activeIndex * track.clientWidth,
+        behavior: 'smooth'
+      });
+    }
+    updateUI(activeIndex);
+  }
+
+  // Prev / Next button clicks
+  prevBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    goToSlide(activeIndex - 1);
   });
 
-  nextBtn.addEventListener('click', () => {
-    track.scrollBy({ left: track.clientWidth, behavior: 'smooth' });
+  nextBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    goToSlide(activeIndex + 1);
   });
 
-  track.addEventListener('scroll', updateCounter);
-
+  // Thumbnail clicks
   thumbs.forEach(thumb => {
     thumb.addEventListener('click', () => {
       const idx = parseInt(thumb.dataset.index);
-      track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' });
+      goToSlide(idx);
     });
+  });
+
+  // Dot clicks
+  dots.forEach(dot => {
+    dot.addEventListener('click', () => {
+      const idx = parseInt(dot.dataset.index);
+      goToSlide(idx);
+    });
+  });
+
+  // Track scroll listener (sync UI if user free-scrolls with peek support)
+  let scrollTimeout;
+  track.addEventListener('scroll', () => {
+    clearTimeout(scrollTimeout);
+    scrollTimeout = setTimeout(() => {
+      const slides = track.querySelectorAll('.carousel-slide');
+      if (!slides.length) return;
+      const trackCenter = track.scrollLeft + (track.clientWidth / 2);
+      let closestIdx = 0;
+      let minDiff = Infinity;
+      slides.forEach((s, i) => {
+        const slideCenter = s.offsetLeft + (s.clientWidth / 2);
+        const diff = Math.abs(trackCenter - slideCenter);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closestIdx = i;
+        }
+      });
+      if (closestIdx !== activeIndex && closestIdx >= 0 && closestIdx < photos.length) {
+        updateUI(closestIdx);
+      }
+    }, 50);
+  });
+
+  // ==================== TOUCH GESTURES (SWIPE MOBILE) ====================
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let touchCurrentX = 0;
+  let isSwiping = false;
+
+  track.addEventListener('touchstart', (e) => {
+    if (!e.touches || e.touches.length === 0) return;
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    touchCurrentX = touchStartX;
+    isSwiping = true;
+  }, { passive: true });
+
+  track.addEventListener('touchmove', (e) => {
+    if (!isSwiping || !e.touches || e.touches.length === 0) return;
+    touchCurrentX = e.touches[0].clientX;
+  }, { passive: true });
+
+  track.addEventListener('touchend', (e) => {
+    if (!isSwiping) return;
+    isSwiping = false;
+    const diffX = touchCurrentX - touchStartX;
+    const diffY = Math.abs((e.changedTouches[0]?.clientY || 0) - touchStartY);
+
+    // If horizontal motion is dominant and exceeds 35px threshold
+    if (Math.abs(diffX) > 35 && Math.abs(diffX) > diffY) {
+      if (diffX < 0) {
+        // Swiped left -> Next slide
+        goToSlide(activeIndex + 1);
+      } else {
+        // Swiped right -> Previous slide
+        goToSlide(activeIndex - 1);
+      }
+    }
+  }, { passive: true });
+
+  // ==================== MOUSE DRAG GESTURES (DESKTOP) ====================
+  let isMouseDown = false;
+  let mouseStartX = 0;
+  let mouseDiffX = 0;
+
+  track.addEventListener('mousedown', (e) => {
+    isMouseDown = true;
+    mouseStartX = e.clientX;
+    mouseDiffX = 0;
+    track.style.cursor = 'grabbing';
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isMouseDown) return;
+    mouseDiffX = e.clientX - mouseStartX;
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (!isMouseDown) return;
+    isMouseDown = false;
+    track.style.cursor = 'grab';
+    if (Math.abs(mouseDiffX) > 40) {
+      if (mouseDiffX < 0) {
+        goToSlide(activeIndex + 1);
+      } else {
+        goToSlide(activeIndex - 1);
+      }
+    }
+  });
+
+  // Keyboard Navigation (ArrowLeft / ArrowRight)
+  containerEl.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      goToSlide(activeIndex - 1);
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      goToSlide(activeIndex + 1);
+    }
   });
 }
 
 // ==================== ROOMS LISTING PAGE ====================
+
+// Global helper to slide card images right/left on listing page
+window.slideCardImg = function(btn, direction) {
+  const cardImg = btn.closest('.card-img');
+  if (!cardImg) return;
+
+  const track = cardImg.querySelector('.card-slider-track');
+  const countText = cardImg.querySelector('.photo-idx-text');
+  const dots = cardImg.querySelectorAll('.card-slider-dot');
+  const total = parseInt(cardImg.dataset.totalPhotos) || 1;
+  let current = parseInt(cardImg.dataset.currentIndex) || 0;
+
+  current += direction;
+  if (current < 0) current = 0;
+  if (current >= total) current = total - 1;
+
+  cardImg.dataset.currentIndex = current;
+  track.style.transform = `translateX(-${current * 100}%)`;
+
+  if (countText) countText.textContent = current + 1;
+  dots.forEach((d, idx) => d.classList.toggle('active', idx === current));
+};
 
 async function initRoomsPage() {
   const container = document.getElementById('roomsGrid');
@@ -181,40 +361,106 @@ async function initRoomsPage() {
       return;
     }
 
-    container.innerHTML = rooms.map(room => `
-      <a href="/rooms/${room.id}" class="room-card-link">
+    container.innerHTML = rooms.map(room => {
+      const photos = room.photos || [];
+      const slidesHTML = photos.map(p => `<img src="${p}" alt="${room.name}" loading="lazy" draggable="false">`).join('');
+      const dotsHTML = photos.map((_, idx) => `<span class="card-slider-dot ${idx === 0 ? 'active' : ''}"></span>`).join('');
+
+      return `
         <div class="room-listing-card">
-          <div class="card-img">
-            <img src="${room.photos[0]}" alt="${room.name}" loading="lazy">
-            <span class="photo-count"><i class="fas fa-camera"></i> ${room.photos.length}</span>
-          </div>
-          <div class="card-body">
-            <h3>${room.name}</h3>
-            <div class="room-meta">
-              <span><i class="fas fa-users"></i> ${room.capacity} Tamu</span>
-              <span><i class="fas fa-expand-arrows-alt"></i> ${room.size} m²</span>
-              <span><i class="fas fa-bed"></i> ${room.bed}</span>
+          <div class="card-img" data-room-id="${room.id}" data-current-index="0" data-total-photos="${photos.length}">
+            <div class="card-slider-track">
+              ${slidesHTML}
             </div>
-            <div class="card-price">
-              <div>
-                <span class="price">${formatCurrency(room.price)}</span>
-                <span class="per-night">/ malam</span>
+            ${photos.length > 1 ? `
+              <button class="card-slider-arrow card-slider-prev" onclick="slideCardImg(this, -1)" aria-label="Foto Sebelumnya">
+                <i class="fas fa-chevron-left"></i>
+              </button>
+              <button class="card-slider-arrow card-slider-next" onclick="slideCardImg(this, 1)" aria-label="Foto Berikutnya">
+                <i class="fas fa-chevron-right"></i>
+              </button>
+              <div class="card-slider-dots">${dotsHTML}</div>
+            ` : ''}
+            <span class="photo-count"><i class="fas fa-camera"></i> <span class="photo-idx-text">1</span>/${photos.length}</span>
+          </div>
+          <a href="/rooms/${room.id}" class="room-card-link">
+            <div class="card-body">
+              <h3>${room.name}</h3>
+              <div class="room-meta">
+                <span><i class="fas fa-users"></i> ${room.capacity} Tamu</span>
+                <span><i class="fas fa-expand-arrows-alt"></i> ${room.size} m²</span>
+                <span><i class="fas fa-bed"></i> ${room.bed}</span>
               </div>
-              <span class="availability-badge ${room.availableUnits > 0 ? 'avail-yes' : 'avail-no'}">
-                ${room.availableUnits > 0 ? room.availableUnits + ' tersedia' : 'Penuh'}
-              </span>
+              <div class="card-price">
+                <div>
+                  <span class="price">${formatCurrency(room.price)}</span>
+                  <span class="per-night">/ malam</span>
+                </div>
+                <span class="availability-badge ${room.availableUnits > 0 ? 'avail-yes' : 'avail-no'}">
+                  ${room.availableUnits > 0 ? room.availableUnits + ' tersedia' : 'Penuh'}
+                </span>
+              </div>
             </div>
-          </div>
+          </a>
         </div>
-      </a>
-    `).join('');
+      `;
+    }).join('');
+
+    // Setup Touch Swipe on each Room Card in Mobile
+    document.querySelectorAll('.room-listing-card .card-img').forEach(cardImg => {
+      let touchStartX = 0;
+      let touchStartY = 0;
+      let touchCurrentX = 0;
+
+      cardImg.addEventListener('touchstart', (e) => {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        touchCurrentX = touchStartX;
+      }, { passive: true });
+
+      cardImg.addEventListener('touchmove', (e) => {
+        touchCurrentX = e.touches[0].clientX;
+      }, { passive: true });
+
+      cardImg.addEventListener('touchend', (e) => {
+        const diffX = touchCurrentX - touchStartX;
+        const diffY = Math.abs((e.changedTouches[0]?.clientY || 0) - touchStartY);
+
+        if (Math.abs(diffX) > 35 && Math.abs(diffX) > diffY) {
+          const nextBtn = cardImg.querySelector('.card-slider-next');
+          const prevBtn = cardImg.querySelector('.card-slider-prev');
+          if (diffX < 0 && nextBtn) {
+            slideCardImg(nextBtn, 1);
+          } else if (diffX > 0 && prevBtn) {
+            slideCardImg(prevBtn, -1);
+          }
+        }
+      }, { passive: true });
+    });
   }
+
+  // Category pills click handler (horizontal overflow on mobile)
+  const categoryPills = document.querySelectorAll('.cat-pill');
+  categoryPills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      categoryPills.forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      const type = pill.dataset.type;
+      if (typeFilter) typeFilter.value = type;
+      loadRooms();
+    });
+  });
 
   if (searchInput) {
     let debounce;
     searchInput.addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(loadRooms, 300); });
   }
-  if (typeFilter) typeFilter.addEventListener('change', loadRooms);
+  if (typeFilter) {
+    typeFilter.addEventListener('change', () => {
+      categoryPills.forEach(p => p.classList.toggle('active', p.dataset.type === typeFilter.value));
+      loadRooms();
+    });
+  }
 
   await loadRooms();
 }

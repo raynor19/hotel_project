@@ -115,6 +115,58 @@
   border-color: #C4A265;
 }
 
+/* ==================== CATEGORY PILLS (HORIZONTAL OVERFLOW) ==================== */
+.category-pills-bar {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 4px 2px 18px;
+  margin-bottom: 24px;
+}
+
+.category-pills-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.cat-pill {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 50px;
+  background: #ffffff;
+  border: 1.5px solid #e0e0e0;
+  color: #555;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.cat-pill i {
+  color: #C4A265;
+  font-size: 0.8rem;
+  transition: color 0.3s ease;
+}
+
+.cat-pill:hover,
+.cat-pill.active {
+  background: #C4A265;
+  border-color: #C4A265;
+  color: #0a0a0a;
+  box-shadow: 0 4px 15px rgba(196,162,101,0.3);
+}
+
+.cat-pill.active i {
+  color: #0a0a0a;
+}
+
 /* ==================== ROOM CARDS GRID ==================== */
 .rooms-listing {
   display: grid;
@@ -268,7 +320,8 @@
   background: #0a0a0a;
   border-radius: 12px;
   overflow: hidden;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
+  touch-action: pan-y pinch-zoom;
 }
 
 .carousel-track {
@@ -279,6 +332,14 @@
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  touch-action: pan-y pinch-zoom;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+}
+
+.carousel-track:active {
+  cursor: grabbing;
 }
 
 .carousel-track::-webkit-scrollbar { display: none; }
@@ -287,6 +348,7 @@
   flex: 0 0 100%;
   scroll-snap-align: start;
   position: relative;
+  user-select: none;
 }
 
 .carousel-slide img {
@@ -294,6 +356,9 @@
   height: 480px;
   object-fit: cover;
   display: block;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
 }
 
 .carousel-arrow {
@@ -302,14 +367,14 @@
   transform: translateY(-50%);
   width: 48px;
   height: 48px;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0,0,0,0.55);
   backdrop-filter: blur(10px);
   color: #fff;
-  border: none;
+  border: 1px solid rgba(255,255,255,0.15);
   border-radius: 50%;
   font-size: 1.1rem;
   cursor: pointer;
-  z-index: 10;
+  z-index: 15;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
@@ -317,7 +382,9 @@
 }
 
 .carousel-arrow:hover {
-  background: rgba(196,162,101,0.8);
+  background: rgba(196,162,101,0.9);
+  color: #0a0a0a;
+  transform: translateY(-50%) scale(1.08);
 }
 
 .carousel-prev { left: 16px; }
@@ -327,21 +394,83 @@
   position: absolute;
   bottom: 16px;
   right: 16px;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(6px);
   color: #fff;
-  padding: 6px 16px;
+  padding: 6px 14px;
   border-radius: 20px;
-  font-size: 0.8rem;
-  z-index: 10;
+  font-size: 0.75rem;
+  font-weight: 600;
+  z-index: 15;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.carousel-dots {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 15;
+  pointer-events: auto;
+}
+
+.carousel-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.4);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  padding: 0;
+}
+
+.carousel-dot.active {
+  background: #C4A265;
+  width: 22px;
+  border-radius: 12px;
+  box-shadow: 0 0 8px rgba(196,162,101,0.6);
+}
+
+.carousel-swipe-hint {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.65);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  letter-spacing: 0.5px;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid rgba(196,162,101,0.4);
+  pointer-events: none;
+  animation: pulseHint 2.4s infinite;
+  transition: opacity 0.5s ease;
+}
+
+@keyframes pulseHint {
+  0%, 100% { opacity: 0.9; transform: translateX(-50%) scale(1); }
+  50% { opacity: 0.5; transform: translateX(-50%) scale(0.97); }
 }
 
 .carousel-thumbs {
   display: flex;
   gap: 8px;
   padding: 12px;
-  background: #1a1a1a;
+  background: #141414;
   overflow-x: auto;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  border-radius: 8px;
 }
 
 .carousel-thumbs::-webkit-scrollbar { display: none; }
@@ -352,10 +481,96 @@
   object-fit: cover;
   border-radius: 6px;
   cursor: pointer;
-  opacity: 0.5;
+  opacity: 0.45;
   transition: all 0.3s ease;
   border: 2px solid transparent;
   flex-shrink: 0;
+  -webkit-user-drag: none;
+}
+
+.carousel-thumbs img.active,
+.carousel-thumbs img:hover {
+  opacity: 1;
+  border-color: #C4A265;
+  transform: translateY(-2px);
+}
+
+/* Card Slider (for Room Listing Cards) */
+.room-listing-card .card-img {
+  height: 220px;
+  overflow: hidden;
+  position: relative;
+  touch-action: pan-y pinch-zoom;
+  user-select: none;
+}
+
+.card-slider-track {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.35s ease;
+}
+
+.card-slider-track img {
+  width: 100%;
+  height: 100%;
+  flex-shrink: 0;
+  object-fit: cover;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+
+.card-slider-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 5;
+  transition: all 0.2s;
+  opacity: 0.85;
+}
+
+.card-slider-prev { left: 8px; }
+.card-slider-next { right: 8px; }
+
+.card-slider-arrow:hover {
+  background: #C4A265;
+  color: #0a0a0a;
+  opacity: 1;
+}
+
+.card-slider-dots {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 5px;
+  z-index: 5;
+}
+
+.card-slider-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.5);
+  transition: all 0.2s;
+}
+
+.card-slider-dot.active {
+  background: #C4A265;
+  width: 14px;
+  border-radius: 4px;
 }
 
 .carousel-thumbs img.active {
@@ -1102,12 +1317,106 @@
   .reservation-card .rsv-actions { flex-direction: row; padding: 0 24px 20px; width: 100%; justify-content: space-between; }
   .admin-rsv-card { flex-direction: column; align-items: flex-start; }
   .admin-rsv-card .rsv-photo { width: 100%; height: 140px; }
-  .carousel-slide img { height: 240px; }
   .stats-grid { grid-template-columns: 1fr 1fr; }
   .form-row { grid-template-columns: 1fr; }
+
+  /* ==================== MOBILE HORIZONTAL OVERFLOW & PEEK ==================== */
+  /* Detail Kamar POV Carousel with Left & Right Overflow Peek */
+  .carousel-container {
+    margin-left: -20px;
+    margin-right: -20px;
+    border-radius: 0;
+    overflow: visible !important;
+    background: transparent;
+  }
+
+  .carousel-track {
+    padding: 0 20px;
+    scroll-padding: 0 20px;
+    gap: 12px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .carousel-track::-webkit-scrollbar {
+    display: none;
+  }
+
+  .carousel-slide {
+    flex: 0 0 86% !important;
+    border-radius: 14px;
+    overflow: hidden;
+    scroll-snap-align: center;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+    background: #111;
+  }
+
+  .carousel-slide img {
+    height: 250px;
+    border-radius: 14px;
+    object-fit: cover;
+  }
+
+  .carousel-thumbs {
+    margin-left: -20px;
+    margin-right: -20px;
+    border-radius: 0;
+    padding: 10px 20px;
+    gap: 10px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .carousel-thumbs::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Horizontal Overflow for Category Pills */
+  .category-pills-bar {
+    margin-left: -20px;
+    margin-right: -20px;
+    padding-left: 20px;
+    padding-right: 20px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Horizontal Overflow for Admin / Receptionist Filter Tabs */
+  .filter-tabs {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin-left: -20px;
+    margin-right: -20px;
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-bottom: 12px;
+  }
+
+  .filter-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filter-tab {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
 }
 
 @media (max-width: 480px) {
   .stats-grid { grid-template-columns: 1fr; }
-  .carousel-thumbs img { width: 60px; height: 42px; }
+  .carousel-slide {
+    flex: 0 0 88% !important;
+  }
+  .carousel-slide img {
+    height: 220px;
+  }
+  .carousel-thumbs img {
+    width: 65px;
+    height: 46px;
+  }
 }

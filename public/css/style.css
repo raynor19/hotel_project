@@ -1675,9 +1675,44 @@ input, select, textarea {
     padding: 18px;
   }
 
-  /* Rooms */
+  /* Rooms with Horizontal Overflow & Peek on Mobile */
   .rooms-grid {
-    grid-template-columns: 1fr;
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 16px;
+    padding: 10px 20px 24px;
+    margin: 0 -20px;
+  }
+  .rooms-grid::-webkit-scrollbar {
+    display: none;
+  }
+  .room-card {
+    flex: 0 0 85%;
+    max-width: 85%;
+    scroll-snap-align: center;
+  }
+
+  /* Facilities with Horizontal Overflow on Mobile */
+  .facilities-grid {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 14px;
+    padding: 10px 20px 24px;
+    margin: 0 -20px;
+  }
+  .facilities-grid::-webkit-scrollbar {
+    display: none;
+  }
+  .facility-card {
+    flex: 0 0 76%;
+    max-width: 76%;
+    scroll-snap-align: center;
   }
 
   /* CTA Stats */
