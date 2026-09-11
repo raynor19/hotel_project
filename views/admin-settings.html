@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pengaturan Website — Admin HotelKu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/pages.css">
+</head>
+<body class="page-wrapper">
+
+  <!-- Navbar Admin -->
+  <nav class="navbar navbar-solid" id="navbar">
+    <div class="nav-container">
+      <a href="/admin/dashboard" class="nav-logo">
+        <span class="logo-icon">✦</span>
+        <div class="logo-text">
+          <span class="logo-name">HOTELKU</span>
+          <span class="logo-tagline">ADMINISTRATOR</span>
+        </div>
+      </a>
+
+      <div class="nav-menu-pages">
+        <a href="/admin/dashboard" class="nav-link">Laporan & Statistik</a>
+        <a href="/admin/rooms" class="nav-link">Kelola Kamar</a>
+        <a href="/admin/users" class="nav-link">Kelola Pengguna</a>
+        <a href="/admin/settings" class="nav-link active">Pengaturan Website</a>
+        <a href="/receptionist/dashboard" class="nav-link" style="color: #D4B87A;">Konsol Operasional</a>
+      </div>
+
+      <div class="nav-actions">
+        <div class="user-info">
+          <i class="fas fa-crown" style="color: #C4A265;"></i>
+          <span id="navUserName">Admin Eksekutif</span>
+        </div>
+        <button class="btn btn-outline btn-sm" id="navLogout">
+          <i class="fas fa-sign-out-alt"></i> Keluar
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page Header -->
+  <header class="page-header">
+    <p class="section-label light">✦ KONFIGURASI SISTEM ✦</p>
+    <h1>Pengaturan Umum Website</h1>
+    <p>Atur identitas properti hotel, kontak layanan pelanggan, banner promosi publik, serta jam operasional dan kebijakan check-in/out</p>
+  </header>
+
+  <!-- Page Content -->
+  <main class="page-content">
+    <div style="max-width: 800px; margin: 0 auto;">
+      <div class="form-card">
+        <form id="settingsForm">
+          <!-- Identitas Properti -->
+          <h3 style="font-family: 'Playfair Display', serif; font-size: 1.25rem; margin-bottom: 20px; color: #1a1a1a; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-hotel" style="color: #C4A265;"></i> Identitas Hotel
+          </h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Nama Properti</label>
+              <input type="text" id="sHotelName" required>
+            </div>
+            <div class="form-group">
+              <label>Tagline / Slogan</label>
+              <input type="text" id="sTagline" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Alamat Lengkap</label>
+            <input type="text" id="sAddress" required>
+          </div>
+
+          <!-- Kontak & Layanan -->
+          <div style="margin: 32px 0 20px; padding-top: 24px; border-top: 1px solid #f0f0f0;">
+            <h3 style="font-family: 'Playfair Display', serif; font-size: 1.25rem; margin-bottom: 20px; color: #1a1a1a; display: flex; align-items: center; gap: 8px;">
+              <i class="fas fa-phone-alt" style="color: #C4A265;"></i> Kontak & CS
+            </h3>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Telepon Kantor</label>
+              <input type="text" id="sPhone" required>
+            </div>
+            <div class="form-group">
+              <label>WhatsApp Layanan</label>
+              <input type="text" id="sWhatsapp" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Email Resmi Hotel</label>
+            <input type="email" id="sEmail" required>
+          </div>
+
+          <!-- Banner Promo -->
+          <div style="margin: 32px 0 20px; padding-top: 24px; border-top: 1px solid #f0f0f0;">
+            <h3 style="font-family: 'Playfair Display', serif; font-size: 1.25rem; margin-bottom: 20px; color: #1a1a1a; display: flex; align-items: center; gap: 8px;">
+              <i class="fas fa-bullhorn" style="color: #C4A265;"></i> Banner Promo & Pengumuman Tamu
+            </h3>
+          </div>
+          <div class="form-group">
+            <label>Teks Promo Website</label>
+            <textarea id="sPromoBanner" style="min-height: 70px;"></textarea>
+          </div>
+          <div style="margin-bottom: 20px;">
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-size: 0.9rem; font-weight: 600;">
+              <input type="checkbox" id="sPromoActive" style="width: 18px; height: 18px; accent-color: #C4A265;">
+              Tampilkan banner promo ini kepada pengunjung website
+            </label>
+          </div>
+
+          <!-- Kebijakan Hotel -->
+          <div style="margin: 32px 0 20px; padding-top: 24px; border-top: 1px solid #f0f0f0;">
+            <h3 style="font-family: 'Playfair Display', serif; font-size: 1.25rem; margin-bottom: 20px; color: #1a1a1a; display: flex; align-items: center; gap: 8px;">
+              <i class="fas fa-file-contract" style="color: #C4A265;"></i> Waktu & Kebijakan Menginap
+            </h3>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Waktu Standar Check-In</label>
+              <input type="text" id="sCheckInTime" placeholder="14:00 WIB" required>
+            </div>
+            <div class="form-group">
+              <label>Waktu Standar Check-Out</label>
+              <input type="text" id="sCheckOutTime" placeholder="12:00 WIB" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Kebijakan Pembatalan & Reservasi</label>
+            <textarea id="sCancellationPolicy" style="min-height: 80px;" required></textarea>
+          </div>
+
+          <button type="submit" class="btn-reserve" style="margin-top: 28px;" id="btnSaveSettings">
+            <i class="fas fa-save"></i> Simpan Semua Pengaturan
+          </button>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/pages.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      await initNavbar();
+      await loadAdminSettings();
+    });
+
+    async function loadAdminSettings() {
+      try {
+        const res = await fetch('/api/admin/settings');
+        const data = await res.json();
+        if (data.success) {
+          const s = data.settings;
+          document.getElementById('sHotelName').value = s.hotelName || '';
+          document.getElementById('sTagline').value = s.tagline || '';
+          document.getElementById('sAddress').value = s.address || '';
+          document.getElementById('sPhone').value = s.phone || '';
+          document.getElementById('sWhatsapp').value = s.whatsapp || '';
+          document.getElementById('sEmail').value = s.email || '';
+          document.getElementById('sPromoBanner').value = s.promoBanner || '';
+          document.getElementById('sPromoActive').checked = Boolean(s.promoActive);
+          document.getElementById('sCheckInTime').value = s.checkInTime || '14:00 WIB';
+          document.getElementById('sCheckOutTime').value = s.checkOutTime || '12:00 WIB';
+          document.getElementById('sCancellationPolicy').value = s.cancellationPolicy || '';
+        }
+      } catch (err) {
+        showToast('Gagal memuat pengaturan', 'error');
+      }
+    }
+
+    document.getElementById('settingsForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnSaveSettings');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+
+      const payload = {
+        hotelName: document.getElementById('sHotelName').value.trim(),
+        tagline: document.getElementById('sTagline').value.trim(),
+        address: document.getElementById('sAddress').value.trim(),
+        phone: document.getElementById('sPhone').value.trim(),
+        whatsapp: document.getElementById('sWhatsapp').value.trim(),
+        email: document.getElementById('sEmail').value.trim(),
+        promoBanner: document.getElementById('sPromoBanner').value.trim(),
+        promoActive: document.getElementById('sPromoActive').checked,
+        checkInTime: document.getElementById('sCheckInTime').value.trim(),
+        checkOutTime: document.getElementById('sCheckOutTime').value.trim(),
+        cancellationPolicy: document.getElementById('sCancellationPolicy').value.trim()
+      };
+
+      try {
+        const res = await fetch('/api/admin/settings', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message, 'success');
+        } else {
+          showToast(data.message, 'error');
+        }
+      } catch (err) {
+        showToast('Gagal menyimpan pengaturan', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> Simpan Semua Pengaturan';
+      }
+    });
+  </script>
+</body>
+</html>

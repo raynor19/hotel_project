@@ -1,0 +1,35 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "▶ Start HotelKu Server",
+      "program": "${workspaceFolder}/server.js",
+      "console": "integratedTerminal",
+      "restart": true,
+      "env": {
+        "PORT": "3000"
+      }
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "▶ Start with Nodemon (Auto-Reload)",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["nodemon", "${workspaceFolder}/server.js"],
+      "console": "integratedTerminal",
+      "restart": true,
+      "env": {
+        "PORT": "3000"
+      }
+    },
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "🌐 Open in Chrome",
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}/public"
+    }
+  ]
+}

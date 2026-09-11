@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proses Check-In — Admin HotelKu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/pages.css">
+</head>
+<body class="page-wrapper">
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-solid" id="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-logo">
+        <span class="logo-icon">✦</span>
+        <div class="logo-text">
+          <span class="logo-name">HOTELKU</span>
+          <span class="logo-tagline">ADMIN CONSOLE</span>
+        </div>
+      </a>
+
+      <div class="nav-menu-pages">
+        <a href="/dashboard" class="nav-link">Dashboard</a>
+        <a href="/receptionist/rooms-status" class="nav-link">Status Kamar</a>
+        <a href="/admin/reservations" class="nav-link">Kelola Reservasi</a>
+        <a href="/admin/checkin" class="nav-link active">Check-In Tamu</a>
+        <a href="/admin/checkout" class="nav-link">Check-Out Tamu</a>
+        <a href="/rooms" class="nav-link">Katalog Kamar</a>
+      </div>
+
+      <div class="nav-actions">
+        <div class="user-info">
+          <i class="fas fa-user-shield" style="color: #C4A265;"></i>
+          <span id="navUserName">Administrator</span>
+        </div>
+        <button class="btn btn-outline btn-sm" id="navLogout">
+          <i class="fas fa-sign-out-alt"></i> Keluar
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page Header -->
+  <header class="page-header">
+    <p class="section-label light">✦ KEDATANGAN TAMU ✦</p>
+    <h1>Proses Check-In Tamu</h1>
+    <p>Daftar tamu dengan reservasi yang telah disetujui (Approved) dan siap melakukan check-in fisik di hotel</p>
+  </header>
+
+  <!-- Page Content -->
+  <main class="page-content">
+    <div style="background: #eef7ff; border-left: 4px solid #2980b9; padding: 16px 20px; border-radius: 8px; margin-bottom: 24px; font-size: 0.85rem; color: #1c5277;">
+      <i class="fas fa-info-circle" style="margin-right: 6px;"></i>
+      Ketika tombol <strong>"Proses Check-In"</strong> ditekan, status reservasi berubah menjadi <strong>Checked-In</strong> dan unit kamar akan ditandai sebagai terisi (Occupied).
+    </div>
+
+    <!-- Check-In List Container -->
+    <div id="checkinList">
+      <div class="empty-state">
+        <i class="fas fa-spinner fa-spin"></i>
+        <h3>Memuat daftar tamu siap check-in...</h3>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/pages.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      await initNavbar();
+      await initAdminCheckin();
+    });
+  </script>
+</body>
+</html>

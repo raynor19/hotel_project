@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profil Saya — HotelKu Yogyakarta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/pages.css">
+</head>
+<body class="page-wrapper">
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-solid" id="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-logo">
+        <span class="logo-icon">✦</span>
+        <div class="logo-text">
+          <span class="logo-name">HOTELKU</span>
+          <span class="logo-tagline">YOGYAKARTA</span>
+        </div>
+      </a>
+
+      <div class="nav-menu-pages">
+        <a href="/" class="nav-link">Beranda</a>
+        <a href="/rooms" class="nav-link">Kamar</a>
+        <a href="/my-reservations" class="nav-link guest-only">Riwayat Pemesanan</a>
+        <a href="/profile" class="nav-link active guest-only">Profil Saya</a>
+        <a href="/dashboard" class="nav-link admin-only hide">Admin Console</a>
+      </div>
+
+      <div class="nav-actions">
+        <div class="user-info logged-in-only">
+          <i class="fas fa-user-circle"></i>
+          <span id="navUserName">Tamu</span>
+        </div>
+        <button class="btn btn-outline btn-sm logged-in-only" id="navLogout">
+          <i class="fas fa-sign-out-alt"></i> Keluar
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page Header -->
+  <header class="page-header">
+    <p class="section-label light">✦ PENGATURAN AKUN ✦</p>
+    <h1>Profil Tamu</h1>
+    <p>Kelola informasi kontak dan keamanan akun pribadi Anda</p>
+  </header>
+
+  <!-- Page Content -->
+  <main class="page-content">
+    <div style="max-width: 680px; margin: 0 auto;">
+      <div class="form-card">
+        <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 30px; padding-bottom: 24px; border-bottom: 1px solid #f0f0f0;">
+          <div style="width: 70px; height: 70px; border-radius: 50%; background: linear-gradient(135deg, #C4A265, #D4B87A); display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #fff;">
+            <i class="fas fa-user"></i>
+          </div>
+          <div>
+            <h2 id="profileDisplayName" style="margin-bottom: 4px;">Loading...</h2>
+            <span class="status-badge status-approved" id="profileRoleBadge">Tamu Terdaftar</span>
+          </div>
+        </div>
+
+        <form id="profileForm">
+          <div class="form-group">
+            <label><i class="fas fa-user"></i> Nama Lengkap</label>
+            <input type="text" id="profName" name="name" required placeholder="Nama lengkap Anda">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label><i class="fas fa-envelope"></i> Alamat Email</label>
+              <input type="email" id="profEmail" name="email" required placeholder="email@contoh.com">
+            </div>
+            <div class="form-group">
+              <label><i class="fas fa-phone"></i> Nomor Telepon / WhatsApp</label>
+              <input type="tel" id="profPhone" name="phone" placeholder="08xxxxxxxxxx">
+            </div>
+          </div>
+
+          <div style="margin: 28px 0 16px; padding-top: 20px; border-top: 1px solid #f0f0f0;">
+            <h3 style="font-family: 'Playfair Display', serif; font-size: 1.15rem; margin-bottom: 8px;">Ganti Password (Opsional)</h3>
+            <p style="font-size: 0.8rem; color: #888; margin-bottom: 16px;">Biarkan kosong jika Anda tidak ingin mengubah password.</p>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label><i class="fas fa-lock"></i> Password Saat Ini</label>
+              <input type="password" id="profCurrentPassword" placeholder="Masukkan password lama">
+            </div>
+            <div class="form-group">
+              <label><i class="fas fa-key"></i> Password Baru</label>
+              <input type="password" id="profNewPassword" placeholder="Minimal 5 karakter">
+            </div>
+          </div>
+
+          <button type="submit" class="btn-reserve" style="margin-top: 20px;" id="btnSaveProfile">
+            <i class="fas fa-save"></i> Simpan Perubahan Profil
+          </button>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/pages.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      await initNavbar();
+      await loadProfileData();
+    });
+
+    async function loadProfileData() {
+      try {
+        const res = await fetch('/api/profile');
+        const data = await res.json();
+        if (data.success) {
+          const u = data.user;
+          document.getElementById('profileDisplayName').textContent = u.name;
+          document.getElementById('profName').value = u.name;
+          document.getElementById('profEmail').value = u.email;
+          document.getElementById('profPhone').value = u.phone || '';
+          document.getElementById('profileRoleBadge').textContent = u.role === 'admin' ? 'Administrator' : 'Tamu HotelKu';
+        } else {
+          window.location.href = '/login';
+        }
+      } catch (err) {
+        showToast('Gagal memuat profil', 'error');
+      }
+    }
+
+    document.getElementById('profileForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnSaveProfile');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+
+      const payload = {
+        name: document.getElementById('profName').value.trim(),
+        email: document.getElementById('profEmail').value.trim(),
+        phone: document.getElementById('profPhone').value.trim()
+      };
+
+      const curPass = document.getElementById('profCurrentPassword').value;
+      const newPass = document.getElementById('profNewPassword').value;
+
+      if (newPass) {
+        if (!curPass) {
+          showToast('Masukkan password saat ini untuk verifikasi penggantian password', 'error');
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-save"></i> Simpan Perubahan Profil';
+          return;
+        }
+        if (newPass.length < 5) {
+          showToast('Password baru minimal 5 karakter', 'error');
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-save"></i> Simpan Perubahan Profil';
+          return;
+        }
+        payload.currentPassword = curPass;
+        payload.newPassword = newPass;
+      }
+
+      try {
+        const res = await fetch('/api/profile', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message, 'success');
+          document.getElementById('profileDisplayName').textContent = data.user.name;
+          document.getElementById('navUserName').textContent = data.user.name;
+          document.getElementById('profCurrentPassword').value = '';
+          document.getElementById('profNewPassword').value = '';
+        } else {
+          showToast(data.message, 'error');
+        }
+      } catch (err) {
+        showToast('Terjadi kesalahan saat menyimpan profil', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> Simpan Perubahan Profil';
+      }
+    });
+  </script>
+</body>
+</html>

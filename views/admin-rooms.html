@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kelola Kamar — Admin HotelKu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/pages.css">
+</head>
+<body class="page-wrapper">
+
+  <!-- Navbar Admin -->
+  <nav class="navbar navbar-solid" id="navbar">
+    <div class="nav-container">
+      <a href="/admin/dashboard" class="nav-logo">
+        <span class="logo-icon">✦</span>
+        <div class="logo-text">
+          <span class="logo-name">HOTELKU</span>
+          <span class="logo-tagline">ADMINISTRATOR</span>
+        </div>
+      </a>
+
+      <div class="nav-menu-pages">
+        <a href="/admin/dashboard" class="nav-link">Laporan & Statistik</a>
+        <a href="/admin/rooms" class="nav-link active">Kelola Kamar</a>
+        <a href="/admin/users" class="nav-link">Kelola Pengguna</a>
+        <a href="/admin/settings" class="nav-link">Pengaturan Website</a>
+        <a href="/receptionist/dashboard" class="nav-link" style="color: #D4B87A;">Konsol Operasional</a>
+      </div>
+
+      <div class="nav-actions">
+        <div class="user-info">
+          <i class="fas fa-crown" style="color: #C4A265;"></i>
+          <span id="navUserName">Admin Eksekutif</span>
+        </div>
+        <button class="btn btn-outline btn-sm" id="navLogout">
+          <i class="fas fa-sign-out-alt"></i> Keluar
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page Header -->
+  <header class="page-header">
+    <p class="section-label light">✦ MANAJEMEN ASET KAMAR ✦</p>
+    <h1>Kelola Data Kamar Hotel</h1>
+    <p>Tambah tipe kamar baru, sesuaikan tarif harga menginap, perbarui foto interior/POV, dan kelola kapasitas unit</p>
+  </header>
+
+  <!-- Page Content -->
+  <main class="page-content">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+      <h2 style="font-family: 'Playfair Display', serif; font-size: 1.4rem;">Daftar Tipe Kamar Aktif</h2>
+      <button class="btn btn-primary" onclick="openCreateRoomModal()">
+        <i class="fas fa-plus"></i> Tambah Kamar Baru
+      </button>
+    </div>
+
+    <!-- Rooms Table -->
+    <div style="background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;" id="roomsTable">
+        <thead>
+          <tr style="border-bottom: 2px solid #f0f0f0; color: #888; font-size: 0.8rem; text-transform: uppercase;">
+            <th style="padding: 12px;">Foto Utama</th>
+            <th style="padding: 12px;">Nama & Tipe</th>
+            <th style="padding: 12px;">Kapasitas / Kasur</th>
+            <th style="padding: 12px; text-align: right;">Harga / Malam</th>
+            <th style="padding: 12px; text-align: center;">Total Unit</th>
+            <th style="padding: 12px; text-align: center;">Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="roomsTableBody">
+          <tr><td colspan="6" style="text-align: center; padding: 40px; color: #888;"><i class="fas fa-spinner fa-spin"></i> Memuat data kamar...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Modal Room Form (Create / Edit) -->
+  <div id="roomModal" class="modal-overlay hide" style="display: none;">
+    <div class="modal-box" style="max-width: 650px; max-height: 90vh; overflow-y: auto;">
+      <h3 id="roomModalTitle"><i class="fas fa-bed" style="color: #C4A265; margin-right: 8px;"></i>Tambah Kamar Baru</h3>
+      
+      <form id="roomForm">
+        <input type="hidden" id="editRoomId" value="">
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nama Kamar</label>
+            <input type="text" id="mRoomName" required placeholder="Contoh: Royal Deluxe Suite">
+          </div>
+          <div class="form-group">
+            <label>Kategori Tipe</label>
+            <select id="mRoomType" style="width: 100%; padding: 12px; border: 1.5px solid #e0e0e0; border-radius: 4px; font-family: inherit;">
+              <option value="Standard">Standard</option>
+              <option value="Deluxe">Deluxe</option>
+              <option value="Superior">Superior</option>
+              <option value="Suite">Suite</option>
+              <option value="Presidential">Presidential</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Harga per Malam (Rp)</label>
+            <input type="number" id="mRoomPrice" required placeholder="550000" min="100000">
+          </div>
+          <div class="form-group">
+            <label>Total Unit Kamar</label>
+            <input type="number" id="mRoomUnits" required placeholder="4" min="1" max="50">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Kapasitas Tamu</label>
+            <input type="number" id="mRoomCapacity" required placeholder="2" min="1" max="10">
+          </div>
+          <div class="form-group">
+            <label>Ukuran Kamar (m²)</label>
+            <input type="number" id="mRoomSize" placeholder="32" min="10">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Tipe Ranjang</label>
+          <input type="text" id="mRoomBed" placeholder="Contoh: 1 King Bed">
+        </div>
+
+        <div class="form-group">
+          <label>Deskripsi Singkat</label>
+          <textarea id="mRoomDesc" style="width: 100%; min-height: 70px; padding: 10px; border: 1.5px solid #e0e0e0; border-radius: 4px; font-family: inherit;" placeholder="Deskripsikan keunggulan kamar..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Fasilitas (Pisahkan dengan koma)</label>
+          <input type="text" id="mRoomFacilities" placeholder="WiFi Gratis, AC, Smart TV, Bathtub, Air Panas, Mini Bar">
+        </div>
+
+        <div class="form-group">
+          <label>URL Foto POV Kamar (Satu baris per URL foto)</label>
+          <textarea id="mRoomPhotos" style="width: 100%; min-height: 80px; padding: 10px; border: 1.5px solid #e0e0e0; border-radius: 4px; font-family: inherit; font-size: 0.8rem;" placeholder="https://images.unsplash.com/...&#10;https://images.unsplash.com/..."></textarea>
+          <span style="font-size: 0.75rem; color: #888;">Foto ini akan otomatis menjadi carousel yang bisa digeser oleh tamu.</span>
+        </div>
+
+        <div class="modal-actions" style="margin-top: 24px;">
+          <button type="button" class="btn-cancel" onclick="closeRoomModal()">Batal</button>
+          <button type="submit" class="btn-reserve" style="width: auto; padding: 10px 24px;" id="btnSubmitRoom">Simpan Kamar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/pages.js"></script>
+  <script>
+    let cachedRooms = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await initNavbar();
+      await loadAdminRooms();
+    });
+
+    async function loadAdminRooms() {
+      try {
+        const res = await fetch('/api/rooms');
+        const data = await res.json();
+        if (data.success) {
+          cachedRooms = data.rooms;
+          renderRoomsTable(cachedRooms);
+        }
+      } catch (err) {
+        showToast('Gagal memuat kamar', 'error');
+      }
+    }
+
+    function renderRoomsTable(rooms) {
+      const tbody = document.getElementById('roomsTableBody');
+      if (rooms.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px; color: #888;">Belum ada tipe kamar.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = rooms.map(r => `
+        <tr style="border-bottom: 1px solid #f8f8f8;">
+          <td style="padding: 12px; width: 100px;">
+            <img src="${r.photos[0]}" style="width: 80px; height: 56px; object-fit: cover; border-radius: 6px;" alt="${r.name}">
+          </td>
+          <td style="padding: 12px;">
+            <div style="font-weight: 700; color: #1a1a1a;">${r.name}</div>
+            <span class="room-type-badge" style="margin-top: 4px;">${r.type}</span>
+          </td>
+          <td style="padding: 12px; color: #666;">
+            <div><i class="fas fa-user" style="color: #C4A265;"></i> ${r.capacity} Tamu</div>
+            <div style="font-size: 0.8rem; color: #888;">${r.bed} (${r.size} m²)</div>
+          </td>
+          <td style="padding: 12px; text-align: right; font-weight: 700; color: #A68B4B; font-size: 1rem;">
+            ${formatCurrency(r.price)}
+          </td>
+          <td style="padding: 12px; text-align: center; font-weight: 600;">
+            ${r.totalUnits} unit
+          </td>
+          <td style="padding: 12px; text-align: center; white-space: nowrap;">
+            <button class="btn btn-outline btn-sm" style="padding: 6px 12px; margin-right: 6px; color: #2980b9; border-color: #2980b9;" onclick="openEditRoomModal(${r.id})">
+              <i class="fas fa-edit"></i> Edit
+            </button>
+            <button class="btn-reject" style="padding: 6px 12px; font-size: 0.75rem;" onclick="deleteRoom(${r.id}, '${r.name}')">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    const roomModal = document.getElementById('roomModal');
+
+    function openCreateRoomModal() {
+      document.getElementById('editRoomId').value = '';
+      document.getElementById('roomModalTitle').innerHTML = '<i class="fas fa-plus" style="color: #C4A265; margin-right: 8px;"></i>Tambah Kamar Baru';
+      document.getElementById('roomForm').reset();
+      document.getElementById('mRoomPhotos').value = 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80\nhttps://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1200&q=80';
+      roomModal.style.display = 'flex';
+    }
+
+    function openEditRoomModal(id) {
+      const room = cachedRooms.find(r => r.id === id);
+      if (!room) return;
+
+      document.getElementById('editRoomId').value = room.id;
+      document.getElementById('roomModalTitle').innerHTML = '<i class="fas fa-edit" style="color: #C4A265; margin-right: 8px;"></i>Edit Kamar: ' + room.name;
+      document.getElementById('mRoomName').value = room.name;
+      document.getElementById('mRoomType').value = room.type;
+      document.getElementById('mRoomPrice').value = room.price;
+      document.getElementById('mRoomUnits').value = room.totalUnits;
+      document.getElementById('mRoomCapacity').value = room.capacity;
+      document.getElementById('mRoomSize').value = room.size || '';
+      document.getElementById('mRoomBed').value = room.bed || '';
+      document.getElementById('mRoomDesc').value = room.description || '';
+      document.getElementById('mRoomFacilities').value = (room.facilities || []).join(', ');
+      document.getElementById('mRoomPhotos').value = (room.photos || []).join('\n');
+      roomModal.style.display = 'flex';
+    }
+
+    function closeRoomModal() {
+      roomModal.style.display = 'none';
+    }
+
+    roomModal.addEventListener('click', (e) => {
+      if (e.target === roomModal) closeRoomModal();
+    });
+
+    document.getElementById('roomForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const editId = document.getElementById('editRoomId').value;
+      const isEdit = Boolean(editId);
+
+      const photosRaw = document.getElementById('mRoomPhotos').value.split('\n').map(s => s.trim()).filter(Boolean);
+      const payload = {
+        name: document.getElementById('mRoomName').value.trim(),
+        type: document.getElementById('mRoomType').value,
+        price: parseInt(document.getElementById('mRoomPrice').value),
+        totalUnits: parseInt(document.getElementById('mRoomUnits').value),
+        capacity: parseInt(document.getElementById('mRoomCapacity').value),
+        size: parseInt(document.getElementById('mRoomSize').value) || 25,
+        bed: document.getElementById('mRoomBed').value.trim() || '1 King Bed',
+        description: document.getElementById('mRoomDesc').value.trim(),
+        facilities: document.getElementById('mRoomFacilities').value.split(',').map(s => s.trim()).filter(Boolean),
+        photos: photosRaw.length ? photosRaw : undefined
+      };
+
+      const btn = document.getElementById('btnSubmitRoom');
+      btn.disabled = true;
+      btn.textContent = 'Menyimpan...';
+
+      try {
+        const url = isEdit ? `/api/admin/rooms/${editId}` : '/api/admin/rooms';
+        const method = isEdit ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          showToast(data.message, 'success');
+          closeRoomModal();
+          await loadAdminRooms();
+        } else {
+          showToast(data.message, 'error');
+        }
+      } catch (err) {
+        showToast('Gagal menyimpan data kamar', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Simpan Kamar';
+      }
+    });
+
+    async function deleteRoom(id, name) {
+      if (!confirm(`Apakah Anda yakin ingin menghapus tipe kamar "${name}"? Seluruh unit terkait akan ikut dihapus.`)) return;
+
+      try {
+        const res = await fetch(`/api/admin/rooms/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message, 'success');
+          await loadAdminRooms();
+        } else {
+          showToast(data.message, 'error');
+        }
+      } catch (err) {
+        showToast('Gagal menghapus kamar', 'error');
+      }
+    }
+  </script>
+</body>
+</html>

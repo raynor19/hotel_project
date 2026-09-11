@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kelola Pengguna — Admin HotelKu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/pages.css">
+</head>
+<body class="page-wrapper">
+
+  <!-- Navbar Admin -->
+  <nav class="navbar navbar-solid" id="navbar">
+    <div class="nav-container">
+      <a href="/admin/dashboard" class="nav-logo">
+        <span class="logo-icon">✦</span>
+        <div class="logo-text">
+          <span class="logo-name">HOTELKU</span>
+          <span class="logo-tagline">ADMINISTRATOR</span>
+        </div>
+      </a>
+
+      <div class="nav-menu-pages">
+        <a href="/admin/dashboard" class="nav-link">Laporan & Statistik</a>
+        <a href="/admin/rooms" class="nav-link">Kelola Kamar</a>
+        <a href="/admin/users" class="nav-link active">Kelola Pengguna</a>
+        <a href="/admin/settings" class="nav-link">Pengaturan Website</a>
+        <a href="/receptionist/dashboard" class="nav-link" style="color: #D4B87A;">Konsol Operasional</a>
+      </div>
+
+      <div class="nav-actions">
+        <div class="user-info">
+          <i class="fas fa-crown" style="color: #C4A265;"></i>
+          <span id="navUserName">Admin Eksekutif</span>
+        </div>
+        <button class="btn btn-outline btn-sm" id="navLogout">
+          <i class="fas fa-sign-out-alt"></i> Keluar
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page Header -->
+  <header class="page-header">
+    <p class="section-label light">✦ MANAJEMEN PENGGUNA ✦</p>
+    <h1>Kelola Pengguna & Staf Hotel</h1>
+    <p>Buat akun baru untuk staf resepsionis, atur peranan hak akses (RBAC), dan kelola data akun pengguna</p>
+  </header>
+
+  <!-- Page Content -->
+  <main class="page-content">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+      <div>
+        <h2 style="font-family: 'Playfair Display', serif; font-size: 1.4rem;">Daftar Akun Pengguna</h2>
+        <p style="font-size: 0.85rem; color: #888;">Resepsionis memiliki akses operasional, Admin memiliki akses penuh</p>
+      </div>
+      <button class="btn btn-primary" onclick="openCreateUserModal()">
+        <i class="fas fa-user-plus"></i> Tambah Akun Resepsionis Baru
+      </button>
+    </div>
+
+    <!-- Users Table -->
+    <div style="background: #fff; border-radius: 12px; padding: 24px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); overflow-x: auto;">
+      <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+        <thead>
+          <tr style="border-bottom: 2px solid #f0f0f0; color: #888; font-size: 0.8rem; text-transform: uppercase;">
+            <th style="padding: 12px 16px;">Nama Pengguna</th>
+            <th style="padding: 12px 16px;">Email Login</th>
+            <th style="padding: 12px 16px;">No. WhatsApp</th>
+            <th style="padding: 12px 16px; text-align: center;">Peran (Role)</th>
+            <th style="padding: 12px 16px; text-align: center;">Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="usersTableBody">
+          <tr><td colspan="5" style="text-align: center; padding: 40px; color: #888;"><i class="fas fa-spinner fa-spin"></i> Memuat data pengguna...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- Modal User Form (Create / Edit) -->
+  <div id="userModal" class="modal-overlay hide" style="display: none;">
+    <div class="modal-box" style="max-width: 500px;">
+      <h3 id="userModalTitle"><i class="fas fa-user-plus" style="color: #C4A265; margin-right: 8px;"></i>Tambah Akun Pengguna Baru</h3>
+      
+      <form id="userForm">
+        <input type="hidden" id="editUserId" value="">
+
+        <div class="form-group">
+          <label>Nama Lengkap</label>
+          <input type="text" id="mUserName" required placeholder="Contoh: Rina Anggraini">
+        </div>
+
+        <div class="form-group">
+          <label>Email (Username Login)</label>
+          <input type="email" id="mUserEmail" required placeholder="nama@hotelku.com">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Peran / Role</label>
+            <select id="mUserRole" style="width: 100%; padding: 12px; border: 1.5px solid #e0e0e0; border-radius: 4px; font-family: inherit;">
+              <option value="receptionist" selected>🛎️ Resepsionis (Operasional)</option>
+              <option value="admin">🔑 Administrator (Akses Penuh)</option>
+              <option value="guest">🧳 Tamu (Pribadi)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>No. Telepon / WA</label>
+            <input type="tel" id="mUserPhone" placeholder="08xxxxxxxxxx">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label id="lblPassword">Password Login</label>
+          <input type="password" id="mUserPassword" placeholder="Minimal 5 karakter">
+          <span style="font-size: 0.75rem; color: #888;" id="passwordHelpText"></span>
+        </div>
+
+        <div class="modal-actions" style="margin-top: 24px;">
+          <button type="button" class="btn-cancel" onclick="closeUserModal()">Batal</button>
+          <button type="submit" class="btn-reserve" style="width: auto; padding: 10px 24px;" id="btnSubmitUser">Simpan Pengguna</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/pages.js"></script>
+  <script>
+    let cachedUsers = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await initNavbar();
+      await loadAdminUsers();
+    });
+
+    async function loadAdminUsers() {
+      try {
+        const res = await fetch('/api/admin/users');
+        const data = await res.json();
+        if (data.success) {
+          cachedUsers = data.users;
+          renderUsersTable(cachedUsers);
+        }
+      } catch (err) {
+        showToast('Gagal memuat pengguna', 'error');
+      }
+    }
+
+    function renderUsersTable(users) {
+      const tbody = document.getElementById('usersTableBody');
+      if (users.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 30px; color: #888;">Belum ada akun.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = users.map(u => {
+        let roleBadge = '';
+        if (u.role === 'admin') {
+          roleBadge = '<span class="status-badge status-approved"><i class="fas fa-crown"></i> Admin</span>';
+        } else if (u.role === 'receptionist') {
+          roleBadge = '<span class="status-badge status-checked-in"><i class="fas fa-concierge-bell"></i> Resepsionis</span>';
+        } else {
+          roleBadge = '<span class="status-badge" style="background: rgba(196,162,101,0.15); color: #A68B4B;"><i class="fas fa-user"></i> Tamu</span>';
+        }
+
+        return `
+          <tr style="border-bottom: 1px solid #f8f8f8;">
+            <td style="padding: 14px 16px; font-weight: 700; color: #1a1a1a;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <div style="width: 32px; height: 32px; border-radius: 50%; background: #f0f0ea; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; color: #666;">
+                  <i class="fas fa-user"></i>
+                </div>
+                ${u.name}
+              </div>
+            </td>
+            <td style="padding: 14px 16px; color: #555;">${u.email}</td>
+            <td style="padding: 14px 16px; color: #666;">${u.phone || '-'}</td>
+            <td style="padding: 14px 16px; text-align: center;">${roleBadge}</td>
+            <td style="padding: 14px 16px; text-align: center; white-space: nowrap;">
+              <button class="btn btn-outline btn-sm" style="padding: 6px 12px; margin-right: 6px; color: #2980b9; border-color: #2980b9;" onclick="openEditUserModal(${u.id})">
+                <i class="fas fa-edit"></i> Edit
+              </button>
+              <button class="btn-reject" style="padding: 6px 12px; font-size: 0.75rem;" onclick="deleteUser(${u.id}, '${u.name}')">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    const userModal = document.getElementById('userModal');
+
+    function openCreateUserModal() {
+      document.getElementById('editUserId').value = '';
+      document.getElementById('userModalTitle').innerHTML = '<i class="fas fa-user-plus" style="color: #C4A265; margin-right: 8px;"></i>Tambah Akun Resepsionis Baru';
+      document.getElementById('userForm').reset();
+      document.getElementById('mUserRole').value = 'receptionist';
+      document.getElementById('mUserPassword').required = true;
+      document.getElementById('passwordHelpText').textContent = 'Buat password untuk login pertama staf';
+      userModal.style.display = 'flex';
+    }
+
+    function openEditUserModal(id) {
+      const user = cachedUsers.find(u => u.id === id);
+      if (!user) return;
+
+      document.getElementById('editUserId').value = user.id;
+      document.getElementById('userModalTitle').innerHTML = '<i class="fas fa-user-edit" style="color: #C4A265; margin-right: 8px;"></i>Edit Akun: ' + user.name;
+      document.getElementById('mUserName').value = user.name;
+      document.getElementById('mUserEmail').value = user.email;
+      document.getElementById('mUserRole').value = user.role;
+      document.getElementById('mUserPhone').value = user.phone || '';
+      document.getElementById('mUserPassword').value = '';
+      document.getElementById('mUserPassword').required = false;
+      document.getElementById('passwordHelpText').textContent = 'Biarkan kosong jika tidak ingin mengubah password';
+      userModal.style.display = 'flex';
+    }
+
+    function closeUserModal() {
+      userModal.style.display = 'none';
+    }
+
+    userModal.addEventListener('click', (e) => {
+      if (e.target === userModal) closeUserModal();
+    });
+
+    document.getElementById('userForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const editId = document.getElementById('editUserId').value;
+      const isEdit = Boolean(editId);
+
+      const payload = {
+        name: document.getElementById('mUserName').value.trim(),
+        email: document.getElementById('mUserEmail').value.trim(),
+        role: document.getElementById('mUserRole').value,
+        phone: document.getElementById('mUserPhone').value.trim()
+      };
+
+      const pass = document.getElementById('mUserPassword').value;
+      if (pass) payload.password = pass;
+
+      const btn = document.getElementById('btnSubmitUser');
+      btn.disabled = true;
+      btn.textContent = 'Menyimpan...';
+
+      try {
+        const url = isEdit ? `/api/admin/users/${editId}` : '/api/admin/users';
+        const method = isEdit ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          showToast(data.message, 'success');
+          closeUserModal();
+          await loadAdminUsers();
+        } else {
+          showToast(data.message, 'error');
+        }
+      } catch (err) {
+        showToast('Gagal menyimpan akun pengguna', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Simpan Pengguna';
+      }
+    });
+
+    async function deleteUser(id, name) {
+      if (!confirm(`Hapus akun pengguna "${name}"?`)) return;
+
+      try {
+        const res = await fetch(`/api/admin/users/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message, 'success');
+          await loadAdminUsers();
+        } else {
+          showToast(data.message, 'error');
+        }
+      } catch (err) {
+        showToast('Gagal menghapus pengguna', 'error');
+      }
+    }
+  </script>
+</body>
+</html>

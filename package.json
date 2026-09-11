@@ -1,0 +1,20 @@
+{
+  "name": "hotelku",
+  "version": "1.0.0",
+  "description": "Prototipe Aplikasi Hotel untuk Reservasi Kamar, Check-in dan Check-out Tamu",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "npx nodemon server.js"
+  },
+  "keywords": ["hotel", "reservasi", "check-in", "check-out"],
+  "author": "Raynor Athaillah",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "express-session": "^1.17.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}

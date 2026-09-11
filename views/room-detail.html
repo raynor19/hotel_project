@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detail Kamar — HotelKu Yogyakarta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/pages.css">
+</head>
+<body class="page-wrapper">
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-solid" id="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-logo">
+        <span class="logo-icon">✦</span>
+        <div class="logo-text">
+          <span class="logo-name">HOTELKU</span>
+          <span class="logo-tagline">YOGYAKARTA</span>
+        </div>
+      </a>
+
+      <div class="nav-menu-pages">
+        <a href="/" class="nav-link">Beranda</a>
+        <a href="/rooms" class="nav-link active">Kamar</a>
+        <a href="/my-reservations" class="nav-link guest-only hide">Riwayat Pemesanan</a>
+        <a href="/profile" class="nav-link guest-only hide">Profil Saya</a>
+        <a href="/admin/dashboard" class="nav-link admin-only hide">Admin Console</a>
+        <a href="/receptionist/dashboard" class="nav-link receptionist-only hide" style="color: #D4B87A;">Konsol Resepsionis</a>
+      </div>
+
+      <div class="nav-actions">
+        <div class="user-info logged-in-only hide">
+          <i class="fas fa-user-circle"></i>
+          <span id="navUserName">Tamu</span>
+        </div>
+        <button class="btn btn-outline btn-sm logged-in-only hide" id="navLogout">
+          <i class="fas fa-sign-out-alt"></i> Keluar
+        </button>
+        <a href="/login" class="btn-signin logged-out-only">
+          <i class="fas fa-user"></i>
+          <span>Masuk</span>
+        </a>
+        <a href="/register" class="btn btn-outline btn-sm logged-out-only" style="padding: 8px 14px; font-size: 0.75rem;">
+          <i class="fas fa-user-plus"></i>
+          <span>Daftar</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page Content -->
+  <main class="page-content" style="padding-top: 30px;">
+    <!-- Breadcrumbs / Back Link -->
+    <div style="margin-bottom: 20px;">
+      <a href="/rooms" style="color: #A68B4B; font-size: 0.85rem; font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+        <i class="fas fa-arrow-left"></i> Kembali ke Daftar Kamar
+      </a>
+    </div>
+
+    <!-- Container for dynamic room details and photo carousel -->
+    <div id="roomDetailContent">
+      <div class="empty-state">
+        <i class="fas fa-spinner fa-spin"></i>
+        <h3>Memuat detail kamar & foto...</h3>
+      </div>
+    </div>
+
+    <!-- Reviews Section -->
+    <section class="room-reviews-section" style="margin-top: 50px; padding-top: 40px; border-top: 1px solid #e5e5df;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+        <div>
+          <span class="section-label" style="text-align: left; margin-bottom: 4px;">✦ ULASAN & PENGALAMAN TAMU ✦</span>
+          <h2 style="font-family: 'Playfair Display', serif; font-size: 1.6rem; color: #1a1a1a;">Ulasan Tamu</h2>
+        </div>
+      </div>
+      <div id="roomReviewsList" style="display: grid; gap: 16px;">
+        <div style="color: #888; font-size: 0.9rem; padding: 20px 0;">Memuat ulasan...</div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/js/pages.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      await initNavbar();
+      await initRoomDetailPage();
+
+      // Load Room Reviews
+      const roomId = window.location.pathname.split('/').pop();
+      const reviewsContainer = document.getElementById('roomReviewsList');
+      try {
+        const res = await fetch(`/api/reviews/room/${roomId}`);
+        const data = await res.json();
+        if (data.success && data.reviews.length > 0) {
+          reviewsContainer.innerHTML = data.reviews.map(rev => `
+            <div style="background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.04);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-weight: 700; color: #1a1a1a;"><i class="fas fa-user-circle" style="color: #C4A265; margin-right: 6px;"></i> ${rev.userName}</span>
+                <span style="color: #f39c12; font-size: 0.85rem;">
+                  ${'★'.repeat(rev.rating)}${'☆'.repeat(5 - rev.rating)}
+                </span>
+              </div>
+              <p style="color: #555; font-size: 0.9rem; margin-bottom: 8px; line-height: 1.6;">"${rev.comment}"</p>
+              <span style="font-size: 0.75rem; color: #aaa;">${formatDate(rev.createdAt)}</span>
+            </div>
+          `).join('');
+        } else {
+          reviewsContainer.innerHTML = '<p style="color: #888; font-size: 0.9rem; font-style: italic;">Belum ada ulasan untuk kamar ini. Jadilah tamu pertama yang memberikan ulasan setelah masa inap Anda selesai!</p>';
+        }
+      } catch (err) {
+        reviewsContainer.innerHTML = '<p style="color: #888; font-size: 0.9rem;">Belum ada ulasan.</p>';
+      }
+    });
+  </script>
+</body>
+</html>

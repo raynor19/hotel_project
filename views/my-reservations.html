@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Riwayat Pemesanan — HotelKu Yogyakarta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/pages.css">
+</head>
+<body class="page-wrapper">
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-solid" id="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-logo">
+        <span class="logo-icon">✦</span>
+        <div class="logo-text">
+          <span class="logo-name">HOTELKU</span>
+          <span class="logo-tagline">YOGYAKARTA</span>
+        </div>
+      </a>
+
+      <div class="nav-menu-pages">
+        <a href="/" class="nav-link">Beranda</a>
+        <a href="/rooms" class="nav-link">Kamar</a>
+        <a href="/my-reservations" class="nav-link active guest-only">Riwayat Pemesanan</a>
+        <a href="/profile" class="nav-link guest-only">Profil Saya</a>
+        <a href="/dashboard" class="nav-link admin-only hide">Admin Console</a>
+      </div>
+
+      <div class="nav-actions">
+        <div class="user-info logged-in-only">
+          <i class="fas fa-user-circle"></i>
+          <span id="navUserName">Tamu</span>
+        </div>
+        <button class="btn btn-outline btn-sm logged-in-only" id="navLogout">
+          <i class="fas fa-sign-out-alt"></i> Keluar
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page Header -->
+  <header class="page-header">
+    <p class="section-label light">✦ AKTIVITAS ANDA ✦</p>
+    <h1>Riwayat Pemesanan Saya</h1>
+    <p>Pantau status pengajuan reservasi, jadwal check-in, dan berikan ulasan setelah masa menginap selesai</p>
+  </header>
+
+  <!-- Page Content -->
+  <main class="page-content">
+    <div style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+      <h2 style="font-family: 'Playfair Display', serif; font-size: 1.4rem; color: #1a1a1a;">Daftar Reservasi Anda</h2>
+      <a href="/rooms" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus"></i> Reservasi Kamar Baru
+      </a>
+    </div>
+
+    <!-- Status Explanation Bar -->
+    <div style="background: #fff; border-radius: 8px; padding: 16px 20px; margin-bottom: 24px; font-size: 0.8rem; color: #666; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; border-left: 4px solid #C4A265;">
+      <span><strong>Alur Status:</strong></span>
+      <span><i class="fas fa-clock" style="color: #e67e22;"></i> <strong>Menunggu:</strong> Menunggu ACC Admin</span>
+      <span><i class="fas fa-check-circle" style="color: #27ae60;"></i> <strong>Disetujui:</strong> Silakan datang ke hotel untuk check-in fisik</span>
+      <span><i class="fas fa-sign-in-alt" style="color: #2980b9;"></i> <strong>Checked In:</strong> Sedang menginap</span>
+      <span><i class="fas fa-sign-out-alt" style="color: #7f8c8d;"></i> <strong>Checked Out:</strong> Selesai (Bisa beri rating & review)</span>
+    </div>
+
+    <!-- Reservations List Container -->
+    <div class="reservations-list" id="myReservationsList">
+      <div class="empty-state">
+        <i class="fas fa-spinner fa-spin"></i>
+        <h3>Memuat riwayat pemesanan...</h3>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Review -->
+  <div id="reviewModal" class="modal-overlay hide" style="display: none;">
+    <div class="modal-box">
+      <h3><i class="fas fa-star" style="color: #f39c12; margin-right: 8px;"></i>Beri Ulasan & Rating</h3>
+      <p id="reviewRoomTitle" style="color: #888; font-size: 0.85rem; margin-bottom: 16px;">Kamar:</p>
+      
+      <form id="reviewForm">
+        <input type="hidden" id="revReservationId" value="">
+        
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Rating:</label>
+          <div id="starRatingSelect" style="display: flex; gap: 10px; font-size: 1.6rem; cursor: pointer; color: #ddd;">
+            <span data-star="1" class="star-item">★</span>
+            <span data-star="2" class="star-item">★</span>
+            <span data-star="3" class="star-item">★</span>
+            <span data-star="4" class="star-item">★</span>
+            <span data-star="5" class="star-item">★</span>
+          </div>
+          <input type="hidden" id="ratingValue" value="5">
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;">Ulasan Anda:</label>
+          <textarea id="reviewComment" placeholder="Bagikan pengalaman menginap Anda di HotelKu Yogyakarta..." required style="width: 100%; min-height: 90px; padding: 12px; border: 1.5px solid #e0e0e0; border-radius: 4px; font-family: inherit; font-size: 0.9rem; outline: none;"></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" id="btnCancelReview">Batal</button>
+          <button type="submit" class="btn-reserve" style="width: auto; padding: 10px 24px;" id="btnSubmitReview">
+            Kirim Ulasan
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/pages.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      await initNavbar();
+      await loadMyReservationsWithReviewOption();
+    });
+
+    async function loadMyReservationsWithReviewOption() {
+      const container = document.getElementById('myReservationsList');
+      if (!container) return;
+
+      try {
+        const [rsvRes, revRes] = await Promise.all([
+          fetch('/api/reservations').then(r => r.json()),
+          fetch('/api/reviews/my').then(r => r.json())
+        ]);
+
+        if (!rsvRes.success || rsvRes.reservations.length === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <i class="fas fa-inbox"></i>
+              <h3>Belum ada riwayat reservasi</h3>
+              <p>Anda belum pernah melakukan pemesanan kamar.</p>
+              <a href="/rooms" class="btn btn-primary" style="margin-top: 16px;">Jelajahi Pilihan Kamar</a>
+            </div>
+          `;
+          return;
+        }
+
+        const myReviewedReservationIds = new Set(
+          (revRes.success && revRes.reviews) ? revRes.reviews.map(rv => rv.reservationId) : []
+        );
+
+        container.innerHTML = rsvRes.reservations.map(rsv => {
+          const hasReviewed = myReviewedReservationIds.has(rsv.id);
+          let reviewButtonHtml = '';
+
+          if (rsv.status === 'checked-out') {
+            if (hasReviewed) {
+              reviewButtonHtml = `
+                <span style="font-size: 0.75rem; color: #27ae60; font-weight: 700; margin-top: 8px;">
+                  <i class="fas fa-check-circle"></i> Sudah Diulas
+                </span>
+              `;
+            } else {
+              reviewButtonHtml = `
+                <button class="btn btn-primary btn-sm" style="margin-top: 8px; font-size: 0.7rem;" onclick="openReviewModal('${rsv.id}', '${rsv.roomName}')">
+                  <i class="fas fa-star"></i> Beri Ulasan & Rating
+                </button>
+              `;
+            }
+          }
+
+          return `
+            <div class="reservation-card">
+              <div class="rsv-img"><img src="${rsv.roomPhoto}" alt="${rsv.roomName}"></div>
+              <div class="rsv-body">
+                <h3>${rsv.roomName}</h3>
+                <div class="rsv-details">
+                  <span><i class="fas fa-calendar"></i> ${formatDate(rsv.checkIn)} — ${formatDate(rsv.checkOut)}</span>
+                  <span><i class="fas fa-moon"></i> ${rsv.totalNights} malam</span>
+                  <span><i class="fas fa-user"></i> ${rsv.guestName}</span>
+                </div>
+                <div class="rsv-id">ID Reservasi: ${rsv.id} · Dibuat: ${formatDate(rsv.createdAt)}</div>
+                ${rsv.status === 'rejected' && rsv.rejectionReason ? `
+                  <div style="color: #e74c3c; font-size: 0.8rem; margin-top: 6px;">
+                    <i class="fas fa-info-circle"></i> <strong>Alasan Penolakan:</strong> ${rsv.rejectionReason}
+                  </div>
+                ` : ''}
+              </div>
+              <div class="rsv-actions">
+                <div class="rsv-price">${formatCurrency(rsv.totalPrice)}</div>
+                ${getStatusBadge(rsv.status)}
+                ${reviewButtonHtml}
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (err) {
+        container.innerHTML = '<div class="empty-state"><h3>Gagal memuat data reservasi</h3></div>';
+      }
+    }
+
+    // Modal Review Logic
+    const reviewModal = document.getElementById('reviewModal');
+    const revReservationId = document.getElementById('revReservationId');
+    const reviewRoomTitle = document.getElementById('reviewRoomTitle');
+    const starItems = document.querySelectorAll('.star-item');
+    const ratingValue = document.getElementById('ratingValue');
+
+    function updateStars(val) {
+      ratingValue.value = val;
+      starItems.forEach((st, idx) => {
+        st.style.color = (idx < val) ? '#f39c12' : '#ddd';
+      });
+    }
+
+    starItems.forEach(st => {
+      st.addEventListener('click', () => {
+        updateStars(parseInt(st.dataset.star));
+      });
+    });
+
+    window.openReviewModal = function(rsvId, roomName) {
+      revReservationId.value = rsvId;
+      reviewRoomTitle.textContent = `Kamar: ${roomName} (${rsvId})`;
+      document.getElementById('reviewComment').value = '';
+      updateStars(5);
+      reviewModal.style.display = 'flex';
+    };
+
+    document.getElementById('btnCancelReview').addEventListener('click', () => {
+      reviewModal.style.display = 'none';
+    });
+
+    reviewModal.addEventListener('click', (e) => {
+      if (e.target === reviewModal) reviewModal.style.display = 'none';
+    });
+
+    document.getElementById('reviewForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnSubmitReview');
+      btn.disabled = true;
+      btn.textContent = 'Menyimpan...';
+
+      try {
+        const res = await fetch('/api/reviews', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            reservationId: revReservationId.value,
+            rating: parseInt(ratingValue.value),
+            comment: document.getElementById('reviewComment').value
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message, 'success');
+          reviewModal.style.display = 'none';
+          await loadMyReservationsWithReviewOption();
+        } else {
+          showToast(data.message, 'error');
+        }
+      } catch (err) {
+        showToast('Terjadi kesalahan', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Kirim Ulasan';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HotelKu — Pengalaman Menginap Tak Terlupakan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <!-- ==================== NAVBAR ==================== -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-logo">
+        <span class="logo-icon">✦</span>
+        <div class="logo-text">
+          <span class="logo-name">HOTELKU</span>
+          <span class="logo-tagline">YOGYAKARTA</span>
+        </div>
+      </a>
+
+      <ul class="nav-menu" id="navMenu">
+        <li><a href="#home" class="nav-link active">Home</a></li>
+        <li><a href="/rooms" class="nav-link">Pilihan Kamar</a></li>
+        <li><a href="#facilities" class="nav-link">Fasilitas</a></li>
+        <li><a href="#about" class="nav-link">Tentang Kami</a></li>
+        <li><a href="#contact" class="nav-link">Kontak</a></li>
+        <li class="guest-nav-item" style="display: none;"><a href="/my-reservations" class="nav-link">Pesanan Saya</a></li>
+        <li class="guest-nav-item" style="display: none;"><a href="/profile" class="nav-link">Profil</a></li>
+        <li class="admin-nav-item" style="display: none;"><a href="/admin/dashboard" class="nav-link" style="color: #C4A265;">Admin Console</a></li>
+        <li class="receptionist-nav-item" style="display: none;"><a href="/receptionist/dashboard" class="nav-link" style="color: #D4B87A;">Konsol Resepsionis</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <div id="navGuestAuthButtons" style="display: flex; gap: 8px; align-items: center;">
+          <a href="/login" class="btn-signin" id="navSignInBtn">
+            <i class="fas fa-user"></i>
+            <span>Masuk</span>
+          </a>
+          <a href="/register" class="btn btn-outline btn-sm" id="navRegisterBtn" style="padding: 8px 14px; font-size: 0.75rem;">
+            <i class="fas fa-user-plus"></i>
+            <span>Daftar</span>
+          </a>
+        </div>
+        <div id="navUserLogged" style="display: none; align-items: center; gap: 12px;">
+          <a href="/profile" style="color: #fff; font-size: 0.85rem; display: flex; align-items: center; gap: 6px; text-decoration: none;">
+            <i class="fas fa-user-circle" style="color: #C4A265;"></i>
+            <span id="navHomeUserName">Tamu</span>
+          </a>
+          <button id="navHomeLogout" class="btn btn-outline btn-sm" style="padding: 6px 14px; font-size: 0.75rem;">
+            Keluar
+          </button>
+        </div>
+        <button class="nav-toggle" id="navToggle" aria-label="Toggle menu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ==================== HERO SECTION ==================== -->
+  <section class="hero" id="home">
+    <div class="hero-slideshow">
+      <div class="hero-slide active" style="background-image: url('https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1920&q=80')"></div>
+      <div class="hero-slide" style="background-image: url('https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1920&q=80')"></div>
+      <div class="hero-slide" style="background-image: url('https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=1920&q=80')"></div>
+      <div class="hero-slide" style="background-image: url('https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1920&q=80')"></div>
+    </div>
+
+    <div class="hero-overlay"></div>
+
+    <div class="hero-content">
+      <p class="hero-subtitle animate-fade-up">✦ WELCOME TO HOTELKU ✦</p>
+      <h1 class="hero-title animate-fade-up delay-1">
+        Pengalaman Menginap<br>
+        <span class="text-gold">Tak Terlupakan</span>
+      </h1>
+      <p class="hero-desc animate-fade-up delay-2">
+        Nikmati kemewahan dan ketenangan di jantung kota Yogyakarta.<br>
+        Terinspirasi oleh keindahan budaya Jawa yang timeless.
+      </p>
+      <div class="hero-buttons animate-fade-up delay-3">
+        <a href="/rooms" class="btn btn-primary">Lihat Semua Kamar</a>
+        <a href="/rooms" class="btn btn-outline">Reservasi Sekarang</a>
+      </div>
+    </div>
+
+    <!-- Slide Indicators -->
+    <div class="hero-indicators">
+      <button class="indicator active" data-slide="0"></button>
+      <button class="indicator" data-slide="1"></button>
+      <button class="indicator" data-slide="2"></button>
+      <button class="indicator" data-slide="3"></button>
+    </div>
+
+    <!-- Scroll Down -->
+    <a href="#booking" class="scroll-down">
+      <span>Scroll</span>
+      <i class="fas fa-chevron-down"></i>
+    </a>
+  </section>
+
+  <!-- ==================== BOOKING BAR ==================== -->
+  <section class="booking-bar" id="booking">
+    <div class="container">
+      <form class="booking-form" id="bookingForm" action="/rooms" method="GET">
+        <div class="booking-field">
+          <label><i class="fas fa-calendar-check"></i> Check-in</label>
+          <input type="date" name="checkin" required>
+        </div>
+        <div class="booking-field">
+          <label><i class="fas fa-calendar-minus"></i> Check-out</label>
+          <input type="date" name="checkout" required>
+        </div>
+        <div class="booking-field">
+          <label><i class="fas fa-user-friends"></i> Tamu</label>
+          <select name="guests">
+            <option value="1">1 Tamu</option>
+            <option value="2" selected>2 Tamu</option>
+            <option value="3">3 Tamu</option>
+            <option value="4">4 Tamu</option>
+          </select>
+        </div>
+        <div class="booking-field">
+          <label><i class="fas fa-bed"></i> Kamar</label>
+          <select name="rooms">
+            <option value="1" selected>1 Kamar</option>
+            <option value="2">2 Kamar</option>
+            <option value="3">3 Kamar</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-book">
+          <i class="fas fa-search"></i> Cari Kamar
+        </button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ==================== ROOMS SECTION ==================== -->
+  <section class="section rooms-section" id="rooms">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-label">✦ OUR ROOMS ✦</span>
+        <h2 class="section-title">Pilihan Kamar <span class="text-gold">Eksklusif</span></h2>
+        <p class="section-desc">Setiap kamar dirancang dengan sentuhan kemewahan dan kenyamanan, terinspirasi oleh keanggunan budaya Jawa.</p>
+      </div>
+
+      <div class="rooms-grid">
+        <!-- Room 1 -->
+        <div class="room-card">
+          <div class="room-image">
+            <img src="https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=800&q=80" alt="Deluxe Room">
+            <div class="room-badge">Popular</div>
+          </div>
+          <div class="room-info">
+            <h3>Deluxe Room</h3>
+            <p>Kamar luas dengan pemandangan kota, dilengkapi fasilitas modern dan sentuhan etnik Jawa.</p>
+            <div class="room-amenities">
+              <span><i class="fas fa-wifi"></i> WiFi</span>
+              <span><i class="fas fa-snowflake"></i> AC</span>
+              <span><i class="fas fa-tv"></i> Smart TV</span>
+              <span><i class="fas fa-bath"></i> Bathtub</span>
+            </div>
+            <div class="room-footer">
+              <div class="room-price">
+                <span class="price">Rp 550.000</span>
+                <span class="per-night">/ malam</span>
+              </div>
+              <a href="/rooms/2" class="btn btn-small">Lihat Kamar</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Room 2 -->
+        <div class="room-card">
+          <div class="room-image">
+            <img src="https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=800&q=80" alt="Superior Room">
+            <div class="room-badge gold">Exclusive</div>
+          </div>
+          <div class="room-info">
+            <h3>Superior Room</h3>
+            <p>Kamar superior mewah dengan dekorasi batik premium, area duduk luas dan furnitur kayu jati.</p>
+            <div class="room-amenities">
+              <span><i class="fas fa-wifi"></i> WiFi</span>
+              <span><i class="fas fa-snowflake"></i> AC</span>
+              <span><i class="fas fa-tv"></i> Smart TV</span>
+              <span><i class="fas fa-hot-tub-person"></i> Jacuzzi</span>
+            </div>
+            <div class="room-footer">
+              <div class="room-price">
+                <span class="price">Rp 750.000</span>
+                <span class="per-night">/ malam</span>
+              </div>
+              <a href="/rooms/3" class="btn btn-small">Lihat Kamar</a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Room 3 -->
+        <div class="room-card">
+          <div class="room-image">
+            <img src="https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?auto=format&fit=crop&w=800&q=80" alt="Presidential Suite">
+            <div class="room-badge gold">Premium</div>
+          </div>
+          <div class="room-info">
+            <h3>Presidential Suite</h3>
+            <p>Pengalaman menginap tertinggi dengan ruangan terluas, sauna pribadi, butler service, dan fasilitas VIP.</p>
+            <div class="room-amenities">
+              <span><i class="fas fa-wifi"></i> WiFi</span>
+              <span><i class="fas fa-snowflake"></i> AC</span>
+              <span><i class="fas fa-champagne-glasses"></i> Mini Bar</span>
+              <span><i class="fas fa-spa"></i> Spa Access</span>
+            </div>
+            <div class="room-footer">
+              <div class="room-price">
+                <span class="price">Rp 3.500.000</span>
+                <span class="per-night">/ malam</span>
+              </div>
+              <a href="/rooms/6" class="btn btn-small">Lihat Kamar</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="text-align: center; margin-top: 40px;">
+        <a href="/rooms" class="btn btn-primary">Lihat Semua 6 Tipe Kamar <i class="fas fa-arrow-right"></i></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== FACILITIES SECTION ==================== -->
+  <section class="section facilities-section" id="facilities">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-label">✦ FACILITIES ✦</span>
+        <h2 class="section-title">Fasilitas <span class="text-gold">Unggulan</span></h2>
+        <p class="section-desc">Kami menyediakan fasilitas terbaik untuk memastikan kenyamanan dan kepuasan Anda selama menginap.</p>
+      </div>
+
+      <div class="facilities-grid">
+        <div class="facility-card">
+          <div class="facility-icon"><i class="fas fa-swimming-pool"></i></div>
+          <h3>Infinity Pool</h3>
+          <p>Kolam renang infinity dengan pemandangan menakjubkan kota Yogyakarta.</p>
+        </div>
+        <div class="facility-card">
+          <div class="facility-icon"><i class="fas fa-spa"></i></div>
+          <h3>Javanese Spa</h3>
+          <p>Perawatan spa tradisional Jawa untuk relaksasi tubuh dan pikiran.</p>
+        </div>
+        <div class="facility-card">
+          <div class="facility-icon"><i class="fas fa-utensils"></i></div>
+          <h3>Restaurant</h3>
+          <p>Restoran dengan menu kuliner Nusantara dan internasional pilihan.</p>
+        </div>
+        <div class="facility-card">
+          <div class="facility-icon"><i class="fas fa-dumbbell"></i></div>
+          <h3>Fitness Center</h3>
+          <p>Pusat kebugaran modern dengan peralatan terlengkap.</p>
+        </div>
+        <div class="facility-card">
+          <div class="facility-icon"><i class="fas fa-concierge-bell"></i></div>
+          <h3>24/7 Service</h3>
+          <p>Layanan resepsionis dan concierge 24 jam siap membantu Anda.</p>
+        </div>
+        <div class="facility-card">
+          <div class="facility-icon"><i class="fas fa-car"></i></div>
+          <h3>Airport Transfer</h3>
+          <p>Layanan antar-jemput bandara dengan kendaraan mewah dan nyaman.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== ABOUT / CTA SECTION ==================== -->
+  <section class="section cta-section" id="about">
+    <div class="cta-bg" style="background-image: url('https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?auto=format&fit=crop&w=1920&q=80')"></div>
+    <div class="cta-overlay"></div>
+    <div class="container">
+      <div class="cta-content">
+        <span class="section-label light">✦ ABOUT HOTELKU ✦</span>
+        <h2 class="cta-title">Keindahan Jogja,<br>Kemewahan <span class="text-gold">Tanpa Batas</span></h2>
+        <p class="cta-desc">
+          HotelKu hadir di jantung kota Yogyakarta, menghadirkan pengalaman menginap yang memadukan 
+          kemewahan modern dengan keanggunan budaya Jawa. Terinspirasi oleh filosofi "Hamemayu Hayuning Bawana", 
+          kami berkomitmen memberikan pelayanan terbaik yang menyentuh hati setiap tamu.
+        </p>
+        <div class="cta-stats">
+          <div class="stat">
+            <span class="stat-number">150+</span>
+            <span class="stat-label">Kamar & Suite</span>
+          </div>
+          <div class="stat">
+            <span class="stat-number">4.8</span>
+            <span class="stat-label">Rating Tamu</span>
+          </div>
+          <div class="stat">
+            <span class="stat-number">10K+</span>
+            <span class="stat-label">Tamu Puas</span>
+          </div>
+          <div class="stat">
+            <span class="stat-number">15+</span>
+            <span class="stat-label">Tahun Pengalaman</span>
+          </div>
+        </div>
+        <a href="/login" class="btn btn-primary btn-lg">Reservasi Sekarang</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== CONTACT SECTION ==================== -->
+  <section class="section contact-section" id="contact">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-label">✦ GET IN TOUCH ✦</span>
+        <h2 class="section-title">Hubungi <span class="text-gold">Kami</span></h2>
+      </div>
+
+      <div class="contact-grid">
+        <div class="contact-info-card">
+          <div class="contact-item">
+            <i class="fas fa-map-marker-alt"></i>
+            <div>
+              <h4>Alamat</h4>
+              <p>Jl. Gowongan Kidul No. 50, Jetis,<br>Yogyakarta 55232, Indonesia</p>
+            </div>
+          </div>
+          <div class="contact-item">
+            <i class="fas fa-phone"></i>
+            <div>
+              <h4>Telepon</h4>
+              <p>+62 274 123 4567</p>
+            </div>
+          </div>
+          <div class="contact-item">
+            <i class="fas fa-envelope"></i>
+            <div>
+              <h4>Email</h4>
+              <p>info@hotelku.com</p>
+            </div>
+          </div>
+          <div class="contact-item">
+            <i class="fas fa-clock"></i>
+            <div>
+              <h4>Resepsionis</h4>
+              <p>24 Jam / 7 Hari</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== FOOTER ==================== -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="footer-logo">
+            <span class="logo-icon">✦</span>
+            <div class="logo-text">
+              <span class="logo-name">HOTELKU</span>
+              <span class="logo-tagline">YOGYAKARTA</span>
+            </div>
+          </div>
+          <p>Pengalaman menginap mewah di jantung kota Yogyakarta. Terinspirasi oleh keindahan budaya Jawa yang timeless.</p>
+          <div class="footer-socials">
+            <a href="#"><i class="fab fa-instagram"></i></a>
+            <a href="#"><i class="fab fa-facebook-f"></i></a>
+            <a href="#"><i class="fab fa-twitter"></i></a>
+            <a href="#"><i class="fab fa-youtube"></i></a>
+          </div>
+        </div>
+        <div class="footer-links">
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="#home">Home</a></li>
+            <li><a href="#rooms">Rooms</a></li>
+            <li><a href="#facilities">Facilities</a></li>
+            <li><a href="#about">About</a></li>
+          </ul>
+        </div>
+        <div class="footer-links">
+          <h4>Services</h4>
+          <ul>
+            <li><a href="/login">Reservasi</a></li>
+            <li><a href="/login">Check-in Online</a></li>
+            <li><a href="/login">Check-out</a></li>
+            <li><a href="#contact">Bantuan</a></li>
+          </ul>
+        </div>
+        <div class="footer-links">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="#">Kebijakan Privasi</a></li>
+            <li><a href="#">Syarat & Ketentuan</a></li>
+            <li><a href="#">Kebijakan Pembatalan</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2024 HotelKu Yogyakarta. All rights reserved. | Tugas Akhir — Pengembangan Prototipe Aplikasi Hotel</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const res = await fetch('/api/me');
+        const data = await res.json();
+        if (data.success && data.user) {
+          const u = data.user;
+          const authBtns = document.getElementById('navGuestAuthButtons');
+          if (authBtns) authBtns.style.display = 'none';
+          const userLogged = document.getElementById('navUserLogged');
+          if (userLogged) userLogged.style.display = 'flex';
+          const nameEl = document.getElementById('navHomeUserName');
+          if (nameEl) nameEl.textContent = u.name;
+
+          if (u.role === 'admin') {
+            document.querySelectorAll('.admin-nav-item').forEach(el => el.style.display = 'block');
+          } else if (u.role === 'receptionist') {
+            document.querySelectorAll('.receptionist-nav-item').forEach(el => el.style.display = 'block');
+          } else {
+            document.querySelectorAll('.guest-nav-item').forEach(el => el.style.display = 'block');
+          }
+
+          const logoutBtn = document.getElementById('navHomeLogout');
+          if (logoutBtn) {
+            logoutBtn.addEventListener('click', async () => {
+              await fetch('/api/logout', { method: 'POST' });
+              window.location.reload();
+            });
+          }
+        }
+      } catch (err) {}
+
+      try {
+        const setRes = await fetch('/api/settings');
+        const setData = await setRes.json();
+        if (setData.success && setData.settings && setData.settings.promoBanner) {
+          const banner = document.createElement('div');
+          banner.style.cssText = 'background: linear-gradient(90deg, #C4A265, #D4B87A); color: #0a0a0a; text-align: center; padding: 8px 16px; font-size: 0.8rem; font-weight: 700; position: fixed; top: 0; left: 0; right: 0; z-index: 9999; box-shadow: 0 2px 10px rgba(0,0,0,0.1);';
+          banner.innerHTML = `<i class="fas fa-bullhorn" style="margin-right: 8px;"></i> ${setData.settings.promoBanner}`;
+          document.body.prepend(banner);
+          const nav = document.getElementById('navbar');
+          if (nav) nav.style.top = '36px';
+        }
+      } catch (e) {}
+    });
+  </script>
+</body>
+</html>

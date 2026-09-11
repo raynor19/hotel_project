@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pilihan Kamar — HotelKu Yogyakarta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/pages.css">
+</head>
+<body class="page-wrapper">
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-solid" id="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-logo">
+        <span class="logo-icon">✦</span>
+        <div class="logo-text">
+          <span class="logo-name">HOTELKU</span>
+          <span class="logo-tagline">YOGYAKARTA</span>
+        </div>
+      </a>
+
+      <div class="nav-menu-pages">
+        <a href="/" class="nav-link">Beranda</a>
+        <a href="/rooms" class="nav-link active">Kamar</a>
+        <a href="/my-reservations" class="nav-link guest-only hide">Riwayat Pemesanan</a>
+        <a href="/profile" class="nav-link guest-only hide">Profil Saya</a>
+        <a href="/admin/dashboard" class="nav-link admin-only hide">Admin Console</a>
+        <a href="/receptionist/dashboard" class="nav-link receptionist-only hide" style="color: #D4B87A;">Konsol Resepsionis</a>
+      </div>
+
+      <div class="nav-actions">
+        <div class="user-info logged-in-only hide">
+          <i class="fas fa-user-circle"></i>
+          <span id="navUserName">Tamu</span>
+        </div>
+        <button class="btn btn-outline btn-sm logged-in-only hide" id="navLogout">
+          <i class="fas fa-sign-out-alt"></i> Keluar
+        </button>
+        <a href="/login" class="btn-signin logged-out-only">
+          <i class="fas fa-user"></i>
+          <span>Masuk</span>
+        </a>
+        <a href="/register" class="btn btn-outline btn-sm logged-out-only" style="padding: 8px 14px; font-size: 0.75rem;">
+          <i class="fas fa-user-plus"></i>
+          <span>Daftar</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page Header -->
+  <header class="page-header">
+    <p class="section-label light">✦ EKSKLUSIF HOTELKU ✦</p>
+    <h1>Pilihan Kamar & Suite</h1>
+    <p>Temukan akomodasi ideal dengan nuansa etnik klasik Jawa dan kenyamanan bintang lima</p>
+  </header>
+
+  <!-- Page Content -->
+  <main class="page-content">
+    <!-- Search & Filter Bar -->
+    <div class="search-bar">
+      <input type="text" id="roomSearch" placeholder="Cari tipe kamar atau fasilitas (contoh: Deluxe, Jacuzzi, Balcony)...">
+      <select id="typeFilter">
+        <option value="all">Semua Tipe Kamar</option>
+        <option value="Standard">Standard</option>
+        <option value="Deluxe">Deluxe</option>
+        <option value="Superior">Superior</option>
+        <option value="Suite">Suite</option>
+        <option value="Presidential">Presidential</option>
+      </select>
+    </div>
+
+    <!-- Rooms Listing Grid -->
+    <div class="rooms-listing" id="roomsGrid">
+      <div class="empty-state">
+        <i class="fas fa-spinner fa-spin"></i>
+        <h3>Memuat pilihan kamar...</h3>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/pages.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      initNavbar();
+      initRoomsPage();
+    });
+  </script>
+</body>
+</html>

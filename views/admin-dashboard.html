@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Console — Laporan & Statistik HotelKu</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/pages.css">
+</head>
+<body class="page-wrapper">
+
+  <!-- Navbar Admin -->
+  <nav class="navbar navbar-solid" id="navbar">
+    <div class="nav-container">
+      <a href="/admin/dashboard" class="nav-logo">
+        <span class="logo-icon">✦</span>
+        <div class="logo-text">
+          <span class="logo-name">HOTELKU</span>
+          <span class="logo-tagline">ADMINISTRATOR</span>
+        </div>
+      </a>
+
+      <div class="nav-menu-pages">
+        <a href="/admin/dashboard" class="nav-link active">Laporan & Statistik</a>
+        <a href="/admin/rooms" class="nav-link">Kelola Kamar</a>
+        <a href="/admin/users" class="nav-link">Kelola Pengguna</a>
+        <a href="/admin/settings" class="nav-link">Pengaturan Website</a>
+        <a href="/receptionist/dashboard" class="nav-link" style="color: #D4B87A;">Konsol Operasional</a>
+      </div>
+
+      <div class="nav-actions">
+        <div class="user-info">
+          <i class="fas fa-crown" style="color: #C4A265;"></i>
+          <span id="navUserName">Admin Eksekutif</span>
+        </div>
+        <button class="btn btn-outline btn-sm" id="navLogout">
+          <i class="fas fa-sign-out-alt"></i> Keluar
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page Header -->
+  <header class="page-header">
+    <p class="section-label light">✦ EXECUTIVE DASHBOARD ✦</p>
+    <h1>Laporan & Statistik Keseluruhan</h1>
+    <p>Akses penuh ke performa finansial, tingkat okupansi hunian, dan rekapitulasi bisnis HotelKu</p>
+  </header>
+
+  <!-- Page Content -->
+  <main class="page-content">
+    <!-- Financial & Occupancy KPI Cards -->
+    <div class="stats-grid" id="adminKpis">
+      <div class="stat-card">
+        <div class="stat-icon green"><i class="fas fa-coins"></i></div>
+        <div class="stat-info">
+          <div class="stat-number" id="kpiRevenue" style="font-size: 1.5rem;">Rp ...</div>
+          <div class="stat-label">Total Pendapatan Terwujud</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon gold"><i class="fas fa-chart-pie"></i></div>
+        <div class="stat-info">
+          <div class="stat-number" id="kpiOccupancy">...%</div>
+          <div class="stat-label">Tingkat Okupansi Kamar</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon orange"><i class="fas fa-hourglass-half"></i></div>
+        <div class="stat-info">
+          <div class="stat-number" id="kpiPotentialRev" style="font-size: 1.5rem;">Rp ...</div>
+          <div class="stat-label">Potensi Pendapatan Pending</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon blue"><i class="fas fa-users-cog"></i></div>
+        <div class="stat-info">
+          <div class="stat-number" id="kpiStaffCount">...</div>
+          <div class="stat-label">Total Staf & Resepsionis</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Management Action Banners -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 40px;">
+      <a href="/admin/rooms" style="background: #fff; padding: 22px 24px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-decoration: none; color: inherit; display: flex; align-items: center; gap: 16px; border-left: 4px solid #C4A265; transition: transform 0.2s;">
+        <div style="width: 44px; height: 44px; border-radius: 8px; background: rgba(196,162,101,0.15); display: flex; align-items: center; justify-content: center; color: #A68B4B; font-size: 1.2rem;">
+          <i class="fas fa-bed"></i>
+        </div>
+        <div>
+          <h4 style="font-family: 'Playfair Display', serif; font-size: 1.1rem; margin-bottom: 2px;">Kelola Data Kamar</h4>
+          <p style="font-size: 0.8rem; color: #888;">Tambah/edit tipe kamar, ubah harga & foto</p>
+        </div>
+      </a>
+
+      <a href="/admin/users" style="background: #fff; padding: 22px 24px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-decoration: none; color: inherit; display: flex; align-items: center; gap: 16px; border-left: 4px solid #3498db; transition: transform 0.2s;">
+        <div style="width: 44px; height: 44px; border-radius: 8px; background: rgba(52,152,219,0.15); display: flex; align-items: center; justify-content: center; color: #2980b9; font-size: 1.2rem;">
+          <i class="fas fa-user-shield"></i>
+        </div>
+        <div>
+          <h4 style="font-family: 'Playfair Display', serif; font-size: 1.1rem; margin-bottom: 2px;">Kelola Pengguna</h4>
+          <p style="font-size: 0.8rem; color: #888;">Buat akun resepsionis baru & kelola akses</p>
+        </div>
+      </a>
+
+      <a href="/admin/settings" style="background: #fff; padding: 22px 24px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-decoration: none; color: inherit; display: flex; align-items: center; gap: 16px; border-left: 4px solid #27ae60; transition: transform 0.2s;">
+        <div style="width: 44px; height: 44px; border-radius: 8px; background: rgba(39,174,96,0.15); display: flex; align-items: center; justify-content: center; color: #27ae60; font-size: 1.2rem;">
+          <i class="fas fa-sliders-h"></i>
+        </div>
+        <div>
+          <h4 style="font-family: 'Playfair Display', serif; font-size: 1.1rem; margin-bottom: 2px;">Pengaturan Website</h4>
+          <p style="font-size: 0.8rem; color: #888;">Kontak, promo banner & kebijakan hotel</p>
+        </div>
+      </a>
+    </div>
+
+    <!-- Revenue Breakdown by Room Type -->
+    <div style="background: #fff; border-radius: 12px; padding: 32px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); margin-bottom: 32px;">
+      <h3 style="font-family: 'Playfair Display', serif; font-size: 1.3rem; margin-bottom: 6px;">Kontribusi Pendapatan per Tipe Kamar</h3>
+      <p style="font-size: 0.85rem; color: #888; margin-bottom: 24px;">Rincian total pemesanan dan akumulasi omset yang dihasilkan dari masing-masing tipe kamar</p>
+
+      <div id="roomRevenueTable" style="overflow-x: auto;">
+        <div class="empty-state"><i class="fas fa-spinner fa-spin"></i><h3>Memuat rincian pendapatan...</h3></div>
+      </div>
+    </div>
+
+    <!-- Financial Transactions Log Table -->
+    <div style="background: #fff; border-radius: 12px; padding: 32px; box-shadow: 0 4px 20px rgba(0,0,0,0.06);">
+      <h3 style="font-family: 'Playfair Display', serif; font-size: 1.3rem; margin-bottom: 6px;">Riwayat Transaksi Reservasi Masuk</h3>
+      <p style="font-size: 0.85rem; color: #888; margin-bottom: 24px;">Daftar transaksi reservasi yang tercatat dalam sistem operasional hotel</p>
+
+      <div id="transactionLogTable" style="overflow-x: auto;">
+        <div class="empty-state"><i class="fas fa-spinner fa-spin"></i><h3>Memuat log transaksi...</h3></div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/pages.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      await initNavbar();
+      await loadAdminReports();
+    });
+
+    async function loadAdminReports() {
+      try {
+        const res = await fetch('/api/admin/reports');
+        const data = await res.json();
+        if (!data.success) {
+          showToast(data.message || 'Gagal memuat laporan', 'error');
+          return;
+        }
+
+        const d = data.data;
+        document.getElementById('kpiRevenue').textContent = formatCurrency(d.realizedRevenue);
+        document.getElementById('kpiOccupancy').textContent = d.occupancyRate + '%';
+        document.getElementById('kpiPotentialRev').textContent = formatCurrency(d.potentialRevenue);
+        document.getElementById('kpiStaffCount').textContent = d.totalStaff + ' Staf';
+
+        // Render Room Revenue Breakdown Table
+        const roomTableContainer = document.getElementById('roomRevenueTable');
+        if (d.roomRevenueBreakdown.length === 0) {
+          roomTableContainer.innerHTML = '<p style="color: #888;">Belum ada data pendapatan.</p>';
+        } else {
+          roomTableContainer.innerHTML = `
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+              <thead>
+                <tr style="border-bottom: 2px solid #f0f0f0; color: #888; font-size: 0.8rem; text-transform: uppercase;">
+                  <th style="padding: 12px 16px;">Tipe Kamar</th>
+                  <th style="padding: 12px 16px;">Kategori</th>
+                  <th style="padding: 12px 16px; text-align: center;">Jumlah Pemesanan</th>
+                  <th style="padding: 12px 16px; text-align: right;">Total Pendapatan</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${d.roomRevenueBreakdown.map(r => `
+                  <tr style="border-bottom: 1px solid #f8f8f8;">
+                    <td style="padding: 14px 16px; font-weight: 700; color: #1a1a1a;">${r.roomName}</td>
+                    <td style="padding: 14px 16px;"><span class="room-type-badge" style="margin: 0;">${r.roomType}</span></td>
+                    <td style="padding: 14px 16px; text-align: center;">${r.totalBookings} reservasi</td>
+                    <td style="padding: 14px 16px; text-align: right; font-weight: 700; color: #A68B4B;">${formatCurrency(r.totalRevenue)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          `;
+        }
+
+        // Render Transaction Logs
+        const transContainer = document.getElementById('transactionLogTable');
+        if (d.transactionLogs.length === 0) {
+          transContainer.innerHTML = '<p style="color: #888;">Belum ada riwayat transaksi.</p>';
+        } else {
+          transContainer.innerHTML = `
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;">
+              <thead>
+                <tr style="border-bottom: 2px solid #f0f0f0; color: #888; font-size: 0.8rem; text-transform: uppercase;">
+                  <th style="padding: 12px 16px;">Kode ID</th>
+                  <th style="padding: 12px 16px;">Nama Tamu</th>
+                  <th style="padding: 12px 16px;">Kamar</th>
+                  <th style="padding: 12px 16px;">Durasi Inap</th>
+                  <th style="padding: 12px 16px; text-align: right;">Total Bayar</th>
+                  <th style="padding: 12px 16px; text-align: center;">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${d.transactionLogs.map(t => `
+                  <tr style="border-bottom: 1px solid #f8f8f8;">
+                    <td style="padding: 14px 16px; font-family: monospace; font-size: 0.8rem; color: #888;">${t.id}</td>
+                    <td style="padding: 14px 16px; font-weight: 600; color: #1a1a1a;">${t.guestName}</td>
+                    <td style="padding: 14px 16px; color: #555;">${t.roomName}</td>
+                    <td style="padding: 14px 16px; font-size: 0.85rem; color: #666;">${t.totalNights} malam (${formatDate(t.checkIn)} - ${formatDate(t.checkOut)})</td>
+                    <td style="padding: 14px 16px; text-align: right; font-weight: 700; color: #A68B4B;">${formatCurrency(t.amount)}</td>
+                    <td style="padding: 14px 16px; text-align: center;">${getStatusBadge(t.status)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          `;
+        }
+      } catch (err) {
+        showToast('Terjadi kesalahan memuat laporan', 'error');
+      }
+    }
+  </script>
+</body>
+</html>

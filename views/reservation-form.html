@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pengajuan Reservasi — HotelKu Yogyakarta</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/pages.css">
+</head>
+<body class="page-wrapper">
+
+  <!-- Navbar -->
+  <nav class="navbar navbar-solid" id="navbar">
+    <div class="nav-container">
+      <a href="/" class="nav-logo">
+        <span class="logo-icon">✦</span>
+        <div class="logo-text">
+          <span class="logo-name">HOTELKU</span>
+          <span class="logo-tagline">YOGYAKARTA</span>
+        </div>
+      </a>
+
+      <div class="nav-menu-pages">
+        <a href="/" class="nav-link">Beranda</a>
+        <a href="/rooms" class="nav-link">Kamar</a>
+        <a href="/my-reservations" class="nav-link guest-only">Riwayat Pemesanan</a>
+        <a href="/profile" class="nav-link guest-only">Profil Saya</a>
+        <a href="/dashboard" class="nav-link admin-only hide">Admin Console</a>
+      </div>
+
+      <div class="nav-actions">
+        <div class="user-info logged-in-only">
+          <i class="fas fa-user-circle"></i>
+          <span id="navUserName">Tamu</span>
+        </div>
+        <button class="btn btn-outline btn-sm logged-in-only" id="navLogout">
+          <i class="fas fa-sign-out-alt"></i> Keluar
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Page Header -->
+  <header class="page-header">
+    <p class="section-label light">✦ LANGKAH PEMESANAN ✦</p>
+    <h1>Formulir Reservasi Kamar</h1>
+    <p>Lengkapi informasi reservasi Anda untuk kami verifikasi dan persiapkan sebelum kedatangan</p>
+  </header>
+
+  <!-- Page Content -->
+  <main class="page-content">
+    <div id="reservationContent">
+      <div class="empty-state">
+        <i class="fas fa-spinner fa-spin"></i>
+        <h3>Menyiapkan formulir...</h3>
+      </div>
+    </div>
+  </main>
+
+  <script src="/js/pages.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      await initNavbar();
+      await initReservationForm();
+    });
+  </script>
+</body>
+</html>
