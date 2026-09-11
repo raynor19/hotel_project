@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link rel="stylesheet" href="/css/style.css">
-  <link rel="stylesheet" href="/css/pages.css">
+  <link rel="stylesheet" href="/css/style.css?v=2">
+  <link rel="stylesheet" href="/css/pages.css?v=2">
 </head>
 <body class="page-wrapper">
 
@@ -64,8 +64,73 @@
   <main class="page-content">
     <!-- Search & Filter Bar -->
     <div class="search-bar">
-      <input type="text" id="roomSearch" placeholder="Cari tipe kamar atau fasilitas (contoh: Deluxe, Jacuzzi, Balcony)...">
-      <select id="typeFilter">
+      <div class="search-input-wrapper">
+        <i class="fas fa-search search-icon"></i>
+        <input type="text" id="roomSearch" placeholder="Cari tipe kamar atau fasilitas (contoh: Deluxe, Jacuzzi, Balcony)...">
+      </div>
+
+      <!-- Luxury Custom Dropdown -->
+      <div class="custom-dropdown" id="typeDropdown">
+        <button type="button" class="dropdown-trigger" id="dropdownTrigger" aria-haspopup="listbox" aria-expanded="false">
+          <span class="trigger-icon"><i class="fas fa-crown"></i></span>
+          <span class="trigger-text" id="dropdownCurrentLabel">Semua Tipe Kamar</span>
+          <span class="trigger-arrow"><i class="fas fa-chevron-down"></i></span>
+        </button>
+
+        <div class="dropdown-menu" id="dropdownMenu" role="listbox">
+          <div class="dropdown-item active" data-value="all" data-icon="fa-th-large">
+            <span class="item-icon"><i class="fas fa-th-large"></i></span>
+            <div class="item-info">
+              <span class="item-title">Semua Tipe Kamar</span>
+              <span class="item-desc">Tampilkan seluruh pilihan</span>
+            </div>
+            <i class="fas fa-check item-check"></i>
+          </div>
+          <div class="dropdown-item" data-value="Standard" data-icon="fa-bed">
+            <span class="item-icon"><i class="fas fa-bed"></i></span>
+            <div class="item-info">
+              <span class="item-title">Standard Room</span>
+              <span class="item-desc">Kenyamanan esensial & fungsional</span>
+            </div>
+            <i class="fas fa-check item-check"></i>
+          </div>
+          <div class="dropdown-item" data-value="Deluxe" data-icon="fa-star">
+            <span class="item-icon"><i class="fas fa-star"></i></span>
+            <div class="item-info">
+              <span class="item-title">Deluxe Room</span>
+              <span class="item-desc">Luas dengan balkon kota</span>
+            </div>
+            <i class="fas fa-check item-check"></i>
+          </div>
+          <div class="dropdown-item" data-value="Superior" data-icon="fa-crown">
+            <span class="item-icon"><i class="fas fa-crown"></i></span>
+            <div class="item-info">
+              <span class="item-title">Superior Room</span>
+              <span class="item-desc">Dekorasi etnik & private jacuzzi</span>
+            </div>
+            <i class="fas fa-check item-check"></i>
+          </div>
+          <div class="dropdown-item" data-value="Suite" data-icon="fa-gem">
+            <span class="item-icon"><i class="fas fa-gem"></i></span>
+            <div class="item-info">
+              <span class="item-title">Suite Exclusive</span>
+              <span class="item-desc">Living room privat & lounge</span>
+            </div>
+            <i class="fas fa-check item-check"></i>
+          </div>
+          <div class="dropdown-item" data-value="Presidential" data-icon="fa-award">
+            <span class="item-icon"><i class="fas fa-award"></i></span>
+            <div class="item-info">
+              <span class="item-title">Presidential Suite</span>
+              <span class="item-desc">Kemewahan tertinggi bintang lima</span>
+            </div>
+            <i class="fas fa-check item-check"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hidden Native Select (Kept for compatibility) -->
+      <select id="typeFilter" style="display: none;">
         <option value="all">Semua Tipe Kamar</option>
         <option value="Standard">Standard</option>
         <option value="Deluxe">Deluxe</option>
@@ -94,7 +159,7 @@
     </div>
   </main>
 
-  <script src="/js/pages.js"></script>
+  <script src="/js/pages.js?v=2"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       initNavbar();

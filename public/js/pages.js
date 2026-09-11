@@ -439,14 +439,65 @@ async function initRoomsPage() {
     });
   }
 
-  // Category pills click handler (horizontal overflow on mobile)
+  // ==================== LUXURY CUSTOM DROPDOWN LOGIC ====================
+  const dropdownEl = document.getElementById('typeDropdown');
+  const dropdownTrigger = document.getElementById('dropdownTrigger');
+  const dropdownMenu = document.getElementById('dropdownMenu');
+  const dropdownLabel = document.getElementById('dropdownCurrentLabel');
+  const triggerIcon = dropdownTrigger?.querySelector('.trigger-icon i');
+  const dropdownItems = document.querySelectorAll('.dropdown-item');
   const categoryPills = document.querySelectorAll('.cat-pill');
+
+  function syncDropdownUI(type) {
+    dropdownItems.forEach(item => {
+      const match = item.dataset.value === type;
+      item.classList.toggle('active', match);
+      if (match) {
+        if (dropdownLabel) dropdownLabel.textContent = item.querySelector('.item-title').textContent;
+        if (triggerIcon && item.dataset.icon) {
+          triggerIcon.className = `fas ${item.dataset.icon}`;
+        }
+      }
+    });
+    categoryPills.forEach(p => p.classList.toggle('active', p.dataset.type === type));
+  }
+
+  if (dropdownTrigger && dropdownMenu) {
+    dropdownTrigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = dropdownMenu.classList.toggle('show');
+      dropdownTrigger.classList.toggle('open', isOpen);
+      dropdownTrigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+    });
+
+    dropdownItems.forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const value = item.dataset.value;
+        if (typeFilter) typeFilter.value = value;
+        syncDropdownUI(value);
+        dropdownMenu.classList.remove('show');
+        dropdownTrigger.classList.remove('open');
+        dropdownTrigger.setAttribute('aria-expanded', 'false');
+        loadRooms();
+      });
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!dropdownEl?.contains(e.target)) {
+        dropdownMenu.classList.remove('show');
+        dropdownTrigger.classList.remove('open');
+        dropdownTrigger.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
+
+  // Category pills click handler (sync with custom dropdown & load rooms)
   categoryPills.forEach(pill => {
     pill.addEventListener('click', () => {
-      categoryPills.forEach(p => p.classList.remove('active'));
-      pill.classList.add('active');
       const type = pill.dataset.type;
       if (typeFilter) typeFilter.value = type;
+      syncDropdownUI(type);
       loadRooms();
     });
   });
@@ -455,9 +506,10 @@ async function initRoomsPage() {
     let debounce;
     searchInput.addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(loadRooms, 300); });
   }
+
   if (typeFilter) {
     typeFilter.addEventListener('change', () => {
-      categoryPills.forEach(p => p.classList.toggle('active', p.dataset.type === typeFilter.value));
+      syncDropdownUI(typeFilter.value);
       loadRooms();
     });
   }

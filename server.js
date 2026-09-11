@@ -1060,3 +1060,5 @@ app.listen(PORT, () => {
   console.log(`  🛎️ Resepsionis : resepsionis@hotelku.com / resepsionis123`);
   console.log(`  🧳 Tamu        : tamu@demo.com / tamu123\n`);
 });
+
+module.exports = app;

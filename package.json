@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "npx nodemon server.js"
+    "dev": "nodemon server.js",
+    "kill": "npx --yes kill-port 3000"
   },
   "keywords": ["hotel", "reservasi", "check-in", "check-out"],
   "author": "Raynor Athaillah",
