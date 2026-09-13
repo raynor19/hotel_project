@@ -1,0 +1,42 @@
+[
+  {
+    "id": 1,
+    "name": "Hendra Wijaya (GM)",
+    "email": "admin@hotelku.com",
+    "password": "admin123",
+    "role": "admin",
+    "phone": "081122334455"
+  },
+  {
+    "id": 2,
+    "name": "Siti Rahma (Front Desk)",
+    "email": "resepsionis@hotelku.com",
+    "password": "resepsionis123",
+    "role": "receptionist",
+    "phone": "082233445566"
+  },
+  {
+    "id": 3,
+    "name": "Budi Santoso",
+    "email": "tamu@demo.com",
+    "password": "tamu123",
+    "role": "guest",
+    "phone": "081234567890"
+  },
+  {
+    "id": 4,
+    "name": "Sari Dewi",
+    "email": "sari@demo.com",
+    "password": "sari123",
+    "role": "guest",
+    "phone": "089876543210"
+  },
+  {
+    "id": 5,
+    "name": "Ahmad Fauzi",
+    "email": "ahmad.fauzi@gmail.com",
+    "password": "password123",
+    "role": "guest",
+    "phone": "081299887766"
+  }
+]

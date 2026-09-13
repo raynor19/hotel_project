@@ -277,6 +277,8 @@
                 name="email" 
                 placeholder="nama@email.com"
                 autocomplete="email"
+                autocapitalize="none"
+                spellcheck="false"
                 required
               >
             </div>
@@ -483,10 +485,12 @@
         const data = await res.json();
 
         if (data.success) {
-          showSuccess(data.message + ' Mengalihkan ke pilihan kamar...');
+          const params = new URLSearchParams(window.location.search);
+          const dest = params.get('redirect') || data.redirect || '/rooms';
+          showSuccess(data.message + ' Mengalihkan...');
           setTimeout(() => {
-            window.location.href = data.redirect || '/rooms';
-          }, 1200);
+            window.location.href = dest;
+          }, 1000);
         } else {
           showError(data.message || 'Terjadi kesalahan saat pendaftaran');
           btnRegister.disabled = false;

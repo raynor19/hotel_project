@@ -96,6 +96,8 @@
               name="email" 
               placeholder="contoh@hotelku.com"
               autocomplete="email"
+              autocapitalize="none"
+              spellcheck="false"
               required
             >
             <span class="input-error" id="emailError"></span>
@@ -155,13 +157,16 @@
         </div>
 
         <div class="login-footer-text">
-          <p>Belum punya akun? <a href="/register" class="register-link">Daftar Sekarang</a></p>
+          <p>Ingin memakai nama Anda sendiri? <a href="/register" class="register-link" style="color: #C4A265; font-weight: 700;">Daftar Akun Tamu Baru</a></p>
         </div>
 
         <!-- Demo Accounts Info -->
         <div class="demo-accounts">
+          <div style="font-size: 0.76rem; color: #888; text-align: center; margin-bottom: 8px;">
+            💡 Anda tidak wajib memakai akun demo. Silakan daftar dengan nama & email pribadi Anda.
+          </div>
           <button class="demo-toggle" id="demoToggle">
-            <i class="fas fa-info-circle"></i> Lihat Akun Demo
+            <i class="fas fa-info-circle"></i> Opsi Akun Demo (Pengujian Staf & Tamu)
           </button>
           <div class="demo-list" id="demoList" style="display: none;">
             <div class="demo-item" data-email="admin@hotelku.com" data-password="admin123">

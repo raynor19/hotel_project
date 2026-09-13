@@ -625,7 +625,7 @@ async function initReservationForm() {
 
   // Check login
   const me = await fetch('/api/me').then(r => r.json());
-  if (!me.success) { window.location.href = '/login'; return; }
+  if (!me.success) { window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname); return; }
 
   const roomRes = await fetch(`/api/rooms/${roomId}`);
   const roomData = await roomRes.json();
@@ -651,8 +651,9 @@ async function initReservationForm() {
             </div>
           </div>
           <div class="form-group">
-            <label><i class="fas fa-user"></i> Nama Lengkap</label>
-            <input type="text" id="rsvName" name="guestName" value="${me.user.name}" placeholder="Masukkan nama lengkap" required>
+            <label><i class="fas fa-user"></i> Nama Tamu yang Menginap</label>
+            <input type="text" id="rsvName" name="guestName" value="${me.user.name}" placeholder="Masukkan nama lengkap tamu" required>
+            <small style="display:block;margin-top:4px;font-size:0.75rem;color:#777;">*Bisa diubah jika Anda memesan kamar atas nama orang lain (keluarga / rekan)</small>
           </div>
           <div class="form-row">
             <div class="form-group">

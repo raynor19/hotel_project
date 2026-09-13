@@ -1,6 +1,7 @@
 const express = require('express');
 const session = require('express-session');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -24,9 +25,18 @@ app.use(session({
 }));
 
 // ================================================================
-//  DATA (In-Memory — untuk prototipe)
+//  PERSISTENCE STORAGE (File JSON agar data tidak hilang saat restart)
 // ================================================================
 
+const DATA_DIR = path.join(__dirname, 'data');
+if (!fs.existsSync(DATA_DIR)) {
+  try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (e) {}
+}
+
+const USERS_FILE = path.join(DATA_DIR, 'users.json');
+const RESERVATIONS_FILE = path.join(DATA_DIR, 'reservations.json');
+
+// Default initial users
 let users = [
   { id: 1, name: 'Hendra Wijaya (GM)', email: 'admin@hotelku.com', password: 'admin123', role: 'admin', phone: '081122334455' },
   { id: 2, name: 'Siti Rahma (Front Desk)', email: 'resepsionis@hotelku.com', password: 'resepsionis123', role: 'receptionist', phone: '082233445566' },
@@ -35,6 +45,32 @@ let users = [
 ];
 
 let userCounter = 4;
+
+function saveUsers() {
+  try {
+    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('Error saving users.json:', err.message);
+  }
+}
+
+function loadUsers() {
+  try {
+    if (fs.existsSync(USERS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(USERS_FILE, 'utf-8'));
+      if (Array.isArray(data) && data.length > 0) {
+        users = data;
+        userCounter = Math.max(...users.map(u => u.id || 0), 4);
+      }
+    } else {
+      saveUsers();
+    }
+  } catch (err) {
+    console.error('Error loading users.json:', err.message);
+  }
+}
+
+loadUsers();
 
 let hotelSettings = {
   hotelName: 'HotelKu Yogyakarta',
@@ -275,6 +311,33 @@ let reservations = [
   }
 ];
 
+function saveReservations() {
+  try {
+    fs.writeFileSync(RESERVATIONS_FILE, JSON.stringify(reservations, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('Error saving reservations.json:', err.message);
+  }
+}
+
+function loadReservations() {
+  try {
+    if (fs.existsSync(RESERVATIONS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(RESERVATIONS_FILE, 'utf-8'));
+      if (Array.isArray(data) && data.length > 0) {
+        reservations = data;
+        const ids = reservations.map(r => parseInt(String(r.id).replace('RSV-', '')) || 0);
+        reservationCounter = Math.max(...ids, 4);
+      }
+    } else {
+      saveReservations();
+    }
+  } catch (err) {
+    console.error('Error loading reservations.json:', err.message);
+  }
+}
+
+loadReservations();
+
 // ================================================================
 //  RBAC MIDDLEWARES
 // ================================================================
@@ -393,34 +456,38 @@ app.post('/api/register', (req, res) => {
   }
 
   const cleanEmail = email.trim().toLowerCase();
+  const cleanPassword = password.trim();
+  const cleanName = name.trim();
+
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(cleanEmail)) {
-    return res.status(400).json({ success: false, message: 'Format alamat email tidak valid' });
+    return res.status(400).json({ success: false, message: 'Format alamat email tidak valid (contoh: nama@gmail.com)' });
   }
 
-  if (password.length < 5) {
-    return res.status(400).json({ success: false, message: 'Password minimal 5 karakter' });
+  if (cleanPassword.length < 4) {
+    return res.status(400).json({ success: false, message: 'Password minimal 4 karakter' });
   }
 
-  if (confirmPassword && password !== confirmPassword) {
+  if (confirmPassword && cleanPassword !== confirmPassword.trim()) {
     return res.status(400).json({ success: false, message: 'Konfirmasi password tidak cocok' });
   }
 
   const existing = users.find(u => u.email.toLowerCase() === cleanEmail);
   if (existing) {
-    return res.status(400).json({ success: false, message: 'Alamat email sudah terdaftar. Silakan masuk atau gunakan email lain.' });
+    return res.status(400).json({ success: false, message: 'Alamat email sudah terdaftar. Silakan gunakan email lain atau masuk di halaman Sign In.' });
   }
 
   const newUser = {
     id: ++userCounter,
-    name: name.trim(),
+    name: cleanName,
     email: cleanEmail,
-    password,
+    password: cleanPassword,
     role: 'guest',
     phone: phone ? phone.trim() : ''
   };
 
   users.push(newUser);
+  saveUsers(); // Simpan permanen ke data/users.json!
 
   // Auto-login session agar tamu bisa langsung booking kamar
   req.session.user = {
@@ -443,7 +510,10 @@ app.post('/api/login', (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ success: false, message: 'Email dan password harus diisi' });
 
-  const user = users.find(u => u.email === email && u.password === password);
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanPassword = password.trim();
+
+  const user = users.find(u => u.email.toLowerCase() === cleanEmail && u.password === cleanPassword);
   if (!user) return res.status(401).json({ success: false, message: 'Email atau password salah' });
 
   req.session.user = { id: user.id, name: user.name, email: user.email, role: user.role, phone: user.phone || '' };
@@ -481,6 +551,7 @@ app.put('/api/profile', apiAuth, (req, res) => {
   if (name) user.name = name;
   if (phone) user.phone = phone;
   if (email) user.email = email;
+  saveUsers();
 
   req.session.user.name = user.name;
   req.session.user.email = user.email;
@@ -682,6 +753,7 @@ app.post('/api/reservations', apiAuth, (req, res) => {
   };
 
   reservations.push(reservation);
+  saveReservations();
   res.json({ success: true, message: 'Reservasi berhasil diajukan! Menunggu verifikasi staf hotel.', reservation });
 });
 
@@ -716,6 +788,7 @@ app.put('/api/reservations/:id/approve', apiStaff, (req, res) => {
   if (rsv.status !== 'pending') return res.status(400).json({ success: false, message: 'Reservasi tidak dalam status pending' });
 
   rsv.status = 'approved';
+  saveReservations();
   res.json({ success: true, message: `Reservasi ${rsv.id} telah disetujui (ACC) oleh staf` });
 });
 
@@ -727,6 +800,7 @@ app.put('/api/reservations/:id/reject', apiStaff, (req, res) => {
 
   rsv.status = 'rejected';
   rsv.rejectionReason = req.body.reason || 'Kamar tidak tersedia pada jadwal yang diminta';
+  saveReservations();
   res.json({ success: true, message: `Reservasi ${rsv.id} telah ditolak` });
 });
 
@@ -748,6 +822,7 @@ app.put('/api/reservations/:id/checkin', apiStaff, (req, res) => {
   const room = rooms.find(r => r.id === rsv.roomId);
   if (room) room.occupiedUnits++;
 
+  saveReservations();
   res.json({ success: true, message: `Tamu ${rsv.guestName} berhasil check-in ke kamar ${room?.name} ${availableUnit ? '(Unit ' + availableUnit.unitNumber + ')' : ''}` });
 });
 
@@ -776,6 +851,7 @@ app.put('/api/reservations/:id/checkout', apiStaff, (req, res) => {
   const room = rooms.find(r => r.id === rsv.roomId);
   if (room && room.occupiedUnits > 0) room.occupiedUnits--;
 
+  saveReservations();
   res.json({ success: true, message: `Check-out tamu ${rsv.guestName} selesai! Kamar sekarang berstatus "Dibersihkan" (Cleaning).` });
 });
 
@@ -863,6 +939,7 @@ app.post('/api/admin/users', apiAdmin, (req, res) => {
   };
 
   users.push(newUser);
+  saveUsers();
   res.json({
     success: true,
     message: `Akun baru "${newUser.name}" (${newUser.role}) berhasil dibuat!`,
@@ -880,6 +957,7 @@ app.put('/api/admin/users/:id', apiAdmin, (req, res) => {
   if (role) user.role = role;
   if (phone) user.phone = phone;
   if (password) user.password = password;
+  saveUsers();
 
   res.json({ success: true, message: `Data pengguna "${user.name}" berhasil diperbarui!`, user });
 });
@@ -894,6 +972,7 @@ app.delete('/api/admin/users/:id', apiAdmin, (req, res) => {
 
   const deleted = users[idx].name;
   users.splice(idx, 1);
+  saveUsers();
   res.json({ success: true, message: `Akun "${deleted}" berhasil dihapus dari sistem` });
 });
 

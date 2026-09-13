@@ -176,7 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
       e.preventDefault();
       clearErrors();
 
-      const email = emailInput.value.trim();
+      const email = emailInput.value.trim().toLowerCase();
       const password = passwordInput.value;
       let valid = true;
 
@@ -193,8 +193,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!password) {
         showError(passwordInput, passwordError, 'Password harus diisi');
         valid = false;
-      } else if (password.length < 5) {
-        showError(passwordInput, passwordError, 'Password minimal 5 karakter');
+      } else if (password.length < 4) {
+        showError(passwordInput, passwordError, 'Password minimal 4 karakter');
         valid = false;
       }
 
@@ -215,9 +215,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (data.success) {
           showAlert('success', data.message);
           
+          const params = new URLSearchParams(window.location.search);
+          const redirectUrl = params.get('redirect');
+
           // Redirect after short delay based on user role
           setTimeout(() => {
-            if (data.user && data.user.role === 'admin') {
+            if (redirectUrl) {
+              window.location.href = redirectUrl;
+            } else if (data.user && data.user.role === 'admin') {
               window.location.href = '/admin/dashboard';
             } else if (data.user && data.user.role === 'receptionist') {
               window.location.href = '/receptionist/dashboard';
@@ -251,6 +256,14 @@ document.addEventListener('DOMContentLoaded', () => {
       passwordInput.classList.remove('error');
       passwordError.textContent = '';
     });
+  }
+
+  // Carry over redirect parameter to register link if exists
+  const urlParams = new URLSearchParams(window.location.search);
+  const redirectTarget = urlParams.get('redirect');
+  const registerLink = document.querySelector('.register-link');
+  if (redirectTarget && registerLink) {
+    registerLink.href = '/register?redirect=' + encodeURIComponent(redirectTarget);
   }
 
   // ==================== PASSWORD TOGGLE ====================
