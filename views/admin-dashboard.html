@@ -15,6 +15,26 @@
 
   <!-- Navbar Admin -->
   <nav class="navbar navbar-solid" id="navbar">
+    <div class="hotel-topbar">
+      <div class="topbar-container">
+        <div class="topbar-left">
+          <span class="topbar-item"><i class="fas fa-hotel"></i> HotelKu Yogyakarta Management</span>
+          <span class="topbar-divider">•</span>
+          <span class="topbar-item"><i class="fas fa-server"></i> Server Online</span>
+        </div>
+        <div class="topbar-right">
+          <div class="topbar-clock-badge">
+            <span class="live-pulse-dot"></span>
+            <i class="far fa-calendar-alt"></i>
+            <span class="realtime-date">Memuat tanggal...</span>
+            <span class="topbar-divider">•</span>
+            <i class="far fa-clock"></i>
+            <span class="realtime-clock">00:00:00 WIB</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div class="nav-container">
       <a href="/admin/dashboard" class="nav-logo">
         <span class="logo-icon">✦</span>
@@ -53,6 +73,24 @@
 
   <!-- Page Content -->
   <main class="page-content">
+    <!-- Real-time Operational Clock Card -->
+    <div class="operational-clock-card">
+      <div class="operational-clock-info">
+        <div class="operational-clock-icon"><i class="fas fa-satellite-dish"></i></div>
+        <div>
+          <div class="operational-clock-title"><span class="live-pulse-dot"></span> WAKTU SISTEM ADMINISTRATOR REAL TIME</div>
+          <div class="operational-clock-desc">Sinkronisasi otomatis zona waktu Waktu Indonesia Barat (WIB / UTC+7)</div>
+        </div>
+      </div>
+      <div class="operational-clock-digits">
+        <div class="digits-date-wrap">
+          <div class="digits-date-label">Hari & Tanggal</div>
+          <div class="digits-date-val realtime-date">Memuat tanggal...</div>
+        </div>
+        <div class="digits-time-val realtime-clock">00:00:00 WIB</div>
+      </div>
+    </div>
+
     <!-- Financial & Occupancy KPI Cards -->
     <div class="stats-grid" id="adminKpis">
       <div class="stat-card">

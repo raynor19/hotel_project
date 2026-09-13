@@ -2,7 +2,58 @@
    HOTELKU — Frontend JavaScript
    ============================================================ */
 
+// ==================== REALTIME CLOCK & DATE ====================
+function initRealtimeClock() {
+  const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  const months = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ];
+
+  function updateClock() {
+    const now = new Date();
+    const dayName = days[now.getDay()];
+    const dateNum = now.getDate();
+    const monthName = months[now.getMonth()];
+    const year = now.getFullYear();
+
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+
+    const dateFormatted = `${dayName}, ${dateNum} ${monthName} ${year}`;
+    const timeFormatted = `${hours}:${minutes}:${seconds} WIB`;
+    const fullFormatted = `${dayName}, ${dateNum} ${monthName} ${year} • ${timeFormatted}`;
+
+    document.querySelectorAll('.realtime-full-datetime').forEach(el => {
+      el.textContent = fullFormatted;
+    });
+    document.querySelectorAll('.realtime-date').forEach(el => {
+      el.textContent = dateFormatted;
+    });
+    document.querySelectorAll('.realtime-clock').forEach(el => {
+      el.textContent = timeFormatted;
+    });
+    document.querySelectorAll('.realtime-day').forEach(el => {
+      el.textContent = dayName;
+    });
+    document.querySelectorAll('.realtime-daynum').forEach(el => {
+      el.textContent = dateNum;
+    });
+    document.querySelectorAll('.realtime-month').forEach(el => {
+      el.textContent = monthName;
+    });
+    document.querySelectorAll('.realtime-year').forEach(el => {
+      el.textContent = year;
+    });
+  }
+
+  updateClock();
+  setInterval(updateClock, 1000);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  initRealtimeClock();
 
   // ==================== NAVBAR SCROLL EFFECT ====================
   const navbar = document.getElementById('navbar');

@@ -62,5 +62,21 @@
     "status": "checked-out",
     "rejectionReason": "",
     "createdAt": "2024-11-28T08:00:00"
+  },
+  {
+    "id": "RSV-005",
+    "roomId": 2,
+    "userId": 6,
+    "guestName": "AGIL",
+    "guestPhone": "082360486190",
+    "guestEmail": "agil@gmail.com",
+    "checkIn": "2026-09-13",
+    "checkOut": "2026-09-14",
+    "totalNights": 1,
+    "totalPrice": 550000,
+    "notes": "prabu kontol mau ngocok",
+    "status": "rejected",
+    "rejectionReason": "prabu blom mandi",
+    "createdAt": "2026-09-13T13:44:43.995Z"
   }
 ]

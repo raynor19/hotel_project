@@ -38,5 +38,13 @@
     "password": "password123",
     "role": "guest",
     "phone": "081299887766"
+  },
+  {
+    "id": 6,
+    "name": "AGIL",
+    "email": "agil@gmail.com",
+    "password": "agil123",
+    "role": "guest",
+    "phone": "123456"
   }
 ]

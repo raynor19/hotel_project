@@ -94,23 +94,24 @@ input, select, textarea {
   left: 0;
   width: 100%;
   z-index: 1000;
-  padding: 20px 0;
+  padding: 0 0 14px 0;
   transition: var(--transition);
   background: transparent;
 }
 
 .navbar.scrolled,
 .navbar-solid {
-  background: rgba(10, 10, 10, 0.95);
+  background: rgba(10, 10, 10, 0.96);
   backdrop-filter: blur(20px);
-  padding: 12px 0;
-  box-shadow: 0 2px 30px rgba(0,0,0,0.3);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 0 0 10px 0;
+  box-shadow: 0 2px 30px rgba(0,0,0,0.35);
 }
 
 .nav-container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 40px;
+  padding: 8px 40px 0 40px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1618,6 +1619,227 @@ input, select, textarea {
   color: var(--gold);
 }
 
+/* ==================== HOTEL TOPBAR & REALTIME CLOCK ==================== */
+.hotel-topbar {
+  background: rgba(10, 10, 10, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(196, 162, 101, 0.22);
+  padding: 6px 0;
+  font-size: 0.78rem;
+  color: #cfcfcf;
+  width: 100%;
+  position: relative;
+  z-index: 1001;
+}
+
+.topbar-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topbar-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #b5b5b5;
+  font-size: 0.76rem;
+}
+
+.topbar-item i {
+  color: #C4A265;
+  font-size: 0.75rem;
+}
+
+.topbar-divider {
+  color: rgba(196, 162, 101, 0.4);
+  font-size: 0.75rem;
+  user-select: none;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.topbar-clock-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(196, 162, 101, 0.1);
+  border: 1px solid rgba(196, 162, 101, 0.3);
+  border-radius: 20px;
+  padding: 3px 12px;
+  color: #f3f3f3;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 0.76rem;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.live-pulse-dot {
+  width: 7px;
+  height: 7px;
+  background-color: #2ecc71;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7);
+  animation: pulse-green 2s infinite;
+  flex-shrink: 0;
+}
+
+@keyframes pulse-green {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 6px rgba(46, 204, 113, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(46, 204, 113, 0);
+  }
+}
+
+.realtime-clock {
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-weight: 700;
+  color: #fbbf24;
+  letter-spacing: 0.5px;
+}
+
+.realtime-date {
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.hero-realtime-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(15, 15, 15, 0.75);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(196, 162, 101, 0.45);
+  border-radius: 30px;
+  padding: 6px 18px;
+  margin-bottom: 20px;
+  color: #ffffff;
+  font-size: 0.82rem;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+}
+
+.hero-clock-label {
+  color: #C4A265;
+  font-weight: 700;
+  letter-spacing: 1px;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+}
+
+/* Operational Realtime Clock Card for Admin & Receptionist */
+.operational-clock-card {
+  background: linear-gradient(135deg, #11141a, #1a202c);
+  border: 1px solid rgba(196, 162, 101, 0.35);
+  border-radius: 12px;
+  padding: 16px 22px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+}
+
+.operational-clock-info {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.operational-clock-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba(196, 162, 101, 0.15);
+  border: 1px solid rgba(196, 162, 101, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #C4A265;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.operational-clock-title {
+  font-size: 0.72rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: #C4A265;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.operational-clock-desc {
+  font-size: 0.84rem;
+  color: #a0aec0;
+  margin-top: 2px;
+}
+
+.operational-clock-digits {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 8px 18px;
+}
+
+.digits-date-wrap {
+  text-align: right;
+}
+
+.digits-date-label {
+  font-size: 0.65rem;
+  color: #718096;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.digits-date-val {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #f7fafc;
+}
+
+.digits-time-val {
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #fbbf24;
+  letter-spacing: 1px;
+  padding-left: 14px;
+  border-left: 1px solid rgba(255, 255, 255, 0.15);
+}
+
 /* ==================== RESPONSIVE ==================== */
 @media (max-width: 1024px) {
   .footer-grid {
@@ -1626,6 +1848,39 @@ input, select, textarea {
 }
 
 @media (max-width: 768px) {
+  /* Topbar & Clock Mobile */
+  .topbar-container {
+    padding: 0 16px;
+    justify-content: center;
+  }
+  .topbar-left {
+    display: none;
+  }
+  .topbar-clock-badge {
+    padding: 3px 10px;
+    font-size: 0.72rem;
+    gap: 6px;
+    width: 100%;
+    justify-content: center;
+  }
+  .operational-clock-card {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 14px 16px;
+  }
+  .operational-clock-digits {
+    justify-content: space-between;
+  }
+  .digits-time-val {
+    font-size: 1.15rem;
+    padding-left: 10px;
+  }
+  .hero-realtime-badge {
+    font-size: 0.75rem;
+    padding: 5px 14px;
+    gap: 6px;
+  }
+
   /* Navbar */
   .nav-toggle { display: flex; }
 

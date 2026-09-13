@@ -5,6 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "predev": "npx --yes kill-port 3000",
     "dev": "nodemon server.js",
     "kill": "npx --yes kill-port 3000"
   },
