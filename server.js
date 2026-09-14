@@ -339,6 +339,32 @@ function loadReservations() {
 loadReservations();
 
 // ================================================================
+//  DEPARTURE & ROOM READINESS ASSISTANT HELPERS
+// ================================================================
+
+let simulationSettings = {
+  forceCheckoutReminder: false,
+  forceRoomReady: false
+};
+
+function isApproachingCheckout(rsv) {
+  if (rsv.status !== 'checked-in') return false;
+  if (simulationSettings.forceCheckoutReminder) return true;
+
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  const todayStr = `${yyyy}-${mm}-${dd}`;
+
+  // If today is check-out date, reservation is approaching checkout
+  if (rsv.checkOut === todayStr) {
+    return true;
+  }
+  return false;
+}
+
+// ================================================================
 //  RBAC MIDDLEWARES
 // ================================================================
 
@@ -856,6 +882,231 @@ app.put('/api/reservations/:id/checkout', apiStaff, (req, res) => {
 });
 
 // ================================================================
+//  DEPARTURE ASSISTANT (T-2 JAM) & ROOM READY NOTIFICATION API
+// ================================================================
+
+// Guest: Check active notifications (T-2 Check-out reminder & Room Ready)
+app.get('/api/notifications/guest-alerts', apiAuth, (req, res) => {
+  const userId = req.session.user.id;
+  const userReservations = reservations.filter(r => r.userId === userId);
+
+  let checkoutReminder = null;
+  let roomReadyAlert = null;
+
+  // 1. Check for active checked-in reservation approaching checkout
+  const inHouseRsv = userReservations.find(r => r.status === 'checked-in' && isApproachingCheckout(r));
+  if (inHouseRsv) {
+    const room = rooms.find(rm => rm.id === inHouseRsv.roomId);
+    const unit = roomUnits.find(u => u.roomId === inHouseRsv.roomId && u.status === 'occupied' && u.guestName === inHouseRsv.guestName);
+
+    const officialCheckoutTime = inHouseRsv.lateCheckoutStatus === 'approved'
+      ? `${12 + (inHouseRsv.lateCheckoutHours || 1)}:00 WIB (Diperpanjang)`
+      : '12:00 WIB';
+
+    checkoutReminder = {
+      reservationId: inHouseRsv.id,
+      guestName: inHouseRsv.guestName,
+      roomName: room ? room.name : 'Kamar HotelKu',
+      roomType: room ? room.type : '',
+      unitNumber: unit ? unit.unitNumber : (inHouseRsv.unitNumber || '101'),
+      checkOutTime: officialCheckoutTime,
+      checkoutConfirmedReady: Boolean(inHouseRsv.checkoutConfirmedReady),
+      lateCheckoutRequested: Boolean(inHouseRsv.lateCheckoutRequested),
+      lateCheckoutHours: inHouseRsv.lateCheckoutHours || null,
+      lateCheckoutStatus: inHouseRsv.lateCheckoutStatus || 'none', // none, pending, approved, rejected
+      lateCheckoutReason: inHouseRsv.lateCheckoutReason || '',
+      bellboyRequested: Boolean(inHouseRsv.bellboyRequested),
+      bellboyStatus: inHouseRsv.bellboyStatus || 'none' // none, requested, dispatched, completed
+    };
+  }
+
+  // 2. Check for approved reservation with Room Ready
+  const approvedRsv = userReservations.find(r => {
+    if (r.status !== 'approved') return false;
+    if (simulationSettings.forceRoomReady) return true;
+    if (r.roomReadyNotified) return true;
+
+    // Auto check if checkIn date is today
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    if (r.checkIn === todayStr) {
+      const hasAvailable = roomUnits.some(u => u.roomId === r.roomId && u.status === 'available');
+      if (hasAvailable) return true;
+    }
+    return false;
+  });
+
+  if (approvedRsv) {
+    const room = rooms.find(rm => rm.id === approvedRsv.roomId);
+    const availableUnit = roomUnits.find(u => u.roomId === approvedRsv.roomId && u.status === 'available');
+
+    const now = new Date();
+    const isEarly = now.getHours() < 14;
+
+    roomReadyAlert = {
+      reservationId: approvedRsv.id,
+      guestName: approvedRsv.guestName,
+      guestPhone: approvedRsv.guestPhone,
+      roomName: room ? room.name : 'Kamar HotelKu',
+      roomType: room ? room.type : '',
+      unitNumber: availableUnit ? availableUnit.unitNumber : '102',
+      readyTime: approvedRsv.roomReadyAt || '12:15 WIB',
+      earlyCheckInPrivilege: isEarly || approvedRsv.earlyCheckInAllowed || true,
+      notified: Boolean(approvedRsv.roomReadyNotified)
+    };
+  }
+
+  res.json({
+    success: true,
+    data: {
+      checkoutReminder,
+      roomReadyAlert,
+      simulationActive: simulationSettings.forceCheckoutReminder || simulationSettings.forceRoomReady,
+      simulationSettings
+    }
+  });
+});
+
+// Guest: Submit Quick Action for Departure (Confirm Ready / Late Checkout / Bellboy)
+app.post('/api/reservations/:id/checkout-action', apiAuth, (req, res) => {
+  const { action, hours, reason, notes } = req.body;
+  const rsv = reservations.find(r => r.id === req.params.id && r.userId === req.session.user.id);
+  if (!rsv) return res.status(404).json({ success: false, message: 'Reservasi tidak ditemukan' });
+
+  if (action === 'confirm-ready') {
+    rsv.checkoutConfirmedReady = true;
+    saveReservations();
+    return res.json({
+      success: true,
+      message: 'Konfirmasi diterima! Front desk mencatat bahwa Anda siap check-out tepat waktu pukul 12:00 WIB.',
+      reservation: rsv
+    });
+  }
+
+  if (action === 'request-late-checkout') {
+    const reqHours = parseInt(hours) || 1;
+    rsv.lateCheckoutRequested = true;
+    rsv.lateCheckoutHours = reqHours;
+    rsv.lateCheckoutStatus = 'pending';
+    rsv.lateCheckoutReason = reason || 'Perlu waktu tambahan berkemas';
+    saveReservations();
+    return res.json({
+      success: true,
+      message: `Permohonan Late Check-Out (+${reqHours} Jam s.d. ${12 + reqHours}:00 WIB) telah diteruskan ke resepsionis untuk verifikasi.`,
+      reservation: rsv
+    });
+  }
+
+  if (action === 'request-bellboy') {
+    rsv.bellboyRequested = true;
+    rsv.bellboyStatus = 'requested';
+    rsv.bellboyNotes = notes || 'Bantuan angkut koper/barang dari kamar';
+    saveReservations();
+    return res.json({
+      success: true,
+      message: 'Panggilan bantuan porter / bellboy berhasil! Petugas hotel akan segera menuju kamar Anda.',
+      reservation: rsv
+    });
+  }
+
+  res.status(400).json({ success: false, message: 'Aksi tidak valid' });
+});
+
+// Staff: Respond to Late Check-out Request (Approve / Reject)
+app.put('/api/reservations/:id/late-checkout/:decision', apiStaff, (req, res) => {
+  const { decision } = req.params;
+  const rsv = reservations.find(r => r.id === req.params.id);
+  if (!rsv) return res.status(404).json({ success: false, message: 'Reservasi tidak ditemukan' });
+
+  if (decision === 'approve') {
+    rsv.lateCheckoutStatus = 'approved';
+    const extendedHour = 12 + (rsv.lateCheckoutHours || 1);
+    saveReservations();
+    return res.json({
+      success: true,
+      message: `Permohonan Late Check-Out disetujui! Batas waktu check-out diperpanjang menjadi pukul ${extendedHour}:00 WIB.`
+    });
+  } else if (decision === 'reject') {
+    rsv.lateCheckoutStatus = 'rejected';
+    saveReservations();
+    return res.json({
+      success: true,
+      message: `Permohonan Late Check-Out ditolak karena tingginya okupansi kedatangan tamu berikutnya.`
+    });
+  }
+
+  res.status(400).json({ success: false, message: 'Keputusan tidak valid' });
+});
+
+// Staff: Update Bellboy Service Status (Dispatched / Completed)
+app.put('/api/reservations/:id/bellboy/:status', apiStaff, (req, res) => {
+  const { status } = req.params;
+  const rsv = reservations.find(r => r.id === req.params.id);
+  if (!rsv) return res.status(404).json({ success: false, message: 'Reservasi tidak ditemukan' });
+
+  rsv.bellboyStatus = status;
+  saveReservations();
+  res.json({
+    success: true,
+    message: status === 'dispatched'
+      ? `Petugas bellboy telah diberangkatkan untuk membantu ${rsv.guestName}!`
+      : `Bantuan bellboy untuk kamar ${rsv.guestName} selesai.`
+  });
+});
+
+// Staff: Notify Guest that Room is Ready for Check-in
+app.put('/api/receptionist/notify-room-ready/:id', apiStaff, (req, res) => {
+  const rsv = reservations.find(r => r.id === req.params.id);
+  if (!rsv) return res.status(404).json({ success: false, message: 'Reservasi tidak ditemukan' });
+
+  rsv.roomReadyNotified = true;
+  rsv.earlyCheckInAllowed = true;
+  const now = new Date();
+  rsv.roomReadyAt = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} WIB`;
+  saveReservations();
+
+  res.json({
+    success: true,
+    message: `Notifikasi kesiapan kamar berhasil dikirimkan ke tamu ${rsv.guestName}!`,
+    reservation: rsv
+  });
+});
+
+// Staff: Get list of in-house guests approaching check-out (< 2 hours / today)
+app.get('/api/receptionist/approaching-checkout', apiStaff, (req, res) => {
+  const approaching = reservations.filter(r => r.status === 'checked-in' && isApproachingCheckout(r));
+  const result = approaching.map(r => {
+    const room = rooms.find(rm => rm.id === r.roomId);
+    const unit = roomUnits.find(u => u.roomId === r.roomId && u.status === 'occupied' && u.guestName === r.guestName);
+    return {
+      ...r,
+      roomName: room ? room.name : 'Kamar HotelKu',
+      roomType: room ? room.type : '',
+      unitNumber: unit ? unit.unitNumber : (r.unitNumber || '101'),
+      isApproaching: true
+    };
+  });
+  res.json({ success: true, count: result.length, reservations: result });
+});
+
+// Demo Simulation API (For presentations)
+app.post('/api/demo/simulation', (req, res) => {
+  const { forceCheckoutReminder, forceRoomReady, reset } = req.body;
+  if (reset) {
+    simulationSettings.forceCheckoutReminder = false;
+    simulationSettings.forceRoomReady = false;
+  } else {
+    if (forceCheckoutReminder !== undefined) simulationSettings.forceCheckoutReminder = Boolean(forceCheckoutReminder);
+    if (forceRoomReady !== undefined) simulationSettings.forceRoomReady = Boolean(forceRoomReady);
+  }
+  res.json({ success: true, message: 'Status mode simulasi diperbarui!', settings: simulationSettings });
+});
+
+app.get('/api/demo/simulation', (req, res) => {
+  res.json({ success: true, settings: simulationSettings });
+});
+
+// ================================================================
 //  REVIEWS API
 // ================================================================
 
@@ -1103,6 +1354,17 @@ app.get('/api/receptionist/dashboard', apiStaff, (req, res) => {
   const pendingReservations = reservations.filter(r => r.status === 'pending');
   const approvedReservations = reservations.filter(r => r.status === 'approved'); // siap checkin
   const inHouseGuests = reservations.filter(r => r.status === 'checked-in'); // sedang menginap
+  const approachingCheckoutReservations = reservations
+    .filter(r => r.status === 'checked-in' && isApproachingCheckout(r))
+    .map(r => {
+      const room = rooms.find(rm => rm.id === r.roomId);
+      const unit = roomUnits.find(u => u.roomId === r.roomId && u.status === 'occupied' && u.guestName === r.guestName);
+      return {
+        ...r,
+        roomName: room ? room.name : 'Kamar HotelKu',
+        unitNumber: unit ? unit.unitNumber : (r.unitNumber || '101')
+      };
+    });
 
   const statusSummary = {
     totalUnits: roomUnits.length,
@@ -1118,6 +1380,8 @@ app.get('/api/receptionist/dashboard', apiStaff, (req, res) => {
       pendingCount: pendingReservations.length,
       readyToCheckInCount: approvedReservations.length,
       inHouseCount: inHouseGuests.length,
+      approachingCheckoutCount: approachingCheckoutReservations.length,
+      approachingReservations: approachingCheckoutReservations,
       statusSummary,
       recentPending: pendingReservations.slice(0, 5)
     }

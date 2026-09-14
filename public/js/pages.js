@@ -955,7 +955,16 @@ async function initAdminCheckin() {
       <div class="rsv-right">
         <span class="rsv-amount">${formatCurrency(rsv.totalPrice)}</span>
         ${getStatusBadge(rsv.status)}
-        <button class="btn-checkin" onclick="processCheckin('${rsv.id}')"><i class="fas fa-sign-in-alt"></i> Proses Check-in</button>
+        ${rsv.roomReadyNotified ? `
+          <span class="status-badge" style="background:#d1fae5;color:#065f46;margin-top:6px;font-size:0.75rem;">
+            <i class="fas fa-check-circle"></i> Tamu Telah Diberi Tahu
+          </span>
+        ` : `
+          <button class="btn btn-outline btn-sm" style="margin-top:6px;font-size:0.75rem;border-color:#059669;color:#059669;" onclick="notifyRoomReady('${rsv.id}')">
+            <i class="fas fa-bell"></i> Beri Tahu: Kamar Siap
+          </button>
+        `}
+        <button class="btn-checkin" style="margin-top:6px;" onclick="processCheckin('${rsv.id}')"><i class="fas fa-sign-in-alt"></i> Proses Check-in</button>
       </div>
     </div>
   `).join('');
@@ -982,11 +991,16 @@ async function initAdminCheckout() {
         <h4>${rsv.roomName} — ${rsv.id}</h4>
         <div class="rsv-guest"><i class="fas fa-user" style="color:#C4A265;margin-right:6px;"></i>${rsv.guestName} · ${rsv.guestPhone}</div>
         <div class="rsv-dates"><i class="fas fa-calendar" style="margin-right:6px;"></i>${formatDate(rsv.checkIn)} — ${formatDate(rsv.checkOut)} (${rsv.totalNights} malam)</div>
+        <div style="margin-top: 6px; display: flex; flex-wrap: wrap; gap: 6px;">
+          ${rsv.checkoutConfirmedReady ? `<span class="status-badge" style="background:#d1fae5;color:#065f46;font-size:0.72rem;"><i class="fas fa-check-circle"></i> Tamu Siap Tepat Waktu</span>` : ''}
+          ${rsv.lateCheckoutRequested ? `<span class="status-badge" style="background:#fef3c7;color:#92400e;font-size:0.72rem;"><i class="fas fa-clock"></i> Late Check-out (${rsv.lateCheckoutStatus})</span>` : ''}
+          ${rsv.bellboyRequested ? `<span class="status-badge" style="background:#e0e7ff;color:#3730a3;font-size:0.72rem;"><i class="fas fa-luggage-cart"></i> Bellboy (${rsv.bellboyStatus})</span>` : ''}
+        </div>
       </div>
       <div class="rsv-right">
         <span class="rsv-amount">${formatCurrency(rsv.totalPrice)}</span>
         ${getStatusBadge(rsv.status)}
-        <button class="btn-checkout" onclick="processCheckout('${rsv.id}')"><i class="fas fa-sign-out-alt"></i> Proses Check-out</button>
+        <button class="btn-checkout" style="margin-top:6px;" onclick="processCheckout('${rsv.id}')"><i class="fas fa-sign-out-alt"></i> Proses Check-out</button>
       </div>
     </div>
   `).join('');
@@ -1030,4 +1044,320 @@ async function processCheckout(id) {
   const data = await res.json();
   showToast(data.message, data.success ? 'success' : 'error');
   if (data.success) setTimeout(() => location.reload(), 800);
+}
+
+// ==================== PRD VALUE-ADDED FEATURES ====================
+// Fitur 1: Pengingat Check-Out Otomatis (T-2 Jam)
+// Fitur 2: Notifikasi Kamar Siap Check-In (Room Ready)
+// Fitur 3: Demo Mode & WhatsApp Push Simulation
+
+async function loadGuestAlerts() {
+  const container = document.getElementById('guestAlertsContainer');
+  if (!container) return;
+
+  try {
+    const res = await fetch('/api/notifications/guest-alerts');
+    const json = await res.json();
+    if (!json.success || !json.data) {
+      container.innerHTML = '';
+      return;
+    }
+
+    const { checkoutReminder, roomReadyAlert } = json.data;
+    let html = '';
+
+    // 1. Render Room Ready Alert Banner (Emerald Green)
+    if (roomReadyAlert) {
+      html += `
+        <div style="background: linear-gradient(135deg, #ecfdf5, #d1fae5); border: 2px solid #10b981; border-radius: 12px; padding: 22px 24px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(16,185,129,0.15); display: flex; flex-direction: column; gap: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 42px; height: 42px; border-radius: 50%; background: #10b981; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                <i class="fas fa-door-open"></i>
+              </div>
+              <div>
+                <span style="background: #059669; color: #fff; padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 0.72rem; letter-spacing: 0.5px;">
+                  ✦ EARLY CHECK-IN PRIVILEGE ✦
+                </span>
+                <h3 style="font-family: 'Playfair Display', serif; font-size: 1.25rem; color: #064e3b; margin: 4px 0 0 0;">
+                  Kamar Anda Sudah Selesai Disiapkan & Siap Huni!
+                </h3>
+              </div>
+            </div>
+            <span class="status-badge" style="background: #059669; color: #fff; font-weight: 700; padding: 6px 14px; font-size: 0.78rem;">
+              <i class="fas fa-bolt"></i> Fast-Track Key Handover
+            </span>
+          </div>
+
+          <p style="font-size: 0.9rem; color: #065f46; line-height: 1.6; margin: 0;">
+            Selamat datang <strong>Bpk/Ibu ${roomReadyAlert.guestName}</strong>! Kamar <strong>${roomReadyAlert.roomName} (Unit ${roomReadyAlert.unitNumber})</strong> telah siap lebih awal pada pukul <strong>${roomReadyAlert.readyTime}</strong>. Anda dapat langsung menuju meja resepsionis untuk mengambil kunci kamar tanpa perlu mengantre.
+          </p>
+
+          <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; border-top: 1px dashed #6ee7b7; padding-top: 14px;">
+            <button class="btn btn-sm" style="background: #075e54; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 8px;" onclick='openWhatsappPreview("room_ready", ${JSON.stringify(roomReadyAlert).replace(/'/g, "\\'")})'>
+              <i class="fab fa-whatsapp" style="font-size: 1.1rem; color: #25d366;"></i> Lihat Simulasi Notifikasi WhatsApp
+            </button>
+            <span style="font-size: 0.78rem; color: #047857;">
+              <i class="fas fa-check-circle"></i> Petugas resepsionis telah menyiagakan kunci dan welcome drink Anda.
+            </span>
+          </div>
+        </div>
+      `;
+    }
+
+    // 2. Render Checkout Reminder Banner (Amber / Gold)
+    if (checkoutReminder) {
+      let readyBtnHtml = '';
+      if (checkoutReminder.checkoutConfirmedReady) {
+        readyBtnHtml = `
+          <span class="status-badge" style="background: #d1fae5; color: #065f46; padding: 8px 14px; font-size: 0.8rem; font-weight: 700;">
+            <i class="fas fa-check-circle"></i> Terkonfirmasi: Siap Check-Out Tepat Waktu (12:00 WIB)
+          </span>
+        `;
+      } else {
+        readyBtnHtml = `
+          <button class="btn btn-sm" style="background: #27ae60; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 6px;" onclick="submitCheckoutAction('${checkoutReminder.reservationId}', 'confirm-ready')">
+            <i class="fas fa-check"></i> Konfirmasi Siap Pukul 12:00
+          </button>
+        `;
+      }
+
+      let lateBtnHtml = '';
+      if (checkoutReminder.lateCheckoutRequested) {
+        if (checkoutReminder.lateCheckoutStatus === 'pending') {
+          lateBtnHtml = `
+            <span class="status-badge" style="background: #fef3c7; color: #92400e; padding: 8px 14px; font-size: 0.8rem; font-weight: 700;">
+              <i class="fas fa-hourglass-half"></i> Permohonan Late Check-Out (+${checkoutReminder.lateCheckoutHours} Jam) Menunggu Resepsionis
+            </span>
+          `;
+        } else if (checkoutReminder.lateCheckoutStatus === 'approved') {
+          lateBtnHtml = `
+            <span class="status-badge" style="background: #d1fae5; color: #065f46; padding: 8px 14px; font-size: 0.8rem; font-weight: 700;">
+              <i class="fas fa-check-double"></i> Late Check-Out Disetujui! Batas Baru: ${checkoutReminder.checkOutTime}
+            </span>
+          `;
+        } else if (checkoutReminder.lateCheckoutStatus === 'rejected') {
+          lateBtnHtml = `
+            <span class="status-badge" style="background: #fee2e2; color: #991b1b; padding: 8px 14px; font-size: 0.8rem; font-weight: 700;">
+              <i class="fas fa-times-circle"></i> Permohonan Late Check-Out Ditolak (Kamar Penuh)
+            </span>
+          `;
+        }
+      } else {
+        lateBtnHtml = `
+          <button class="btn btn-sm" style="background: #d97706; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 6px;" onclick="openLateCheckoutModal('${checkoutReminder.reservationId}', '${checkoutReminder.roomName}')">
+            <i class="fas fa-business-time"></i> Ajukan Late Check-Out
+          </button>
+        `;
+      }
+
+      let bellboyBtnHtml = '';
+      if (checkoutReminder.bellboyRequested) {
+        if (checkoutReminder.bellboyStatus === 'requested') {
+          bellboyBtnHtml = `
+            <span class="status-badge" style="background: #e0e7ff; color: #3730a3; padding: 8px 14px; font-size: 0.8rem; font-weight: 700;">
+              <i class="fas fa-luggage-cart"></i> Bantuan Bellboy Dipanggil (Menuju Kamar)
+            </span>
+          `;
+        } else if (checkoutReminder.bellboyStatus === 'dispatched') {
+          bellboyBtnHtml = `
+            <span class="status-badge" style="background: #fef3c7; color: #92400e; padding: 8px 14px; font-size: 0.8rem; font-weight: 700;">
+              <i class="fas fa-running"></i> Petugas Porter Sedang Menuju Kamar Anda
+            </span>
+          `;
+        } else if (checkoutReminder.bellboyStatus === 'completed') {
+          bellboyBtnHtml = `
+            <span class="status-badge" style="background: #d1fae5; color: #065f46; padding: 8px 14px; font-size: 0.8rem; font-weight: 700;">
+              <i class="fas fa-check"></i> Bantuan Bellboy Selesai
+            </span>
+          `;
+        }
+      } else {
+        bellboyBtnHtml = `
+          <button class="btn btn-sm" style="background: #4f46e5; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 6px;" onclick="submitCheckoutAction('${checkoutReminder.reservationId}', 'request-bellboy')">
+            <i class="fas fa-luggage-cart"></i> Panggil Bantuan Bellboy
+          </button>
+        `;
+      }
+
+      html += `
+        <div style="background: linear-gradient(135deg, #fffbeb, #fef3c7); border: 2px solid #f59e0b; border-radius: 12px; padding: 22px 24px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(245,158,11,0.15); display: flex; flex-direction: column; gap: 14px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 42px; height: 42px; border-radius: 50%; background: #d97706; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                <i class="fas fa-bell"></i>
+              </div>
+              <div>
+                <span style="background: #b45309; color: #fff; padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 0.72rem; letter-spacing: 0.5px;">
+                  ✦ PENGINGAT WAKTU CHECK-OUT (T-2 JAM) ✦
+                </span>
+                <h3 style="font-family: 'Playfair Display', serif; font-size: 1.25rem; color: #78350f; margin: 4px 0 0 0;">
+                  Persiapan Kepulangan — Batas Waktu: ${checkoutReminder.checkOutTime}
+                </h3>
+              </div>
+            </div>
+            <button class="btn btn-sm" style="background: #075e54; color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 6px;" onclick='openWhatsappPreview("checkout", ${JSON.stringify(checkoutReminder).replace(/'/g, "\\'")})'>
+              <i class="fab fa-whatsapp" style="color: #25d366;"></i> Pesan WhatsApp
+            </button>
+          </div>
+
+          <p style="font-size: 0.9rem; color: #92400e; line-height: 1.6; margin: 0;">
+            Selamat pagi <strong>Bpk/Ibu ${checkoutReminder.guestName}</strong>! Waktu check-out untuk <strong>${checkoutReminder.roomName} (Unit ${checkoutReminder.unitNumber})</strong> adalah hari ini pukul <strong>${checkoutReminder.checkOutTime}</strong>. Mohon persiapkan barang bawaan Anda agar kepulangan berjalan lancar dan nyaman.
+          </p>
+
+          <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; border-top: 1px dashed #fcd34d; padding-top: 14px;">
+            <span style="font-size: 0.8rem; font-weight: 700; color: #78350f; margin-right: 4px;">Aksi Cepat Tamu:</span>
+            ${readyBtnHtml}
+            ${lateBtnHtml}
+            ${bellboyBtnHtml}
+          </div>
+        </div>
+      `;
+    }
+
+    container.innerHTML = html;
+  } catch (err) {
+    console.error('Error loading guest alerts:', err);
+  }
+}
+
+async function submitCheckoutAction(reservationId, action, extra = {}) {
+  try {
+    const res = await fetch(`/api/reservations/${reservationId}/checkout-action`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, ...extra })
+    });
+    const data = await res.json();
+    showToast(data.message, data.success ? 'success' : 'error');
+    if (data.success) {
+      await loadGuestAlerts();
+    }
+  } catch {
+    showToast('Terjadi kesalahan saat memproses aksi', 'error');
+  }
+}
+
+function openLateCheckoutModal(reservationId, roomName) {
+  const modal = document.getElementById('lateCheckoutModal');
+  const rsvInput = document.getElementById('lateCheckoutRsvId');
+  const sub = document.getElementById('lateCheckoutSub');
+  if (!modal) return;
+
+  rsvInput.value = reservationId;
+  if (sub) sub.textContent = `Pilih perpanjangan waktu untuk ${roomName} (${reservationId}).`;
+  modal.style.display = 'flex';
+}
+
+function initDemoSimulationToolbar() {
+  const btnCheckout = document.getElementById('btnSimulateCheckout');
+  const btnRoomReady = document.getElementById('btnSimulateRoomReady');
+  const btnReset = document.getElementById('btnResetSimulation');
+
+  if (btnCheckout) {
+    btnCheckout.onclick = async () => {
+      await fetch('/api/demo/simulation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ forceCheckoutReminder: true, forceRoomReady: false })
+      });
+      showToast('Simulasi Pengingat Check-Out (T-2 Jam) Aktif!', 'success');
+      await loadGuestAlerts();
+    };
+  }
+
+  if (btnRoomReady) {
+    btnRoomReady.onclick = async () => {
+      await fetch('/api/demo/simulation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ forceCheckoutReminder: false, forceRoomReady: true })
+      });
+      showToast('Simulasi Notifikasi Kamar Siap Check-In Aktif!', 'success');
+      await loadGuestAlerts();
+    };
+  }
+
+  if (btnReset) {
+    btnReset.onclick = async () => {
+      await fetch('/api/demo/simulation', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reset: true })
+      });
+      showToast('Mode simulasi direset ke waktu normal', 'info');
+      await loadGuestAlerts();
+    };
+  }
+
+  // Handle Late Check-out Form
+  const lateForm = document.getElementById('lateCheckoutForm');
+  if (lateForm) {
+    lateForm.onsubmit = async (e) => {
+      e.preventDefault();
+      const rsvId = document.getElementById('lateCheckoutRsvId').value;
+      const hours = document.querySelector('input[name="lateCheckoutOption"]:checked')?.value || 1;
+      const reason = document.getElementById('lateCheckoutReason').value;
+
+      await submitCheckoutAction(rsvId, 'request-late-checkout', { hours, reason });
+      document.getElementById('lateCheckoutModal').style.display = 'none';
+    };
+
+    const cancelBtn = document.getElementById('btnCancelLateCheckout');
+    if (cancelBtn) {
+      cancelBtn.onclick = () => {
+        document.getElementById('lateCheckoutModal').style.display = 'none';
+      };
+    }
+  }
+
+  // Handle WhatsApp Modal
+  const btnCloseWa = document.getElementById('btnCloseWhatsapp');
+  if (btnCloseWa) {
+    btnCloseWa.onclick = () => {
+      document.getElementById('whatsappModal').style.display = 'none';
+    };
+  }
+}
+
+function openWhatsappPreview(type, data) {
+  const modal = document.getElementById('whatsappModal');
+  const body = document.getElementById('whatsappMessageBody');
+  const timestamp = document.getElementById('whatsappTimestamp');
+  if (!modal || !body) return;
+
+  const now = new Date();
+  const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} WIB`;
+  if (timestamp) timestamp.textContent = timeStr;
+
+  if (type === 'room_ready') {
+    body.innerHTML = `
+      Halo <strong>Bpk/Ibu ${data.guestName}</strong>, salam hangat dari HotelKu Yogyakarta! 🌿<br><br>
+      Kabar gembira, kamar Anda <strong>${data.roomName} (Unit ${data.unitNumber})</strong> telah selesai disiapkan dan siap huni lebih awal (<strong>Early Check-In Privilege</strong>)! ✨<br><br>
+      Anda dapat langsung menuju meja resepsionis untuk serah terima kunci kamar tanpa perlu mengantre di lobi.<br><br>
+      Kami menantikan kedatangan Anda di HotelKu Yogyakarta! 🛎️
+    `;
+  } else {
+    body.innerHTML = `
+      Selamat pagi <strong>Bpk/Ibu ${data.guestName}</strong> dari HotelKu Yogyakarta! ☀️<br><br>
+      Kami mengingatkan bahwa waktu check-out untuk kamar <strong>${data.roomName} (Unit ${data.unitNumber})</strong> adalah hari ini pukul <strong>${data.checkOutTime}</strong> (tersisa 2 jam lagi).<br><br>
+      Mohon persiapkan barang bawaan Anda agar kepulangan berjalan lancar.<br><br>
+      ✦ Butuh waktu berkemas lebih? Ajukan <em>Late Check-Out</em>.<br>
+      ✦ Butuh bantuan porter koper? Panggil <em>Bellboy</em> melalui aplikasi.<br><br>
+      Terima kasih telah memilih menginap di HotelKu Yogyakarta! 🙏
+    `;
+  }
+
+  modal.style.display = 'flex';
+}
+
+async function notifyRoomReady(reservationId) {
+  try {
+    const res = await fetch(`/api/receptionist/notify-room-ready/${reservationId}`, { method: 'PUT' });
+    const data = await res.json();
+    showToast(data.message, data.success ? 'success' : 'error');
+    if (data.success) setTimeout(() => location.reload(), 800);
+  } catch {
+    showToast('Gagal mengirimkan notifikasi kamar siap', 'error');
+  }
 }

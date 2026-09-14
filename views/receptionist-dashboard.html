@@ -69,37 +69,11 @@
   <header class="page-header">
     <p class="section-label light">✦ FRONT DESK & OPERASIONAL HARIAN ✦</p>
     <h1>Konsol Resepsionis</h1>
-    <p>Kelola pemesanan kamar tamu yang masuk, pantau status kebersihan kamar, dan layani proses check-in / check-out</p>
+    <p>Kelola pemesanan kamar tamu yang masuk, pantau status kesiapan kamar, dan layani proses check-in / check-out</p>
   </header>
 
   <!-- Page Content -->
   <main class="page-content">
-    <!-- Real-time Operational Clock Card -->
-    <div class="operational-clock-card">
-      <div class="operational-clock-info">
-        <div class="operational-clock-icon"><i class="fas fa-user-clock"></i></div>
-        <div>
-          <div class="operational-clock-title"><span class="live-pulse-dot"></span> WAKTU OPERASIONAL FRONT DESK REAL TIME</div>
-          <div class="operational-clock-desc">Sinkronisasi waktu real time untuk pencatatan Check-In, Check-Out, dan Booking</div>
-        </div>
-      </div>
-      <div class="operational-clock-digits">
-        <div class="digits-date-wrap">
-          <div class="digits-date-label">Hari & Tanggal</div>
-          <div class="digits-date-val realtime-date">Memuat tanggal...</div>
-        </div>
-        <div class="digits-time-val realtime-clock">00:00:00 WIB</div>
-      </div>
-    </div>
-
-    <!-- Role Restriction Notice -->
-    <div style="background: #eef7ff; border-left: 4px solid #2980b9; padding: 16px 20px; border-radius: 8px; margin-bottom: 28px; font-size: 0.85rem; color: #1c5277; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
-      <div>
-        <i class="fas fa-shield-alt" style="margin-right: 6px;"></i>
-        <strong>Peran Anda: Resepsionis / Front Desk.</strong> Anda memiliki wewenang operasional penuh (Booking, Check-in, Check-out, Status Kamar). Anda dibatasi dari perubahan tarif harga kamar atau pengelolaan akun pengguna.
-      </div>
-      <span class="status-badge status-checked-in"><i class="fas fa-user-clock"></i> Akses Operasional Aktif</span>
-    </div>
 
     <!-- Operational KPI Cards -->
     <div class="stats-grid" id="receptionistKpis">
@@ -129,6 +103,13 @@
         <div class="stat-info">
           <div class="stat-number" id="opCleaning">...</div>
           <div class="stat-label">Kamar Perlu Dibersihkan</div>
+        </div>
+      </div>
+      <div class="stat-card" style="border-top: 3px solid #d97706;">
+        <div class="stat-icon" style="background: rgba(217,119,6,0.12); color: #d97706;"><i class="fas fa-bell"></i></div>
+        <div class="stat-info">
+          <div class="stat-number" id="opApproaching" style="color: #d97706;">...</div>
+          <div class="stat-label">Mendekati Check-Out (&lt; 2 Jam)</div>
         </div>
       </div>
     </div>
@@ -212,6 +193,88 @@
           document.getElementById('opReadyCheckin').textContent = d.readyToCheckInCount;
           document.getElementById('opInHouse').textContent = d.inHouseCount;
           document.getElementById('opCleaning').textContent = d.statusSummary.cleaningUnits;
+          if (document.getElementById('opApproaching')) {
+            document.getElementById('opApproaching').textContent = d.approachingCheckoutCount || 0;
+          }
+
+          // Render Approaching Checkout list (PRD Fitur 1)
+          const appContainer = document.getElementById('approachingCheckoutList');
+          if (appContainer) {
+            if (d.approachingReservations && d.approachingReservations.length > 0) {
+              appContainer.innerHTML = d.approachingReservations.map(rsv => {
+                let guestSignalHtml = '';
+                if (rsv.checkoutConfirmedReady) {
+                  guestSignalHtml += `<span class="status-badge" style="background:#d1fae5;color:#065f46;font-size:0.72rem;margin-right:6px;"><i class="fas fa-check-circle"></i> Tamu Siap Tepat Waktu (12:00 WIB)</span>`;
+                }
+                if (rsv.lateCheckoutRequested) {
+                  if (rsv.lateCheckoutStatus === 'pending') {
+                    guestSignalHtml += `
+                      <span class="status-badge" style="background:#fef3c7;color:#92400e;font-size:0.72rem;margin-right:6px;">
+                        <i class="fas fa-hourglass-half"></i> Permohonan Late Check-Out +${rsv.lateCheckoutHours || 1} Jam
+                      </span>
+                      <button class="btn btn-sm" style="background:#059669;color:#fff;border:none;border-radius:4px;padding:3px 8px;font-size:0.7rem;cursor:pointer;margin-right:4px;" onclick="handleReceptionistLateCheckout('${rsv.id}', 'approve')">
+                        <i class="fas fa-check"></i> Setujui
+                      </button>
+                      <button class="btn btn-sm" style="background:#dc2626;color:#fff;border:none;border-radius:4px;padding:3px 8px;font-size:0.7rem;cursor:pointer;" onclick="handleReceptionistLateCheckout('${rsv.id}', 'reject')">
+                        <i class="fas fa-times"></i> Tolak
+                      </button>
+                    `;
+                  } else if (rsv.lateCheckoutStatus === 'approved') {
+                    guestSignalHtml += `<span class="status-badge" style="background:#d1fae5;color:#065f46;font-size:0.72rem;margin-right:6px;"><i class="fas fa-check-double"></i> Late Check-Out ACC (+${rsv.lateCheckoutHours} Jam)</span>`;
+                  } else if (rsv.lateCheckoutStatus === 'rejected') {
+                    guestSignalHtml += `<span class="status-badge" style="background:#fee2e2;color:#991b1b;font-size:0.72rem;margin-right:6px;"><i class="fas fa-times-circle"></i> Late Check-Out Ditolak</span>`;
+                  }
+                }
+                if (rsv.bellboyRequested) {
+                  if (rsv.bellboyStatus === 'requested') {
+                    guestSignalHtml += `
+                      <span class="status-badge" style="background:#e0e7ff;color:#3730a3;font-size:0.72rem;margin-right:6px;">
+                        <i class="fas fa-luggage-cart"></i> Butuh Porter / Bellboy
+                      </span>
+                      <button class="btn btn-sm" style="background:#4f46e5;color:#fff;border:none;border-radius:4px;padding:3px 8px;font-size:0.7rem;cursor:pointer;" onclick="handleReceptionistBellboy('${rsv.id}', 'dispatched')">
+                        <i class="fas fa-running"></i> Kirim Bellboy
+                      </button>
+                    `;
+                  } else if (rsv.bellboyStatus === 'dispatched') {
+                    guestSignalHtml += `
+                      <span class="status-badge" style="background:#fef3c7;color:#92400e;font-size:0.72rem;margin-right:6px;">
+                        <i class="fas fa-running"></i> Bellboy Sedang Menuju Kamar
+                      </span>
+                      <button class="btn btn-sm" style="background:#059669;color:#fff;border:none;border-radius:4px;padding:3px 8px;font-size:0.7rem;cursor:pointer;" onclick="handleReceptionistBellboy('${rsv.id}', 'completed')">
+                        <i class="fas fa-check"></i> Selesai
+                      </button>
+                    `;
+                  } else if (rsv.bellboyStatus === 'completed') {
+                    guestSignalHtml += `<span class="status-badge" style="background:#d1fae5;color:#065f46;font-size:0.72rem;margin-right:6px;"><i class="fas fa-check"></i> Bellboy Selesai</span>`;
+                  }
+                }
+
+                if (!guestSignalHtml) {
+                  guestSignalHtml = `<span style="font-size: 0.75rem; color: #888;">Belum ada respon aksi dari tamu</span>`;
+                }
+
+                return `
+                  <div class="admin-rsv-card" style="border-left: 4px solid #d97706; margin-bottom: 12px;">
+                    <div class="rsv-photo"><img src="${rsv.roomPhoto || 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=600&q=80'}" alt="${rsv.roomName}"></div>
+                    <div class="rsv-info">
+                      <h4>${rsv.roomName} — Unit ${rsv.unitNumber || '101'} (${rsv.id})</h4>
+                      <div class="rsv-guest"><i class="fas fa-user" style="color:#C4A265;margin-right:6px;"></i>${rsv.guestName} · ${rsv.guestPhone}</div>
+                      <div class="rsv-dates"><i class="fas fa-clock" style="margin-right:6px;color:#d97706;"></i>Batas Check-Out: <strong>${rsv.lateCheckoutStatus === 'approved' ? (12 + (rsv.lateCheckoutHours || 1)) + ':00 WIB (Diperpanjang)' : '12:00 WIB'}</strong></div>
+                      <div style="margin-top: 8px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px;">
+                        ${guestSignalHtml}
+                      </div>
+                    </div>
+                    <div class="rsv-right">
+                      <span class="status-badge" style="background:#fef3c7;color:#92400e;font-weight:700;"><i class="fas fa-hourglass-end"></i> Segera Check-Out</span>
+                      <button class="btn-checkout" style="margin-top: 8px;" onclick="processCheckout('${rsv.id}')"><i class="fas fa-sign-out-alt"></i> Proses Check-Out</button>
+                    </div>
+                  </div>
+                `;
+              }).join('');
+            } else {
+              appContainer.innerHTML = '<p style="color: #888; text-align: center; padding: 24px;">Tidak ada kamar yang berada dalam periode mendekati batas check-out (&lt; 2 jam) saat ini.</p>';
+            }
+          }
         }
 
         const container = document.getElementById('receptionistPendingList');
@@ -238,6 +301,28 @@
         }
       } catch (err) {
         showToast('Gagal memuat konsol resepsionis', 'error');
+      }
+    }
+
+    async function handleReceptionistLateCheckout(rsvId, decision) {
+      try {
+        const res = await fetch(`/api/reservations/${rsvId}/late-checkout/${decision}`, { method: 'PUT' });
+        const data = await res.json();
+        showToast(data.message, data.success ? 'success' : 'error');
+        if (data.success) await loadReceptionistDashboard();
+      } catch {
+        showToast('Gagal memproses permohonan', 'error');
+      }
+    }
+
+    async function handleReceptionistBellboy(rsvId, status) {
+      try {
+        const res = await fetch(`/api/reservations/${rsvId}/bellboy/${status}`, { method: 'PUT' });
+        const data = await res.json();
+        showToast(data.message, data.success ? 'success' : 'error');
+        if (data.success) await loadReceptionistDashboard();
+      } catch {
+        showToast('Gagal memperbarui status bellboy', 'error');
       }
     }
   </script>

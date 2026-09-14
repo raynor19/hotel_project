@@ -80,15 +80,6 @@
       </a>
     </div>
 
-    <!-- Status Explanation Bar -->
-    <div style="background: #fff; border-radius: 8px; padding: 16px 20px; margin-bottom: 24px; font-size: 0.8rem; color: #666; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; border-left: 4px solid #C4A265;">
-      <span><strong>Alur Status:</strong></span>
-      <span><i class="fas fa-clock" style="color: #e67e22;"></i> <strong>Menunggu:</strong> Menunggu ACC Admin</span>
-      <span><i class="fas fa-check-circle" style="color: #27ae60;"></i> <strong>Disetujui:</strong> Silakan datang ke hotel untuk check-in fisik</span>
-      <span><i class="fas fa-sign-in-alt" style="color: #2980b9;"></i> <strong>Checked In:</strong> Sedang menginap</span>
-      <span><i class="fas fa-sign-out-alt" style="color: #7f8c8d;"></i> <strong>Checked Out:</strong> Selesai (Bisa beri rating & review)</span>
-    </div>
-
     <!-- Reservations List Container -->
     <div class="reservations-list" id="myReservationsList">
       <div class="empty-state">
@@ -134,12 +125,279 @@
     </div>
   </div>
 
+  <!-- Modal E-Invoice / Bukti Pembayaran Resmi Sesuai Format Referensi -->
+  <div id="invoiceModal" class="modal-overlay" style="display: none; align-items: center; justify-content: center; z-index: 99999; position: fixed; inset: 0; background: rgba(0,0,0,0.65); padding: 20px 10px;">
+    <div class="modal-box" style="max-width: 680px; width: 100%; max-height: 94vh; background: #ffffff; border-radius: 8px; padding: 0; overflow-y: auto; box-shadow: 0 25px 60px rgba(0,0,0,0.35); border: 1px solid #d1d5db; position: relative;">
+      
+      <!-- Sticky Action Bar -->
+      <div style="position: sticky; top: 0; z-index: 10; background: #1a1a1a; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; color: #fff; border-bottom: 1px solid #333;">
+        <div style="font-size: 0.82rem; display: flex; align-items: center; gap: 8px; font-weight: 600; color: #e5e7eb;">
+          <i class="fas fa-file-invoice" style="color: #C4A265;"></i> E-Invoice Resmi Tamu
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <button type="button" onclick="printInvoice()" style="background: #C4A265; color: #111; font-weight: 700; border: none; font-size: 0.75rem; padding: 6px 14px; border-radius: 4px; display: flex; align-items: center; gap: 6px; cursor: pointer; transition: 0.2s;">
+            <i class="fas fa-print"></i> Cetak / Simpan PDF
+          </button>
+          <button type="button" onclick="closeInvoiceModal()" style="background: none; border: none; color: #9ca3af; font-size: 1.3rem; cursor: pointer; padding: 0 4px; line-height: 1;">✕</button>
+        </div>
+      </div>
+
+      <!-- Printable Invoice Sheet (Mengikuti Format Referensi Gambar) -->
+      <div id="printableInvoiceSheet" style="background: #ffffff; color: #374151; font-family: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 0.86rem; line-height: 1.45;">
+        
+        <!-- Top Hero Header with Background & Logo -->
+        <div style="position: relative; background: linear-gradient(135deg, rgba(26,26,26,0.92) 0%, rgba(42,42,42,0.85) 100%), url('/images/rooms/presidential-suite.jpg') center/cover no-repeat; padding: 32px 36px 28px; color: #ffffff;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <!-- Left Header: INVOICE & Hotel Details -->
+            <div>
+              <h1 style="font-family: 'Outfit', sans-serif; font-size: 2.2rem; font-weight: 900; letter-spacing: 2px; margin: 0; color: #ffffff; text-transform: uppercase;">
+                INVOICE
+              </h1>
+              <div style="color: #C4A265; font-size: 0.88rem; font-weight: 800; letter-spacing: 1px; margin-top: 4px; text-transform: uppercase;">
+                HOTELKU YOGYAKARTA
+              </div>
+              <div style="font-size: 0.74rem; color: #d1d5db; margin-top: 10px; line-height: 1.45;">
+                Jl. Malioboro No. 50, Sosromenduran<br>
+                Kota Yogyakarta, D.I. Yogyakarta 55271<br>
+                <span style="color: #93c5fd;">www.hotelku-jogja.com</span> · +62 274 555-0199
+              </div>
+            </div>
+
+            <!-- Right Header: HotelKu Logo & Date -->
+            <div style="text-align: right;">
+              <div style="display: inline-flex; align-items: center; gap: 8px; justify-content: flex-end;">
+                <span style="font-size: 1.6rem; color: #C4A265;">✦</span>
+                <div style="text-align: left;">
+                  <div style="font-family: 'Cinzel', serif; font-size: 1.15rem; font-weight: 800; color: #ffffff; letter-spacing: 1.5px; line-height: 1;">HOTELKU</div>
+                  <div style="font-size: 0.6rem; font-weight: 700; color: #C4A265; letter-spacing: 2px; line-height: 1;">YOGYAKARTA</div>
+                </div>
+              </div>
+              <div style="margin-top: 24px; font-size: 0.78rem; color: #e5e7eb; font-weight: 500;">
+                Date: <strong id="invDateHeader" style="color: #ffffff;">Sep 14, 2026</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Guest Name Bar -->
+        <div style="padding: 18px 36px 14px; border-bottom: 1px solid #f3f4f6;">
+          <div style="font-size: 0.72rem; color: #9ca3af; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">GUEST NAME / BILL TO:</div>
+          <div id="invGuestNameBanner" style="font-size: 1.18rem; font-weight: 800; color: #111827; letter-spacing: 0.5px; margin-top: 2px; text-transform: uppercase;">
+            MR. GUEST NAME
+          </div>
+        </div>
+
+        <!-- Reservation Metadata 2-Column Grid (Sesuai Referensi Gambar) -->
+        <div style="padding: 16px 36px; background: #fafafa; border-bottom: 1px solid #e5e7eb;">
+          <div id="invNumberLabel" style="font-size: 0.95rem; font-weight: 800; color: #C4A265; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px;">
+            INVOICE #AB-00000
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; font-size: 0.78rem; color: #4b5563;">
+            <!-- Left Info Column -->
+            <ul style="list-style: none; padding: 0; margin: 0; line-height: 1.8;">
+              <li style="display: flex; align-items: center; gap: 6px;">
+                <span style="color: #6b7280;">•</span> <span>Account / User ID:</span> <strong id="invAccountId" style="color: #111827; margin-left: auto;">USR-10001</strong>
+              </li>
+              <li style="display: flex; align-items: center; gap: 6px;">
+                <span style="color: #6b7280;">•</span> <span>Room / Unit:</span> <strong id="invRoomUnit" style="color: #111827; margin-left: auto;">Unit 101</strong>
+              </li>
+              <li style="display: flex; align-items: center; gap: 6px;">
+                <span style="color: #6b7280;">•</span> <span>Arrival Date:</span> <strong id="invArrivalDate" style="color: #111827; margin-left: auto;">Sep 14, 2026</strong>
+              </li>
+              <li style="display: flex; align-items: center; gap: 6px;">
+                <span style="color: #6b7280;">•</span> <span>Departure Date:</span> <strong id="invDepartureDate" style="color: #111827; margin-left: auto;">Sep 16, 2026</strong>
+              </li>
+            </ul>
+
+            <!-- Right Info Column -->
+            <ul style="list-style: none; padding: 0; margin: 0; line-height: 1.8; border-left: 1px solid #e5e7eb; padding-left: 20px;">
+              <li style="display: flex; align-items: center; gap: 6px;">
+                <span style="color: #6b7280;">•</span> <span>Check-in time:</span> <strong id="invCheckInTime" style="color: #111827; margin-left: auto;">14:00 WIB</strong>
+              </li>
+              <li style="display: flex; align-items: center; gap: 6px;">
+                <span style="color: #6b7280;">•</span> <span>Check-out time:</span> <strong id="invCheckOutTime" style="color: #111827; margin-left: auto;">12:00 WIB</strong>
+              </li>
+              <li style="display: flex; align-items: center; gap: 6px;">
+                <span style="color: #6b7280;">•</span> <span>Checked in by:</span> <strong id="invCheckedInBy" style="color: #111827; margin-left: auto;">Cole, N. (Front Desk)</strong>
+              </li>
+              <li style="display: flex; align-items: center; gap: 6px;">
+                <span style="color: #6b7280;">•</span> <span>Status:</span> <strong id="invStatusTag" style="color: #059669; margin-left: auto; text-transform: uppercase;">VERIFIED & PAID</strong>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Table Charges (Description, Quantity, Rate, Comment, Amount) -->
+        <div style="padding: 20px 36px 12px;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem; color: #374151;">
+            <thead>
+              <tr style="border-top: 1.5px solid #111827; border-bottom: 1.5px solid #111827; text-align: left; font-size: 0.72rem; text-transform: uppercase; color: #111827; letter-spacing: 0.5px;">
+                <th style="padding: 10px 6px; font-weight: 800;">Description</th>
+                <th style="padding: 10px 6px; font-weight: 800; text-align: center;">Quantity</th>
+                <th style="padding: 10px 6px; font-weight: 800; text-align: right;">Rate</th>
+                <th style="padding: 10px 10px; font-weight: 800; text-align: left;">Comment</th>
+                <th style="padding: 10px 6px; font-weight: 800; text-align: right;">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Row 1: Room Charges -->
+              <tr style="border-bottom: 1px solid #f3f4f6;">
+                <td style="padding: 12px 6px; font-weight: 800; color: #111827; text-transform: uppercase;">ROOM CHARGES</td>
+                <td id="invTableQty" style="padding: 12px 6px; text-align: center; font-weight: 600;">2 Nights</td>
+                <td id="invTableRate" style="padding: 12px 6px; text-align: right;">Rp 850.000</td>
+                <td id="invTableComment" style="padding: 12px 10px; font-size: 0.75rem; color: #6b7280;">Deluxe Heritage Room (All Inclusive)</td>
+                <td id="invTableAmount" style="padding: 12px 6px; text-align: right; font-weight: 700; color: #111827;">Rp 1.700.000</td>
+              </tr>
+              <!-- Row 2: Complimentary Welcome & Amenities -->
+              <tr style="border-bottom: 1px solid #f3f4f6;">
+                <td style="padding: 10px 6px; font-weight: 700; color: #4b5563; text-transform: uppercase;">WELCOME DRINK & HERITAGE TEA</td>
+                <td style="padding: 10px 6px; text-align: center; color: #6b7280;">1 Package</td>
+                <td style="padding: 10px 6px; text-align: right; color: #6b7280;">Included</td>
+                <td style="padding: 10px 10px; font-size: 0.75rem; color: #6b7280;">Wedang Ronde & Jamu Tradisional</td>
+                <td style="padding: 10px 6px; text-align: right; font-weight: 600; color: #059669;">Rp 0</td>
+              </tr>
+              <!-- Row 3: High-speed WiFi & Valet Parking -->
+              <tr style="border-bottom: 1px solid #f3f4f6;">
+                <td style="padding: 10px 6px; font-weight: 700; color: #4b5563; text-transform: uppercase;">PREMIUM WI-FI & VALET</td>
+                <td style="padding: 10px 6px; text-align: center; color: #6b7280;">Unlimited</td>
+                <td style="padding: 10px 6px; text-align: right; color: #6b7280;">Complimentary</td>
+                <td style="padding: 10px 10px; font-size: 0.75rem; color: #6b7280;">Layanan Akses Tamu Eksklusif</td>
+                <td style="padding: 10px 6px; text-align: right; font-weight: 600; color: #059669;">Rp 0</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Subtotal, Taxes & Grand Total Section (Aligned Right like Sample) -->
+        <div style="padding: 6px 36px 20px; display: flex; justify-content: space-between; align-items: flex-start;">
+          <!-- Left Notes & Loyalty Badge -->
+          <div style="max-width: 250px; font-size: 0.75rem; color: #6b7280; padding-top: 10px;">
+            <p style="margin-bottom: 6px;">* Poin loyalitas Anda otomatis diakumulasikan ke dalam akun keanggotaan HotelKu Rewards.</p>
+            <p style="font-size: 0.7rem; color: #9ca3af;">Front Desk: +62 274 555-0199 · Ext. 101</p>
+          </div>
+
+          <!-- Right Calculation Box -->
+          <div style="width: 290px; font-size: 0.82rem;">
+            <div style="display: flex; justify-content: space-between; padding: 4px 0; color: #4b5563;">
+              <span style="font-weight: 700;">Subtotal</span>
+              <span id="invCalcSubtotal" style="font-weight: 600; color: #111827;">Rp 1.700.000</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 4px 0; color: #4b5563;">
+              <span>Pajak Hotel (10%)</span>
+              <span id="invCalcTax" style="font-weight: 600; color: #059669;">Termasuk (Included)</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 4px 0; color: #4b5563;">
+              <span>Biaya Pelayanan (Service 5%)</span>
+              <span style="font-weight: 600; color: #059669;">Termasuk (Included)</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; padding: 12px 0 6px; border-top: 1.5px solid #111827; border-bottom: 1.5px solid #111827; margin-top: 8px; font-size: 0.96rem; font-weight: 900; color: #111827;">
+              <span style="text-transform: uppercase; letter-spacing: 0.5px;">GRAND TOTAL</span>
+              <span id="invCalcGrandTotal" style="color: #b45309;">Rp 1.700.000</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Orange / Gold Footer Banner (Sesuai Referensi Gambar) -->
+        <div style="padding: 0 36px 32px;">
+          <div style="background: linear-gradient(90deg, #d97706 0%, #C4A265 100%); color: #ffffff; padding: 14px 20px; font-weight: 800; font-size: 0.85rem; letter-spacing: 1px; text-transform: uppercase; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(217, 119, 6, 0.2);">
+            <span>WE HOPE YOU HAD A GREAT STAY!</span>
+            <span style="font-size: 0.72rem; font-weight: 600; opacity: 0.9; text-transform: none; letter-spacing: 0;">Matur Nuwun · HotelKu Yogyakarta</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Modal Permohonan Late Check-Out (PRD Fitur 1) -->
+  <div id="lateCheckoutModal" class="modal-overlay hide" style="display: none;">
+    <div class="modal-box" style="max-width: 480px;">
+      <h3 style="color: #b45309; display: flex; align-items: center; gap: 8px;">
+        <i class="fas fa-business-time"></i> Permohonan Late Check-Out
+      </h3>
+      <p id="lateCheckoutSub" style="color: #64748b; font-size: 0.85rem; margin-bottom: 16px;">
+        Pilih durasi tambahan waktu menginap. Permohonan Anda akan diteruskan ke sistem resepsionis.
+      </p>
+      
+      <form id="lateCheckoutForm">
+        <input type="hidden" id="lateCheckoutRsvId" value="">
+        
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; color: #334155;">Pilihan Tambahan Waktu:</label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <label style="border: 2px solid #C4A265; border-radius: 8px; padding: 12px; cursor: pointer; text-align: center; background: #fffbeb;">
+              <input type="radio" name="lateCheckoutOption" value="1" checked style="margin-right: 6px;">
+              <strong style="color: #1a1a1a; display: block; font-size: 1rem;">+1 Jam</strong>
+              <div style="font-size: 0.75rem; color: #78350f;">Hingga 13:00 WIB</div>
+            </label>
+            <label style="border: 2px solid #e2e8f0; border-radius: 8px; padding: 12px; cursor: pointer; text-align: center; background: #fff;">
+              <input type="radio" name="lateCheckoutOption" value="2" style="margin-right: 6px;">
+              <strong style="color: #1a1a1a; display: block; font-size: 1rem;">+2 Jam</strong>
+              <div style="font-size: 0.75rem; color: #78350f;">Hingga 14:00 WIB</div>
+            </label>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <label style="display: block; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; margin-bottom: 8px; color: #334155;">Alasan Permohonan (Opsional):</label>
+          <textarea id="lateCheckoutReason" placeholder="Contoh: Menunggu jadwal kereta/penerbangan sore hari, masih menyelesaikan berkemas..." style="width: 100%; min-height: 80px; padding: 10px; border: 1.5px solid #cbd5e1; border-radius: 6px; font-family: inherit; font-size: 0.85rem; outline: none;"></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" id="btnCancelLateCheckout">Batal</button>
+          <button type="submit" class="btn-reserve" style="width: auto; padding: 10px 24px; background: #d97706;" id="btnSubmitLateCheckout">
+            <i class="fas fa-paper-plane"></i> Kirim ke Resepsionis
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Simulasi WhatsApp / SMS Notification (PRD Fitur 2) -->
+  <div id="whatsappModal" class="modal-overlay hide" style="display: none;">
+    <div class="modal-box" style="max-width: 440px; padding: 0; overflow: hidden; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+      <div style="background: #075e54; color: #fff; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div style="width: 40px; height: 40px; border-radius: 50%; background: #fff; color: #075e54; display: flex; align-items: center; justify-content: center; font-weight: bold;">
+            <i class="fab fa-whatsapp" style="font-size: 1.5rem; color: #25d366;"></i>
+          </div>
+          <div>
+            <div style="font-weight: 700; font-size: 0.95rem;">HotelKu Yogyakarta Verified</div>
+            <div style="font-size: 0.72rem; color: #cbe7e2;"><i class="fas fa-check-circle" style="color: #34b7f1;"></i> Akun Resmi Bisnis WhatsApp</div>
+          </div>
+        </div>
+        <button type="button" id="btnCloseWhatsapp" style="background: none; border: none; color: #fff; font-size: 1.3rem; cursor: pointer; padding: 4px;">✕</button>
+      </div>
+
+      <div style="background: #ece5dd; padding: 20px; background-image: radial-gradient(#d4c7b8 1.5px, transparent 1.5px); background-size: 16px 16px; min-height: 240px; display: flex; flex-direction: column; justify-content: center;">
+        <div style="background: #fff; border-radius: 8px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.15); max-width: 100%; border-top-left-radius: 0; position: relative;">
+          <div style="font-weight: 700; color: #075e54; font-size: 0.88rem; margin-bottom: 8px; border-bottom: 1px solid #edf2f7; padding-bottom: 6px;">
+            ✦ PEMBERITAHUAN RESMI HOTELKU ✦
+          </div>
+          <div id="whatsappMessageBody" style="font-size: 0.85rem; color: #222; line-height: 1.5; white-space: pre-line;">
+            Memuat isi notifikasi...
+          </div>
+          <div style="text-align: right; font-size: 0.68rem; color: #888; margin-top: 10px;">
+            <span id="whatsappTimestamp">11:30 WIB</span> <i class="fas fa-check-double" style="color: #34b7f1; margin-left: 4px;"></i>
+          </div>
+        </div>
+      </div>
+
+      <div style="background: #f8fafc; padding: 12px 16px; text-align: center; font-size: 0.75rem; color: #64748b; border-top: 1px solid #e2e8f0;">
+        <i class="fas fa-satellite-dish" style="color: #059669; margin-right: 4px;"></i> Simulasi Pesan Push Notification WhatsApp Gateway Real-Time
+      </div>
+    </div>
+  </div>
+
   <script src="/js/pages.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
       await initNavbar();
       await loadMyReservationsWithReviewOption();
     });
+
+    let myReservationsCache = [];
 
     async function loadMyReservationsWithReviewOption() {
       const container = document.getElementById('myReservationsList');
@@ -163,6 +421,8 @@
           return;
         }
 
+        myReservationsCache = rsvRes.reservations;
+
         const myReviewedReservationIds = new Set(
           (revRes.success && revRes.reviews) ? revRes.reviews.map(rv => rv.reservationId) : []
         );
@@ -170,17 +430,27 @@
         container.innerHTML = rsvRes.reservations.map(rsv => {
           const hasReviewed = myReviewedReservationIds.has(rsv.id);
           let reviewButtonHtml = '';
+          let invoiceButtonHtml = '';
+
+          // Tombol Invoice tampil jika status sudah di-ACC / disetujui (approved, checked-in, checked-out)
+          if (['approved', 'checked-in', 'checked-out'].includes(rsv.status)) {
+            invoiceButtonHtml = `
+              <button class="btn btn-outline btn-sm" style="margin-top: 8px; font-size: 0.72rem; border-color: #C4A265; color: #8A6D3B; display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; background: #fff;" onclick="openInvoiceModal('${rsv.id}')">
+                <i class="fas fa-file-invoice"></i> Lihat Invoice
+              </button>
+            `;
+          }
 
           if (rsv.status === 'checked-out') {
             if (hasReviewed) {
               reviewButtonHtml = `
-                <span style="font-size: 0.75rem; color: #27ae60; font-weight: 700; margin-top: 8px;">
+                <span style="font-size: 0.75rem; color: #27ae60; font-weight: 700; margin-top: 8px; display: block; text-align: center;">
                   <i class="fas fa-check-circle"></i> Sudah Diulas
                 </span>
               `;
             } else {
               reviewButtonHtml = `
-                <button class="btn btn-primary btn-sm" style="margin-top: 8px; font-size: 0.7rem;" onclick="openReviewModal('${rsv.id}', '${rsv.roomName}')">
+                <button class="btn btn-primary btn-sm" style="margin-top: 8px; font-size: 0.7rem; width: 100%;" onclick="openReviewModal('${rsv.id}', '${rsv.roomName}')">
                   <i class="fas fa-star"></i> Beri Ulasan & Rating
                 </button>
               `;
@@ -204,9 +474,10 @@
                   </div>
                 ` : ''}
               </div>
-              <div class="rsv-actions">
+              <div class="rsv-actions" style="min-width: 170px;">
                 <div class="rsv-price">${formatCurrency(rsv.totalPrice)}</div>
                 ${getStatusBadge(rsv.status)}
+                ${invoiceButtonHtml}
                 ${reviewButtonHtml}
               </div>
             </div>
@@ -284,6 +555,160 @@
         btn.textContent = 'Kirim Ulasan';
       }
     });
+
+    // Modal E-Invoice Functions (Sesuai Referensi Gambar)
+    const invoiceModal = document.getElementById('invoiceModal');
+
+    window.openInvoiceModal = async function(rsvId) {
+      try {
+        let rsv = myReservationsCache.find(r => String(r.id) === String(rsvId));
+        
+        // Fallback: jika cache kosong/belum termuat, coba fetch langsung dari API
+        if (!rsv) {
+          try {
+            const res = await fetch('/api/reservations');
+            const data = await res.json();
+            if (data.success && data.reservations) {
+              myReservationsCache = data.reservations;
+              rsv = myReservationsCache.find(r => String(r.id) === String(rsvId));
+            }
+          } catch (e) {
+            console.error('Gagal fetch fallback reservasi:', e);
+          }
+        }
+
+        if (!rsv) {
+          if (typeof showToast === 'function') {
+            showToast('Data reservasi tidak ditemukan', 'error');
+          } else {
+            alert('Data reservasi tidak ditemukan');
+          }
+          return;
+        }
+
+        // Generate invoice code format: #AB-XXXXX / #RSV-XXXX
+        const numOnly = (String(rsv.id) || '').replace(/\D/g, '') || '1024';
+        const invCode = `INVOICE #AB-${numOnly.padStart(5, '0')}`;
+        
+        const createdDate = new Date(rsv.createdAt || Date.now());
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const dateFormatted = `${months[createdDate.getMonth()]} ${createdDate.getDate()}, ${createdDate.getFullYear()}`;
+        
+        // Header Date & Invoice Code
+        const elDateHeader = document.getElementById('invDateHeader');
+        if (elDateHeader) elDateHeader.textContent = dateFormatted;
+        const elNumberLabel = document.getElementById('invNumberLabel');
+        if (elNumberLabel) elNumberLabel.textContent = invCode;
+
+        // Guest Name Banner (MR. / MRS.)
+        const guestUpper = (rsv.guestName || 'GUEST').toUpperCase();
+        const prefix = guestUpper.startsWith('MR') || guestUpper.startsWith('MS') || guestUpper.startsWith('NY') ? '' : 'MR. ';
+        const elGuestNameBanner = document.getElementById('invGuestNameBanner');
+        if (elGuestNameBanner) elGuestNameBanner.textContent = `${prefix}${guestUpper}`;
+
+        // Left Info List
+        const elAccountId = document.getElementById('invAccountId');
+        if (elAccountId) elAccountId.textContent = rsv.userId ? `USR-${String(rsv.userId).slice(-5).toUpperCase()}` : 'USR-10001';
+        const elRoomUnit = document.getElementById('invRoomUnit');
+        if (elRoomUnit) elRoomUnit.textContent = rsv.unitNumber ? `Unit ${rsv.unitNumber}` : `${rsv.roomName || 'Deluxe Room'}`;
+        const elArrivalDate = document.getElementById('invArrivalDate');
+        if (elArrivalDate) elArrivalDate.textContent = typeof formatDate === 'function' ? formatDate(rsv.checkIn) : (rsv.checkIn || '-');
+        const elDepartureDate = document.getElementById('invDepartureDate');
+        if (elDepartureDate) elDepartureDate.textContent = typeof formatDate === 'function' ? formatDate(rsv.checkOut) : (rsv.checkOut || '-');
+
+        // Right Info List
+        const elCheckInTime = document.getElementById('invCheckInTime');
+        if (elCheckInTime) elCheckInTime.textContent = '14:00 WIB';
+        const elCheckOutTime = document.getElementById('invCheckOutTime');
+        if (elCheckOutTime) elCheckOutTime.textContent = rsv.lateCheckoutGranted ? `${12 + (rsv.lateCheckoutHours || 1)}:00 WIB (Late Check-Out)` : '12:00 WIB';
+        const elCheckedInBy = document.getElementById('invCheckedInBy');
+        if (elCheckedInBy) elCheckedInBy.textContent = rsv.checkedInBy || 'Cole, N. (Front Desk)';
+        
+        let statusStr = 'VERIFIED & PAID';
+        if (rsv.status === 'checked-in') statusStr = 'IN-HOUSE / ACTIVE';
+        if (rsv.status === 'checked-out') statusStr = 'SETTLED & COMPLETED';
+        const elStatusTag = document.getElementById('invStatusTag');
+        if (elStatusTag) elStatusTag.textContent = statusStr;
+
+        // Table Data
+        const nights = rsv.totalNights || 1;
+        const ratePerNight = Math.round((rsv.totalPrice || 0) / nights);
+        const elTableQty = document.getElementById('invTableQty');
+        if (elTableQty) elTableQty.textContent = `${nights} Night${nights > 1 ? 's' : ''}`;
+        const elTableRate = document.getElementById('invTableRate');
+        if (elTableRate) elTableRate.textContent = typeof formatCurrency === 'function' ? formatCurrency(ratePerNight) : `Rp ${ratePerNight}`;
+        const elTableComment = document.getElementById('invTableComment');
+        if (elTableComment) elTableComment.textContent = `${rsv.roomName || 'Room'} (All Inclusive Luxury)`;
+        const elTableAmount = document.getElementById('invTableAmount');
+        if (elTableAmount) elTableAmount.textContent = typeof formatCurrency === 'function' ? formatCurrency(rsv.totalPrice) : `Rp ${rsv.totalPrice}`;
+
+        // Calculation Breakdown
+        const elCalcSubtotal = document.getElementById('invCalcSubtotal');
+        if (elCalcSubtotal) elCalcSubtotal.textContent = typeof formatCurrency === 'function' ? formatCurrency(rsv.totalPrice) : `Rp ${rsv.totalPrice}`;
+        const elCalcGrandTotal = document.getElementById('invCalcGrandTotal');
+        if (elCalcGrandTotal) elCalcGrandTotal.textContent = typeof formatCurrency === 'function' ? formatCurrency(rsv.totalPrice) : `Rp ${rsv.totalPrice}`;
+
+        // Tampilkan Modal
+        if (invoiceModal) {
+          invoiceModal.classList.remove('hide');
+          invoiceModal.style.setProperty('display', 'flex', 'important');
+        }
+      } catch (err) {
+        console.error('Error opening invoice modal:', err);
+        if (invoiceModal) {
+          invoiceModal.classList.remove('hide');
+          invoiceModal.style.setProperty('display', 'flex', 'important');
+        }
+      }
+    };
+
+    window.closeInvoiceModal = function() {
+      if (invoiceModal) {
+        invoiceModal.style.display = 'none';
+        invoiceModal.classList.add('hide');
+      }
+    };
+
+    if (invoiceModal) {
+      invoiceModal.addEventListener('click', (e) => {
+        if (e.target === invoiceModal) {
+          window.closeInvoiceModal();
+        }
+      });
+    }
+
+    window.printInvoice = function() {
+      const content = document.getElementById('printableInvoiceSheet').innerHTML;
+      const printWindow = window.open('', '', 'width=850,height=900');
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>HotelKu Yogyakarta - E-Invoice Official</title>
+          <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Cinzel:wght@600;700;800&display=swap" rel="stylesheet">
+          <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+          <style>
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body { font-family: 'Outfit', sans-serif; background: #fff; padding: 30px; color: #1e293b; }
+            @media print {
+              body { padding: 15mm; }
+              @page { size: A4; margin: 10mm; }
+            }
+          </style>
+        </head>
+        <body>
+          ${content}
+          <script>
+            window.onload = function() {
+              window.focus();
+              window.print();
+            };
+          <\/script>
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
+    };
   </script>
 </body>
 </html>
