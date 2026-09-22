@@ -102,5 +102,21 @@
     "password": "fira123",
     "role": "guest",
     "phone": "0812345432"
+  },
+  {
+    "id": 14,
+    "name": "Tamu Vercel Test",
+    "email": "test_resilience_1790075181021@gmail.com",
+    "password": "rahasia123",
+    "role": "guest",
+    "phone": "08123456789"
+  },
+  {
+    "id": 9999,
+    "name": "Cold Start User",
+    "email": "cold_user_1790075181057@gmail.com",
+    "password": "passcold123",
+    "role": "guest",
+    "phone": "0899999999"
   }
 ]

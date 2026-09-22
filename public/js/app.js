@@ -18,9 +18,15 @@
           if (options.headers instanceof Headers) {
             if (!options.headers.has('x-user-id')) options.headers.set('x-user-id', String(savedUser.id));
             if (!options.headers.has('x-user-email')) options.headers.set('x-user-email', String(savedUser.email));
+            if (!options.headers.has('x-user-name') && savedUser.name) options.headers.set('x-user-name', encodeURIComponent(savedUser.name));
+            if (!options.headers.has('x-user-role') && savedUser.role) options.headers.set('x-user-role', String(savedUser.role));
+            if (!options.headers.has('x-user-phone') && savedUser.phone) options.headers.set('x-user-phone', encodeURIComponent(savedUser.phone));
           } else if (typeof options.headers === 'object') {
             if (!options.headers['x-user-id']) options.headers['x-user-id'] = String(savedUser.id);
             if (!options.headers['x-user-email']) options.headers['x-user-email'] = String(savedUser.email);
+            if (!options.headers['x-user-name'] && savedUser.name) options.headers['x-user-name'] = encodeURIComponent(savedUser.name);
+            if (!options.headers['x-user-role'] && savedUser.role) options.headers['x-user-role'] = String(savedUser.role);
+            if (!options.headers['x-user-phone'] && savedUser.phone) options.headers['x-user-phone'] = encodeURIComponent(savedUser.phone);
           }
         }
       }
@@ -394,11 +400,18 @@ document.addEventListener('DOMContentLoaded', () => {
       // Send login request
       setLoading(true);
 
+      // Check local registered accounts fallback for serverless multi-instance support
+      let localAccount = null;
+      try {
+        const accounts = JSON.parse(localStorage.getItem('hotelku_registered_accounts') || '[]');
+        localAccount = accounts.find(a => a.email && a.email.toLowerCase() === email && a.password === password) || null;
+      } catch (e) {}
+
       try {
         const response = await fetch('/api/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password })
+          body: JSON.stringify({ email, password, localAccount })
         });
 
         const data = await response.json();

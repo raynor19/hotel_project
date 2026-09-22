@@ -495,6 +495,21 @@
         const data = await res.json();
 
         if (data.success) {
+          try {
+            const acc = (data.user) || {
+              id: Date.now(),
+              name,
+              email: email.toLowerCase(),
+              password,
+              phone,
+              role: 'guest'
+            };
+            let accounts = JSON.parse(localStorage.getItem('hotelku_registered_accounts') || '[]');
+            accounts = accounts.filter(a => a.email && a.email.toLowerCase() !== email.toLowerCase());
+            accounts.push(acc);
+            localStorage.setItem('hotelku_registered_accounts', JSON.stringify(accounts));
+          } catch (e) {}
+
           localStorage.removeItem('hotelku_user');
           const params = new URLSearchParams(window.location.search);
           const redirectParam = params.get('redirect');

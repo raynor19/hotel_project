@@ -13,9 +13,25 @@ app.set('trust proxy', 1);
 //  PERSISTENCE STORAGE (File JSON agar data tidak hilang saat restart)
 // ================================================================
 
-const DATA_DIR = path.join(__dirname, 'data');
+const IS_VERCEL = !!(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+const DATA_DIR = IS_VERCEL ? '/tmp/hotel_data' : path.join(__dirname, 'data');
+
 if (!fs.existsSync(DATA_DIR)) {
   try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (e) {}
+}
+
+// Seed initial files on Vercel if /tmp/hotel_data is fresh
+if (IS_VERCEL) {
+  try {
+    const seedDir = path.join(__dirname, 'data');
+    ['users.json', 'reservations.json', 'reviews.json'].forEach(f => {
+      const target = path.join(DATA_DIR, f);
+      const src = path.join(seedDir, f);
+      if (!fs.existsSync(target) && fs.existsSync(src)) {
+        try { fs.copyFileSync(src, target); } catch (e) {}
+      }
+    });
+  } catch (e) {}
 }
 
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
@@ -133,7 +149,7 @@ let hotelSettings = {
   cancellationPolicy: 'Pembatalan bebas biaya hingga 24 jam sebelum jadwal check-in. Pembatalan di bawah 24 jam dikenakan biaya 1 malam.'
 };
 
-const REVIEWS_FILE = path.join(__dirname, 'data', 'reviews.json');
+const REVIEWS_FILE = path.join(DATA_DIR, 'reviews.json');
 
 let reviews = [
   {
@@ -555,7 +571,17 @@ function apiAuth(req, res, next) {
   const rsvId = req.body?.reservationId || req.params?.id;
 
   if (fallbackUserId) {
-    const u = users.find(x => x.id === parseInt(fallbackUserId));
+    let u = users.find(x => x.id === parseInt(fallbackUserId));
+    if (!u && req.headers['x-user-name'] && fallbackEmail) {
+      u = {
+        id: parseInt(fallbackUserId),
+        name: decodeURIComponent(req.headers['x-user-name']),
+        email: String(fallbackEmail).trim().toLowerCase(),
+        role: req.headers['x-user-role'] || 'guest',
+        phone: req.headers['x-user-phone'] ? decodeURIComponent(req.headers['x-user-phone']) : ''
+      };
+      users.push(u);
+    }
     if (u) {
       req.session.user = { id: u.id, name: u.name, email: u.email, role: u.role, phone: u.phone || '' };
       return next();
@@ -715,18 +741,43 @@ app.post('/api/register', (req, res) => {
   res.json({
     success: true,
     message: `Pendaftaran akun berhasil! Silakan masuk dengan email dan password Anda.`,
+    user: {
+      id: newUser.id,
+      name: newUser.name,
+      email: newUser.email,
+      phone: newUser.phone,
+      role: newUser.role,
+      password: cleanPassword
+    },
     redirect: '/login?registered=1'
   });
 });
 
 app.post('/api/login', (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, localAccount } = req.body;
   if (!email || !password) return res.status(400).json({ success: false, message: 'Email dan password harus diisi' });
 
   const cleanEmail = email.trim().toLowerCase();
   const cleanPassword = password.trim();
 
-  const user = users.find(u => u.email.toLowerCase() === cleanEmail && u.password === cleanPassword);
+  let user = users.find(u => u.email.toLowerCase() === cleanEmail && u.password === cleanPassword);
+
+  // Fallback for Vercel Serverless: If serverless instance cold-started without the newly registered user
+  if (!user && localAccount && localAccount.email && localAccount.password) {
+    if (localAccount.email.trim().toLowerCase() === cleanEmail && localAccount.password.trim() === cleanPassword) {
+      user = {
+        id: localAccount.id || ++userCounter,
+        name: (localAccount.name || 'Tamu').trim(),
+        email: cleanEmail,
+        password: cleanPassword,
+        role: localAccount.role || 'guest',
+        phone: (localAccount.phone || '').trim()
+      };
+      users.push(user);
+      saveUsers();
+    }
+  }
+
   if (!user) return res.status(401).json({ success: false, message: 'Email atau password salah' });
 
   req.session.user = { id: user.id, name: user.name, email: user.email, role: user.role, phone: user.phone || '' };
