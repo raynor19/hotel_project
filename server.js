@@ -9,21 +9,6 @@ const PORT = process.env.PORT || 3000;
 // Trust reverse proxy (wajib untuk deploy di Render, Vercel, Railway, Heroku agar session cookie HTTPS berfungsi di HP)
 app.set('trust proxy', 1);
 
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
-app.use(session({
-  secret: 'hotelku-secret-key-2024',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    maxAge: 24 * 60 * 60 * 1000,
-    secure: 'auto',
-    sameSite: 'lax'
-  }
-}));
-
 // ================================================================
 //  PERSISTENCE STORAGE (File JSON agar data tidak hilang saat restart)
 // ================================================================
@@ -35,6 +20,68 @@ if (!fs.existsSync(DATA_DIR)) {
 
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const RESERVATIONS_FILE = path.join(DATA_DIR, 'reservations.json');
+const SESSIONS_FILE = path.join(DATA_DIR, 'sessions.json');
+
+// Persistent Session Store agar sesi login tidak hilang saat restart server
+class JsonFileStore extends session.Store {
+  constructor() {
+    super();
+    this.filePath = SESSIONS_FILE;
+    this.sessions = {};
+    this.load();
+  }
+  load() {
+    try {
+      if (fs.existsSync(this.filePath)) {
+        this.sessions = JSON.parse(fs.readFileSync(this.filePath, 'utf-8'));
+      }
+    } catch (e) {
+      this.sessions = {};
+    }
+  }
+  save() {
+    try {
+      fs.writeFileSync(this.filePath, JSON.stringify(this.sessions, null, 2), 'utf-8');
+    } catch (e) {}
+  }
+  get(sid, callback) {
+    this.load();
+    const sess = this.sessions[sid];
+    if (!sess) return callback(null, null);
+    if (sess.cookie && sess.cookie.expires && new Date(sess.cookie.expires) <= new Date()) {
+      delete this.sessions[sid];
+      this.save();
+      return callback(null, null);
+    }
+    return callback(null, sess);
+  }
+  set(sid, sess, callback) {
+    this.sessions[sid] = sess;
+    this.save();
+    if (callback) callback(null);
+  }
+  destroy(sid, callback) {
+    delete this.sessions[sid];
+    this.save();
+    if (callback) callback(null);
+  }
+}
+
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(session({
+  store: new JsonFileStore(),
+  secret: 'hotelku-secret-key-2024',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 hari aktif
+    secure: 'auto',
+    sameSite: 'lax'
+  }
+}));
 
 // Default initial users
 let users = [
@@ -86,6 +133,8 @@ let hotelSettings = {
   cancellationPolicy: 'Pembatalan bebas biaya hingga 24 jam sebelum jadwal check-in. Pembatalan di bawah 24 jam dikenakan biaya 1 malam.'
 };
 
+const REVIEWS_FILE = path.join(__dirname, 'data', 'reviews.json');
+
 let reviews = [
   {
     id: 1,
@@ -95,7 +144,7 @@ let reviews = [
     userName: 'Budi Santoso',
     rating: 5,
     comment: 'Pelayanan sangat ramah, kamar bersih dengan suasana etnik Jawa yang sangat nyaman!',
-    createdAt: '2024-12-01T10:00:00'
+    createdAt: '2026-09-15T10:00:00.000Z'
   },
   {
     id: 2,
@@ -105,9 +154,34 @@ let reviews = [
     userName: 'Sari Dewi',
     rating: 5,
     comment: 'Suasana tenang di tengah kota Jogja, fasilitas lengkap dan bersih sekali.',
-    createdAt: '2024-12-03T15:30:00'
+    createdAt: '2026-09-14T15:30:00.000Z'
   }
 ];
+
+function saveReviews() {
+  try {
+    fs.writeFileSync(REVIEWS_FILE, JSON.stringify(reviews, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('Error saving reviews.json:', err.message);
+  }
+}
+
+function loadReviews() {
+  try {
+    if (fs.existsSync(REVIEWS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(REVIEWS_FILE, 'utf-8'));
+      if (Array.isArray(data) && data.length > 0) {
+        reviews = data;
+      }
+    } else {
+      saveReviews();
+    }
+  } catch (err) {
+    console.error('Error loading reviews.json:', err.message);
+  }
+}
+
+loadReviews();
 
 let rooms = [
   {
@@ -218,10 +292,82 @@ let rooms = [
     ],
     totalUnits: 1,
     occupiedUnits: 0
+  },
+  {
+    id: 7,
+    name: 'Family Heritage Suite',
+    type: 'Family',
+    price: 1600000,
+    capacity: 5,
+    size: 58,
+    bed: '2 Queen Beds + 1 Daybed',
+    description: 'Suite keluarga luas bertema budaya keraton Yogyakarta yang hangat. Dilengkapi dua kamar tidur terhubung (connecting door), area santai keluarga, dan perlengkapan ramah anak untuk liburan keluarga sempurna.',
+    facilities: ['WiFi Gratis', 'AC', 'Smart TV 55"', 'Bathtub & Shower', 'Air Panas', 'Connecting Door', 'Kulkas & Mini Bar', 'Kids Amenity Kit', 'Balkon Pemandangan Kolam', 'Brankas'],
+    photos: [
+      'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1200&q=80'
+    ],
+    totalUnits: 3,
+    occupiedUnits: 0
+  },
+  {
+    id: 8,
+    name: 'Royal Honeymoon Villa',
+    type: 'Villa',
+    price: 2750000,
+    capacity: 2,
+    size: 72,
+    bed: '1 King Canopy Bed',
+    description: 'Villa privat bernuansa romantis tropis dengan kolam renang pribadi (private plunge pool) dan gazebo khas Jawa. Didedikasikan khusus untuk pasangan yang menginginkan momen istimewa dan privasi maksimal.',
+    facilities: ['Private Plunge Pool', 'WiFi Gratis', 'AC', 'Smart TV 60"', 'Jacuzzi Luar Ruang', 'Floating Breakfast', 'Mini Bar Premium', 'Mesin Kopi Nespresso', 'Set Romantis Honeymoon', 'Butler On-Call'],
+    photos: [
+      'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?auto=format&fit=crop&w=1200&q=80'
+    ],
+    totalUnits: 2,
+    occupiedUnits: 0
+  },
+  {
+    id: 9,
+    name: 'Grand Penthouse Suite',
+    type: 'Presidential',
+    price: 4800000,
+    capacity: 6,
+    size: 110,
+    bed: '2 Super King Beds + 2 Single Beds',
+    description: 'Penthouse termegah di lantai paling atas HotelKu dengan teras rooftop luas, panorama 360 derajat kota Yogyakarta dan Gunung Merapi. Menawarkan kemewahan tak tertandingi dengan butler 24 jam.',
+    facilities: ['Rooftop Private Terrace', 'WiFi Ultra Cepat', 'AC Central', 'Smart TV 85" 4K', 'Jacuzzi Rooftop', 'Private Mini Bar & Wine', 'Dapur Modern', 'Ruang Tamu & Makan Grand', 'VIP Butler 24 Jam', 'Airport Limousine'],
+    photos: [
+      'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80'
+    ],
+    totalUnits: 1,
+    occupiedUnits: 0
+  },
+  {
+    id: 10,
+    name: 'Deluxe Garden Twin',
+    type: 'Deluxe',
+    price: 600000,
+    capacity: 2,
+    size: 34,
+    bed: '2 Twin Beds',
+    description: 'Kamar Deluxe bernuansa asri dengan sepasang ranjang twin empuk dan akses langsung teras menghadap taman tropis. Pilihan tepat bagi teman seperjalanan atau pelancong bisnis.',
+    facilities: ['WiFi Gratis', 'AC', 'Smart TV 43"', 'Kamar Mandi Marmer', 'Air Panas', 'Teras Taman Tropis', 'Mini Bar', 'Meja Kerja & Brankas'],
+    photos: [
+      'https://images.unsplash.com/photo-1591088398332-8a7791972843?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1200&q=80',
+      'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80'
+    ],
+    totalUnits: 4,
+    occupiedUnits: 0
   }
 ];
 
-let roomCounter = 6;
+let roomCounter = 10;
 
 // Concrete room units for Receptionist Live Room Status board
 let roomUnits = [
@@ -240,7 +386,17 @@ let roomUnits = [
   { unitNumber: '402', roomId: 4, floor: 4, status: 'available', guestName: '' },
   { unitNumber: '501', roomId: 5, floor: 5, status: 'available', guestName: '' },
   { unitNumber: '502', roomId: 5, floor: 5, status: 'available', guestName: '' },
-  { unitNumber: '601', roomId: 6, floor: 6, status: 'available', guestName: '' }
+  { unitNumber: '601', roomId: 6, floor: 6, status: 'available', guestName: '' },
+  { unitNumber: '701', roomId: 7, floor: 7, status: 'available', guestName: '' },
+  { unitNumber: '702', roomId: 7, floor: 7, status: 'available', guestName: '' },
+  { unitNumber: '703', roomId: 7, floor: 7, status: 'available', guestName: '' },
+  { unitNumber: 'V01', roomId: 8, floor: 1, status: 'available', guestName: '' },
+  { unitNumber: 'V02', roomId: 8, floor: 1, status: 'available', guestName: '' },
+  { unitNumber: '801', roomId: 9, floor: 8, status: 'available', guestName: '' },
+  { unitNumber: '205', roomId: 10, floor: 2, status: 'available', guestName: '' },
+  { unitNumber: '206', roomId: 10, floor: 2, status: 'available', guestName: '' },
+  { unitNumber: '207', roomId: 10, floor: 2, status: 'available', guestName: '' },
+  { unitNumber: '208', roomId: 10, floor: 2, status: 'available', guestName: '' }
 ];
 
 let reservationCounter = 4;
@@ -391,8 +547,48 @@ function requireStaff(req, res, next) {
 }
 
 function apiAuth(req, res, next) {
-  if (!req.session.user) return res.status(401).json({ success: false, message: 'Silakan login terlebih dahulu' });
-  next();
+  if (req.session && req.session.user) return next();
+
+  // 1. Fallback dari custom headers (dikirim otomatis oleh browser melalui localStorage)
+  const fallbackUserId = req.headers['x-user-id'] || req.query.userId;
+  const fallbackEmail = req.headers['x-user-email'] || req.body?.guestEmail;
+  const rsvId = req.body?.reservationId || req.params?.id;
+
+  if (fallbackUserId) {
+    const u = users.find(x => x.id === parseInt(fallbackUserId));
+    if (u) {
+      req.session.user = { id: u.id, name: u.name, email: u.email, role: u.role, phone: u.phone || '' };
+      return next();
+    }
+  }
+
+  if (fallbackEmail) {
+    const cleanMail = String(fallbackEmail).trim().toLowerCase();
+    const u = users.find(x => x.email.toLowerCase() === cleanMail);
+    if (u) {
+      req.session.user = { id: u.id, name: u.name, email: u.email, role: u.role, phone: u.phone || '' };
+      return next();
+    }
+  }
+
+  // 2. Fallback jika aksi berkaitan dengan Reservasi (Check-in, Check-out, Beri Ulasan)
+  if (rsvId) {
+    const rsv = reservations.find(r => r.id === rsvId);
+    if (rsv) {
+      const u = users.find(x => x.id === rsv.userId);
+      if (u) {
+        req.session.user = { id: u.id, name: u.name, email: u.email, role: u.role, phone: u.phone || '' };
+        return next();
+      }
+    }
+  }
+
+  // 3. Fallback jika mengajukan reservasi baru (diperbolehkan langsung sebagai tamu)
+  if (req.path === '/api/reservations' && req.method === 'POST') {
+    return next();
+  }
+
+  return res.status(401).json({ success: false, message: 'Silakan login terlebih dahulu' });
 }
 
 function apiAdmin(req, res, next) {
@@ -515,20 +711,11 @@ app.post('/api/register', (req, res) => {
   users.push(newUser);
   saveUsers(); // Simpan permanen ke data/users.json!
 
-  // Auto-login session agar tamu bisa langsung booking kamar
-  req.session.user = {
-    id: newUser.id,
-    name: newUser.name,
-    email: newUser.email,
-    role: 'guest',
-    phone: newUser.phone
-  };
-
+  // Tamu tidak langsung login otomatis, melainkan dialihkan ke menu Masuk (login)
   res.json({
     success: true,
-    message: `Pendaftaran berhasil! Selamat datang di HotelKu, ${newUser.name}.`,
-    user: req.session.user,
-    redirect: '/rooms'
+    message: `Pendaftaran akun berhasil! Silakan masuk dengan email dan password Anda.`,
+    redirect: '/login?registered=1'
   });
 });
 
@@ -551,9 +738,36 @@ app.post('/api/logout', (req, res) => {
 });
 
 app.get('/api/me', (req, res) => {
+  if (!req.session.user) {
+    const fallbackUserId = req.headers['x-user-id'] || req.query.userId;
+    const fallbackEmail = req.headers['x-user-email'];
+    if (fallbackUserId) {
+      const u = users.find(x => x.id === parseInt(fallbackUserId));
+      if (u) req.session.user = { id: u.id, name: u.name, email: u.email, role: u.role, phone: u.phone || '' };
+    } else if (fallbackEmail) {
+      const u = users.find(x => x.email.toLowerCase() === String(fallbackEmail).trim().toLowerCase());
+      if (u) req.session.user = { id: u.id, name: u.name, email: u.email, role: u.role, phone: u.phone || '' };
+    }
+  }
+
   if (!req.session.user) return res.status(401).json({ success: false });
   const user = users.find(u => u.id === req.session.user.id);
   res.json({ success: true, user: user ? { id: user.id, name: user.name, email: user.email, role: user.role, phone: user.phone || '' } : req.session.user });
+});
+
+app.post('/api/auth/restore-session', (req, res) => {
+  const { userId, email } = req.body;
+  let user = null;
+  if (userId) user = users.find(u => u.id === parseInt(userId));
+  if (!user && email) {
+    const cleanEmail = String(email).trim().toLowerCase();
+    user = users.find(u => u.email.toLowerCase() === cleanEmail);
+  }
+  if (user) {
+    req.session.user = { id: user.id, name: user.name, email: user.email, role: user.role, phone: user.phone || '' };
+    return res.json({ success: true, message: 'Sesi dipulihkan', user: req.session.user });
+  }
+  return res.status(401).json({ success: false, message: 'User tidak ditemukan' });
 });
 
 app.get('/api/profile', apiAuth, (req, res) => {
@@ -592,10 +806,17 @@ app.put('/api/profile', apiAuth, (req, res) => {
 
 app.get('/api/rooms', (req, res) => {
   const { search, type } = req.query;
-  let result = rooms.map(r => ({
-    ...r,
-    availableUnits: r.totalUnits - r.occupiedUnits
-  }));
+  let result = rooms.map(r => {
+    const roomReviews = reviews.filter(rev => rev.roomId === r.id);
+    const reviewCount = roomReviews.length;
+    const avgRating = reviewCount > 0 ? (roomReviews.reduce((sum, rev) => sum + rev.rating, 0) / reviewCount).toFixed(1) : '5.0';
+    return {
+      ...r,
+      availableUnits: r.totalUnits - r.occupiedUnits,
+      avgRating,
+      reviewCount
+    };
+  });
 
   if (search) {
     const q = search.toLowerCase();
@@ -611,7 +832,10 @@ app.get('/api/rooms', (req, res) => {
 app.get('/api/rooms/:id', (req, res) => {
   const room = rooms.find(r => r.id === parseInt(req.params.id));
   if (!room) return res.status(404).json({ success: false, message: 'Kamar tidak ditemukan' });
-  res.json({ success: true, room: { ...room, availableUnits: room.totalUnits - room.occupiedUnits } });
+  const roomReviews = reviews.filter(rev => rev.roomId === room.id);
+  const reviewCount = roomReviews.length;
+  const avgRating = reviewCount > 0 ? (roomReviews.reduce((sum, rev) => sum + rev.rating, 0) / reviewCount).toFixed(1) : '5.0';
+  res.json({ success: true, room: { ...room, availableUnits: room.totalUnits - room.occupiedUnits, avgRating, reviewCount } });
 });
 
 // Admin: Tambah Kamar Baru
@@ -764,23 +988,64 @@ app.post('/api/reservations', apiAuth, (req, res) => {
     return res.status(400).json({ success: false, message: 'Maaf, seluruh unit kamar tipe ini sedang penuh' });
   }
 
+  // Jika belum login, otomatis buat atau tautkan akun tamu berdasarkan email
+  let rsvUserId = req.session.user ? req.session.user.id : null;
+  if (!rsvUserId) {
+    const cleanEmail = (guestEmail || '').trim().toLowerCase();
+    let existingUser = cleanEmail ? users.find(u => u.email.toLowerCase() === cleanEmail) : null;
+    if (!existingUser) {
+      existingUser = {
+        id: ++userCounter,
+        name: guestName.trim(),
+        email: cleanEmail || `tamu_${Date.now()}@hotelku.com`,
+        password: 'tamu' + Math.floor(1000 + Math.random() * 9000),
+        role: 'guest',
+        phone: (guestPhone || '').trim()
+      };
+      users.push(existingUser);
+      saveUsers();
+    }
+    rsvUserId = existingUser.id;
+    req.session.user = {
+      id: existingUser.id,
+      name: existingUser.name,
+      email: existingUser.email,
+      role: existingUser.role,
+      phone: existingUser.phone || ''
+    };
+  }
+
+  const paymentMethod = req.body.paymentMethod || 'QRIS';
+  const paymentStatus = req.body.paymentStatus || (paymentMethod === 'Bayar di Hotel' ? 'pay_at_hotel' : 'paid');
+  const paymentRef = req.body.paymentRef || ('PAY-' + Date.now().toString().slice(-6));
+  const paidAt = paymentStatus === 'paid' ? new Date().toISOString() : null;
+
   const reservation = {
     id: 'RSV-' + String(++reservationCounter).padStart(3, '0'),
     roomId: parseInt(roomId),
-    userId: req.session.user.id,
+    userId: rsvUserId,
     guestName, guestPhone,
-    guestEmail: guestEmail || req.session.user.email,
+    guestEmail: guestEmail || (req.session.user ? req.session.user.email : ''),
     checkIn, checkOut, totalNights,
     totalPrice: totalNights * room.price,
     notes: notes || '',
     status: 'pending',
+    paymentStatus,
+    paymentMethod,
+    paymentRef,
+    paidAt,
     rejectionReason: '',
     createdAt: new Date().toISOString()
   };
 
   reservations.push(reservation);
   saveReservations();
-  res.json({ success: true, message: 'Reservasi berhasil diajukan! Menunggu verifikasi staf hotel.', reservation });
+  res.json({
+    success: true,
+    message: 'Pembayaran berhasil dikonfirmasi! Permohonan reservasi Anda telah diteruskan ke Resepsionis untuk disetujui (ACC).',
+    reservation,
+    user: req.session.user
+  });
 });
 
 // List reservations (Staff sees all, Guest sees own)
@@ -814,6 +1079,8 @@ app.put('/api/reservations/:id/approve', apiStaff, (req, res) => {
   if (rsv.status !== 'pending') return res.status(400).json({ success: false, message: 'Reservasi tidak dalam status pending' });
 
   rsv.status = 'approved';
+  rsv.approvedAt = new Date().toISOString();
+  rsv.rejectionReason = '';
   saveReservations();
   res.json({ success: true, message: `Reservasi ${rsv.id} telah disetujui (ACC) oleh staf` });
 });
@@ -830,35 +1097,73 @@ app.put('/api/reservations/:id/reject', apiStaff, (req, res) => {
   res.json({ success: true, message: `Reservasi ${rsv.id} telah ditolak` });
 });
 
-// Staff: Check-in (Tamu tiba)
-app.put('/api/reservations/:id/checkin', apiStaff, (req, res) => {
+// Staff: Approve & Check-In Langsung (1 langkah oleh Resepsionis)
+app.put('/api/reservations/:id/approve-checkin', apiStaff, (req, res) => {
   const rsv = reservations.find(r => r.id === req.params.id);
   if (!rsv) return res.status(404).json({ success: false, message: 'Reservasi tidak ditemukan' });
-  if (rsv.status !== 'approved') return res.status(400).json({ success: false, message: 'Hanya reservasi yang sudah disetujui yang dapat di check-in' });
+  if (rsv.status !== 'pending' && rsv.status !== 'approved') {
+    return res.status(400).json({ success: false, message: 'Reservasi tidak dalam status yang dapat di-check in' });
+  }
 
   rsv.status = 'checked-in';
+  rsv.approvedAt = rsv.approvedAt || new Date().toISOString();
+  rsv.checkedInAt = new Date().toISOString();
+  rsv.rejectionReason = '';
 
-  // Assign an available unit of this room type
   const availableUnit = roomUnits.find(u => u.roomId === rsv.roomId && u.status === 'available');
   if (availableUnit) {
     availableUnit.status = 'occupied';
     availableUnit.guestName = rsv.guestName;
+    rsv.unitNumber = availableUnit.unitNumber;
   }
 
   const room = rooms.find(r => r.id === rsv.roomId);
   if (room) room.occupiedUnits++;
 
   saveReservations();
-  res.json({ success: true, message: `Tamu ${rsv.guestName} berhasil check-in ke kamar ${room?.name} ${availableUnit ? '(Unit ' + availableUnit.unitNumber + ')' : ''}` });
+  res.json({
+    success: true,
+    message: `Reservasi ${rsv.id} berhasil disetujui & langsung di-Check In oleh resepsionis ${availableUnit ? '(Unit ' + availableUnit.unitNumber + ')' : ''}`,
+    reservation: rsv
+  });
 });
 
-// Staff: Check-out (Tamu pulang -> kamar otomatis masuk status Cleaning)
+// HANYA STAF (Resepsionis / Admin): Check-in Tamu
+app.put('/api/reservations/:id/checkin', apiStaff, (req, res) => {
+  const rsv = reservations.find(r => r.id === req.params.id);
+  if (!rsv) return res.status(404).json({ success: false, message: 'Reservasi tidak ditemukan' });
+
+  if (rsv.status !== 'approved') return res.status(400).json({ success: false, message: 'Hanya reservasi yang sudah disetujui (ACC) yang dapat di-check in' });
+
+  rsv.status = 'checked-in';
+  rsv.checkedInAt = new Date().toISOString();
+
+  // Assign an available unit of this room type
+  const availableUnit = roomUnits.find(u => u.roomId === rsv.roomId && u.status === 'available');
+  if (availableUnit) {
+    availableUnit.status = 'occupied';
+    availableUnit.guestName = rsv.guestName;
+    rsv.unitNumber = availableUnit.unitNumber;
+  }
+
+  const room = rooms.find(r => r.id === rsv.roomId);
+  if (room) room.occupiedUnits++;
+
+  saveReservations();
+  res.json({ success: true, message: `Check-In berhasil diproses oleh Resepsionis! ${availableUnit ? '(Kamar Unit ' + availableUnit.unitNumber + ')' : ''}`, reservation: rsv });
+});
+
+// HANYA STAF (Resepsionis / Admin): Check-out Tamu
 app.put('/api/reservations/:id/checkout', apiStaff, (req, res) => {
   const rsv = reservations.find(r => r.id === req.params.id);
   if (!rsv) return res.status(404).json({ success: false, message: 'Reservasi tidak ditemukan' });
-  if (rsv.status !== 'checked-in') return res.status(400).json({ success: false, message: 'Tamu belum check-in' });
+
+  if (rsv.status !== 'checked-in' && rsv.status !== 'approved') {
+    return res.status(400).json({ success: false, message: 'Status reservasi belum check-in' });
+  }
 
   rsv.status = 'checked-out';
+  rsv.checkedOutAt = new Date().toISOString();
 
   // Mark room unit as cleaning so housekeeping can clean it
   const occupiedUnit = roomUnits.find(u => u.roomId === rsv.roomId && u.status === 'occupied' && u.guestName === rsv.guestName);
@@ -878,7 +1183,7 @@ app.put('/api/reservations/:id/checkout', apiStaff, (req, res) => {
   if (room && room.occupiedUnits > 0) room.occupiedUnits--;
 
   saveReservations();
-  res.json({ success: true, message: `Check-out tamu ${rsv.guestName} selesai! Kamar sekarang berstatus "Dibersihkan" (Cleaning).` });
+  res.json({ success: true, message: `Check-Out berhasil diproses oleh Resepsionis! Unit kamar dialihkan ke status pembersihan.`, reservation: rsv });
 });
 
 // ================================================================
@@ -920,41 +1225,8 @@ app.get('/api/notifications/guest-alerts', apiAuth, (req, res) => {
     };
   }
 
-  // 2. Check for approved reservation with Room Ready
-  const approvedRsv = userReservations.find(r => {
-    if (r.status !== 'approved') return false;
-    if (simulationSettings.forceRoomReady) return true;
-    if (r.roomReadyNotified) return true;
-
-    // Auto check if checkIn date is today
-    const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-    if (r.checkIn === todayStr) {
-      const hasAvailable = roomUnits.some(u => u.roomId === r.roomId && u.status === 'available');
-      if (hasAvailable) return true;
-    }
-    return false;
-  });
-
-  if (approvedRsv) {
-    const room = rooms.find(rm => rm.id === approvedRsv.roomId);
-    const availableUnit = roomUnits.find(u => u.roomId === approvedRsv.roomId && u.status === 'available');
-
-    const now = new Date();
-    const isEarly = now.getHours() < 14;
-
-    roomReadyAlert = {
-      reservationId: approvedRsv.id,
-      guestName: approvedRsv.guestName,
-      guestPhone: approvedRsv.guestPhone,
-      roomName: room ? room.name : 'Kamar HotelKu',
-      roomType: room ? room.type : '',
-      unitNumber: availableUnit ? availableUnit.unitNumber : '102',
-      readyTime: approvedRsv.roomReadyAt || '12:15 WIB',
-      earlyCheckInPrivilege: isEarly || approvedRsv.earlyCheckInAllowed || true,
-      notified: Boolean(approvedRsv.roomReadyNotified)
-    };
-  }
+  // 2. Room Ready Alert disabled per user request
+  roomReadyAlert = null;
 
   res.json({
     success: true,
@@ -1111,13 +1383,53 @@ app.get('/api/demo/simulation', (req, res) => {
 // ================================================================
 
 app.get('/api/reviews/room/:roomId', (req, res) => {
-  const roomReviews = reviews.filter(r => r.roomId === parseInt(req.params.roomId));
-  res.json({ success: true, reviews: roomReviews });
+  const roomId = parseInt(req.params.roomId);
+  const roomReviews = reviews.filter(r => r.roomId === roomId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const total = roomReviews.length;
+  const avgRating = total > 0 ? (roomReviews.reduce((sum, r) => sum + r.rating, 0) / total).toFixed(1) : '5.0';
+
+  res.json({
+    success: true,
+    reviews: roomReviews,
+    total,
+    avgRating,
+    currentUserId: req.session?.user ? req.session.user.id : null
+  });
 });
 
 app.get('/api/reviews/my', apiAuth, (req, res) => {
   const myReviews = reviews.filter(r => r.userId === req.session.user.id);
   res.json({ success: true, reviews: myReviews });
+});
+
+// Check if user has an unreviewed checked-out reservation for this room
+app.get('/api/reviews/can-review/:roomId', (req, res) => {
+  const roomId = parseInt(req.params.roomId);
+
+  // Auto-resolve user if missing
+  if (!req.session?.user && req.headers['x-user-id']) {
+    const u = users.find(x => x.id === parseInt(req.headers['x-user-id']));
+    if (u) req.session.user = { id: u.id, name: u.name, email: u.email, role: u.role, phone: u.phone || '' };
+  }
+
+  if (!req.session?.user) {
+    return res.json({ success: true, canReview: false, reservation: null });
+  }
+
+  const reviewedReservationIds = new Set(reviews.filter(rv => rv.userId === req.session.user.id).map(rv => rv.reservationId));
+  
+  const eligibleRsv = reservations.find(r => 
+    r.roomId === roomId && 
+    (r.userId === req.session.user.id || (req.session.user.email && r.guestEmail === req.session.user.email)) && 
+    r.status === 'checked-out' && 
+    !reviewedReservationIds.has(r.id)
+  );
+
+  res.json({
+    success: true,
+    canReview: Boolean(eligibleRsv),
+    reservation: eligibleRsv || null
+  });
 });
 
 app.post('/api/reviews', apiAuth, (req, res) => {
@@ -1127,8 +1439,14 @@ app.post('/api/reviews', apiAuth, (req, res) => {
     return res.status(400).json({ success: false, message: 'Rating dan ulasan harus diisi' });
   }
 
-  const rsv = reservations.find(r => r.id === reservationId && r.userId === req.session.user.id);
+  const rsv = reservations.find(r => r.id === reservationId);
   if (!rsv) return res.status(404).json({ success: false, message: 'Data reservasi tidak ditemukan' });
+
+  // Auto-restore session user if missing
+  if (!req.session?.user) {
+    const u = users.find(x => x.id === rsv.userId);
+    if (u) req.session.user = { id: u.id, name: u.name, email: u.email, role: u.role, phone: u.phone || '' };
+  }
 
   if (rsv.status !== 'checked-out') {
     return res.status(400).json({ success: false, message: 'Ulasan hanya dapat diberikan setelah masa menginap selesai (Checked Out)' });
@@ -1139,19 +1457,23 @@ app.post('/api/reviews', apiAuth, (req, res) => {
     return res.status(400).json({ success: false, message: 'Anda sudah memberikan ulasan untuk reservasi ini' });
   }
 
+  const reviewerUserId = (req.session?.user && req.session.user.id) || rsv.userId;
+  const reviewerUserName = (req.session?.user && req.session.user.name) || rsv.guestName || 'Tamu HotelKu';
+
   const newReview = {
     id: reviews.length + 1,
     reservationId,
     roomId: rsv.roomId,
-    userId: req.session.user.id,
-    userName: req.session.user.name,
+    userId: reviewerUserId,
+    userName: reviewerUserName,
     rating: parseInt(rating),
-    comment,
+    comment: String(comment).trim(),
     createdAt: new Date().toISOString()
   };
 
   reviews.push(newReview);
-  res.json({ success: true, message: 'Terima kasih! Ulasan Anda berhasil disimpan.', review: newReview });
+  saveReviews();
+  res.json({ success: true, message: 'Terima kasih! Ulasan Anda berhasil disimpan dan ditampilkan pada kamar ini.', review: newReview });
 });
 
 // ================================================================

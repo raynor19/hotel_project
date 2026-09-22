@@ -1,0 +1,72 @@
+[
+  {
+    "id": 1,
+    "reservationId": "RSV-000",
+    "roomId": 2,
+    "userId": 3,
+    "userName": "Budi Santoso",
+    "rating": 5,
+    "comment": "Pelayanan sangat ramah, kamar bersih dengan suasana etnik Jawa yang sangat nyaman!",
+    "createdAt": "2026-09-15T10:00:00.000Z"
+  },
+  {
+    "id": 2,
+    "reservationId": "RSV-000",
+    "roomId": 1,
+    "userId": 4,
+    "userName": "Sari Dewi",
+    "rating": 5,
+    "comment": "Suasana tenang di tengah kota Jogja, fasilitas lengkap dan bersih sekali.",
+    "createdAt": "2026-09-14T15:30:00.000Z"
+  },
+  {
+    "id": 3,
+    "reservationId": "RSV-003",
+    "roomId": 3,
+    "userId": 3,
+    "userName": "Budi Santoso",
+    "rating": 5,
+    "comment": "Pengalaman menginap di Superior Room sangat memuaskan! Kasurnya nyaman dan pelayanannya bintang lima.",
+    "createdAt": "2026-09-17T04:37:54.442Z"
+  },
+  {
+    "id": 4,
+    "reservationId": "RSV-008",
+    "roomId": 2,
+    "userId": 8,
+    "userName": "kontol",
+    "rating": 5,
+    "comment": "cakepp",
+    "createdAt": "2026-09-17T05:08:17.669Z"
+  },
+  {
+    "id": 5,
+    "reservationId": "RSV-006",
+    "roomId": 3,
+    "userId": 6,
+    "userName": "AGIL",
+    "rating": 5,
+    "comment": "sangat mantap kamarnya",
+    "createdAt": "2026-09-17T08:09:38.340Z"
+  },
+  {
+    "id": 6,
+    "reservationId": "RSV-009",
+    "roomId": 2,
+    "userId": 9,
+    "userName": "pragos",
+    "rating": 5,
+    "comment": "Pelayanan sangat luar biasa, mantap sekali!",
+    "createdAt": "2026-09-17T09:46:35.196Z"
+  },
+  {
+    "id": 7,
+    "reservationId": "RSV-010",
+    "roomId": 2,
+    "userId": 9,
+    "userName": "pragos",
+    "rating": 2,
+    "comment": "biasa",
+    "createdAt": "2026-09-17T11:05:27.275Z"
+  }
+]

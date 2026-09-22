@@ -3,54 +3,181 @@
    (Rooms, Carousel, Reservations, Admin)
    ============================================================ */
 
+// ==================== GLOBAL AUTH FETCH INTERCEPTOR ====================
+(function() {
+  if (window.__hotelkuFetchWrapped) return;
+  window.__hotelkuFetchWrapped = true;
+  const origFetch = window.fetch;
+  window.fetch = function(url, options = {}) {
+    try {
+      const savedUserStr = localStorage.getItem('hotelku_user');
+      if (savedUserStr && typeof url === 'string' && url.startsWith('/api')) {
+        const savedUser = JSON.parse(savedUserStr);
+        if (savedUser && savedUser.id) {
+          options = options || {};
+          options.headers = options.headers || {};
+          if (options.headers instanceof Headers) {
+            if (!options.headers.has('x-user-id')) options.headers.set('x-user-id', String(savedUser.id));
+            if (!options.headers.has('x-user-email')) options.headers.set('x-user-email', String(savedUser.email));
+          } else if (typeof options.headers === 'object') {
+            if (!options.headers['x-user-id']) options.headers['x-user-id'] = String(savedUser.id);
+            if (!options.headers['x-user-email']) options.headers['x-user-email'] = String(savedUser.email);
+          }
+        }
+      }
+    } catch(e) {}
+    return origFetch.apply(this, [url, options]);
+  };
+})();
+
 // ==================== REALTIME CLOCK & DATE ====================
 function initRealtimeClock() {
-  const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-  const months = [
-    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-  ];
+  const tzConfig = {
+    id: { timeZone: 'Asia/Jakarta', tzCode: 'WIB' },
+    en: { timeZone: 'Europe/London', tzCode: 'BST' },
+    ja: { timeZone: 'Asia/Tokyo', tzCode: 'JST' },
+    ar: { timeZone: 'Asia/Riyadh', tzCode: 'AST' },
+    zh: { timeZone: 'Asia/Shanghai', tzCode: 'CST' }
+  };
+
+  const weekIndexMap = { 'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6 };
+
+  const days = {
+    id: ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'],
+    en: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+    ar: ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'],
+    ja: ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'],
+    zh: ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
+  };
+
+  const months = {
+    id: ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'],
+    en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+    ar: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
+    ja: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+    zh: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
+  };
 
   function updateClock() {
+    const lang = (window.getCurrentLanguage && window.getCurrentLanguage()) || localStorage.getItem('hotelku_lang') || 'id';
+    const cfg = tzConfig[lang] || tzConfig.id;
     const now = new Date();
-    const dayName = days[now.getDay()];
-    const dateNum = now.getDate();
-    const monthName = months[now.getMonth()];
-    const year = now.getFullYear();
 
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
+    let parts = {};
+    try {
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: cfg.timeZone,
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        weekday: 'short',
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric',
+        hour12: false
+      });
+      formatter.formatToParts(now).forEach(p => { parts[p.type] = p.value; });
+    } catch (e) {
+      parts = {
+        year: String(now.getFullYear()),
+        month: String(now.getMonth() + 1),
+        day: String(now.getDate()),
+        weekday: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][now.getDay()],
+        hour: String(now.getHours()),
+        minute: String(now.getMinutes()),
+        second: String(now.getSeconds())
+      };
+    }
 
-    const dateFormatted = `${dayName}, ${dateNum} ${monthName} ${year}`;
-    const timeFormatted = `${hours}:${minutes}:${seconds} WIB`;
-    const fullFormatted = `${dayName}, ${dateNum} ${monthName} ${year} • ${timeFormatted}`;
+    const year = parseInt(parts.year, 10);
+    const monthIdx = parseInt(parts.month, 10) - 1;
+    const dateNum = parseInt(parts.day, 10);
+    const dayIdx = weekIndexMap[parts.weekday] !== undefined ? weekIndexMap[parts.weekday] : 0;
+
+    let h24 = parseInt(parts.hour, 10);
+    if (h24 === 24) h24 = 0;
+    const hours24 = String(h24).padStart(2, '0');
+    const minutes = String(parts.minute || '00').padStart(2, '0');
+    const seconds = String(parts.second || '00').padStart(2, '0');
+    const h12 = h24 % 12 || 12;
+    const hours12 = String(h12).padStart(2, '0');
+
+    const dayList = days[lang] || days.id;
+    const monthList = months[lang] || months.id;
+    const dayName = dayList[dayIdx];
+    const monthName = monthList[monthIdx];
+
+    let dateFormatted = '';
+    let timeFormatted = '';
+    let yearFormatted = String(year);
+
+    if (lang === 'en') {
+      dateFormatted = `${dayName}, ${monthName} ${dateNum}, ${year}`;
+      timeFormatted = `${hours12}:${minutes}:${seconds} ${h24 >= 12 ? 'PM' : 'AM'} ${cfg.tzCode}`;
+    } else if (lang === 'ja') {
+      yearFormatted = `${year}年`;
+      dateFormatted = `${year}年${monthIdx + 1}月${dateNum}日 (${dayName})`;
+      timeFormatted = `${hours24}:${minutes}:${seconds} ${cfg.tzCode}`;
+    } else if (lang === 'zh') {
+      yearFormatted = `${year}年`;
+      const period = h24 < 6 ? '凌晨' : h24 < 12 ? '上午' : h24 < 18 ? '下午' : '晚上';
+      dateFormatted = `${year}年${monthIdx + 1}月${dateNum}日 ${dayName}`;
+      timeFormatted = `${period} ${hours12}:${minutes}:${seconds} ${cfg.tzCode}`;
+    } else if (lang === 'ar') {
+      const ampm = h24 >= 12 ? 'م' : 'ص';
+      dateFormatted = `${dayName}، ${dateNum} ${monthName} ${year}`;
+      timeFormatted = `${hours12}:${minutes}:${seconds} ${ampm} ${cfg.tzCode}`;
+    } else {
+      // Bahasa Indonesia (default Jakarta WIB)
+      dateFormatted = `${dayName}, ${dateNum} ${monthName} ${year}`;
+      timeFormatted = `${hours24}:${minutes}:${seconds} ${cfg.tzCode}`;
+    }
+
+    const fullFormatted = `${dateFormatted} • ${timeFormatted}`;
+
+    document.querySelectorAll('.topbar-clock-badge').forEach(el => {
+      el.classList.add('notranslate');
+      el.setAttribute('dir', 'ltr');
+    });
 
     document.querySelectorAll('.realtime-full-datetime').forEach(el => {
+      el.classList.add('notranslate');
+      el.setAttribute('dir', 'ltr');
       el.textContent = fullFormatted;
     });
     document.querySelectorAll('.realtime-date').forEach(el => {
+      el.classList.add('notranslate');
       el.textContent = dateFormatted;
     });
     document.querySelectorAll('.realtime-clock').forEach(el => {
+      el.classList.add('notranslate');
+      el.setAttribute('dir', 'ltr');
       el.textContent = timeFormatted;
     });
     document.querySelectorAll('.realtime-day').forEach(el => {
+      el.classList.add('notranslate');
       el.textContent = dayName;
     });
     document.querySelectorAll('.realtime-daynum').forEach(el => {
-      el.textContent = dateNum;
+      el.classList.add('notranslate');
+      el.textContent = String(dateNum);
     });
     document.querySelectorAll('.realtime-month').forEach(el => {
+      el.classList.add('notranslate');
       el.textContent = monthName;
     });
     document.querySelectorAll('.realtime-year').forEach(el => {
-      el.textContent = year;
+      el.classList.add('notranslate');
+      el.textContent = yearFormatted;
     });
   }
 
+  window.updateRealtimeClock = updateClock;
   updateClock();
-  setInterval(updateClock, 1000);
+  if (!window.__hotelkuClockInterval) {
+    window.__hotelkuClockInterval = setInterval(updateClock, 1000);
+  }
+  window.addEventListener('languageChanged', updateClock);
 }
 
 if (document.readyState === 'loading') {
@@ -68,20 +195,52 @@ function formatCurrency(amount) {
 function formatDate(dateStr) {
   if (!dateStr) return '-';
   const d = new Date(dateStr);
-  return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+  if (isNaN(d.getTime())) return dateStr;
+  const lang = (window.getCurrentLanguage && window.getCurrentLanguage()) || localStorage.getItem('hotelku_lang') || 'id';
+
+  if (lang === 'en') {
+    return d.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+  } else if (lang === 'ja' || lang === 'zh') {
+    return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+  } else if (lang === 'ar') {
+    const monthsAr = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+    return `${d.getDate()} ${monthsAr[d.getMonth()]} ${d.getFullYear()}`;
+  } else {
+    return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
 }
 
 function getStatusBadge(status) {
   const map = {
-    'pending': ['Menunggu', 'status-pending', 'fa-clock'],
-    'approved': ['Disetujui', 'status-approved', 'fa-check-circle'],
+    'pending': ['Menunggu Konfirmasi', 'status-pending', 'fa-clock'],
+    'approved': ['Pesanan Dikonfirmasi', 'status-approved', 'fa-check-circle'],
     'rejected': ['Ditolak', 'status-rejected', 'fa-times-circle'],
-    'checked-in': ['Checked In', 'status-checked-in', 'fa-sign-in-alt'],
+    'checked-in': ['Sedang Menginap', 'status-checked-in', 'fa-door-open'],
     'checked-out': ['Checked Out', 'status-checked-out', 'fa-sign-out-alt']
   };
   const [label, cls, icon] = map[status] || ['Unknown', '', 'fa-question'];
   return `<span class="status-badge ${cls}"><i class="fas ${icon}"></i> ${label}</span>`;
 }
+
+function getPaymentBadge(rsv) {
+  if (!rsv) return '';
+  const methodNames = {
+    'qris': 'QRIS',
+    'va': 'Virtual Account',
+    'cc': 'Kartu Kredit / Debit',
+    'hotel': 'Bayar di Hotel'
+  };
+  const m = (rsv.paymentMethod || 'qris').toLowerCase();
+  const label = methodNames[m] || (rsv.paymentMethod ? rsv.paymentMethod.toUpperCase() : 'QRIS');
+  if (rsv.paymentStatus === 'paid' || (!rsv.paymentStatus && m !== 'hotel')) {
+    return `<span class="status-badge" style="background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;font-size:0.75rem;font-weight:700;"><i class="fas fa-check-circle"></i> LUNAS (${label}) · ${rsv.paymentRef || ''}</span>`;
+  } else if (rsv.paymentStatus === 'pay_at_hotel' || m === 'hotel') {
+    return `<span class="status-badge" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;font-size:0.75rem;font-weight:700;"><i class="fas fa-hotel"></i> Bayar di Resepsionis</span>`;
+  }
+  return `<span class="status-badge" style="background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;font-size:0.75rem;"><i class="fas fa-credit-card"></i> ${label}</span>`;
+}
+window.getPaymentBadge = getPaymentBadge;
+
 
 function showToast(message, type = 'success') {
   const existing = document.querySelector('.toast');
@@ -89,9 +248,27 @@ function showToast(message, type = 'success') {
 
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
-  toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i> ${message}`;
+
+  const isLoginMsg = message && message.toLowerCase().includes('login');
+  if (isLoginMsg) {
+    const redirectUrl = encodeURIComponent(window.location.pathname + window.location.search);
+    toast.innerHTML = `
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <i class="fas fa-exclamation-circle"></i>
+          <span>${message}</span>
+        </div>
+        <a href="/login?redirect=${redirectUrl}" style="background: rgba(255,255,255,0.25); color: #fff; padding: 4px 10px; border-radius: 4px; text-decoration: none; font-weight: 700; font-size: 0.8rem; white-space: nowrap;">
+          Masuk Akun →
+        </a>
+      </div>
+    `;
+  } else {
+    toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i> ${message}`;
+  }
+
   document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 4000);
+  setTimeout(() => toast.remove(), isLoginMsg ? 6000 : 4000);
 }
 
 function showModal(title, bodyHTML, onConfirm) {
@@ -118,11 +295,34 @@ function showModal(title, bodyHTML, onConfirm) {
 
 async function initNavbar() {
   try {
-    const res = await fetch('/api/me');
-    const data = await res.json();
+    let res = await fetch('/api/me');
+    let data = await res.json().catch(() => ({ success: false }));
+
+    // Jika sesi server terputus/kosong tapi di localStorage ada user yang tersimpan, pulihkan otomatis
+    if (!data.success) {
+      const savedUserStr = localStorage.getItem('hotelku_user');
+      if (savedUserStr) {
+        try {
+          const savedUser = JSON.parse(savedUserStr);
+          if (savedUser && (savedUser.id || savedUser.email)) {
+            const restoreRes = await fetch('/api/auth/restore-session', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId: savedUser.id, email: savedUser.email })
+            });
+            const restoreData = await restoreRes.json().catch(() => ({ success: false }));
+            if (restoreData.success) {
+              data = restoreData;
+            }
+          }
+        } catch(e) {}
+      }
+    }
 
     if (data.success) {
       const user = data.user;
+      localStorage.setItem('hotelku_user', JSON.stringify(user));
+
       // Show/hide elements based on role
       document.querySelectorAll('.logged-out-only').forEach(el => el.classList.add('hide'));
       document.querySelectorAll('.logged-in-only').forEach(el => el.classList.remove('hide'));
@@ -144,10 +344,11 @@ async function initNavbar() {
       // Logout
       const logoutBtn = document.getElementById('navLogout');
       if (logoutBtn) {
-        logoutBtn.addEventListener('click', async () => {
+        logoutBtn.onclick = async () => {
+          localStorage.removeItem('hotelku_user');
           await fetch('/api/logout', { method: 'POST' });
           window.location.href = '/login';
-        });
+        };
       }
     } else {
       document.querySelectorAll('.logged-in-only').forEach(el => el.classList.add('hide'));
@@ -398,6 +599,17 @@ async function initRoomsPage() {
   const typeFilter = document.getElementById('typeFilter');
   if (!container) return;
 
+  // Sync dates from URL query or localStorage
+  const urlParams = new URLSearchParams(window.location.search);
+  const qCi = urlParams.get('checkin') || urlParams.get('checkIn');
+  const qCo = urlParams.get('checkout') || urlParams.get('checkOut');
+  if (qCi) localStorage.setItem('hotelku_checkin', qCi);
+  if (qCo) localStorage.setItem('hotelku_checkout', qCo);
+
+  const activeCi = qCi || localStorage.getItem('hotelku_checkin');
+  const activeCo = qCo || localStorage.getItem('hotelku_checkout');
+  const roomQuery = (activeCi && activeCo) ? `?checkin=${encodeURIComponent(activeCi)}&checkout=${encodeURIComponent(activeCo)}` : '';
+
   let allRooms = [];
 
   async function loadRooms() {
@@ -439,13 +651,17 @@ async function initRoomsPage() {
             ` : ''}
             <span class="photo-count"><i class="fas fa-camera"></i> <span class="photo-idx-text">1</span>/${photos.length}</span>
           </div>
-          <a href="/rooms/${room.id}" class="room-card-link">
+          <a href="/rooms/${room.id}${roomQuery}" class="room-card-link">
             <div class="card-body">
               <h3>${room.name}</h3>
               <div class="room-meta">
                 <span><i class="fas fa-users"></i> ${room.capacity} Tamu</span>
                 <span><i class="fas fa-expand-arrows-alt"></i> ${room.size} m²</span>
                 <span><i class="fas fa-bed"></i> ${room.bed}</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px; margin: 4px 0 10px; font-size: 0.8rem;">
+                <span style="color: #f39c12; font-weight: 700;"><i class="fas fa-star"></i> ${room.avgRating || '5.0'}</span>
+                <span style="color: #888; font-size: 0.75rem;">(${room.reviewCount || 0} ulasan tamu)</span>
               </div>
               <div class="card-price">
                 <div>
@@ -590,6 +806,25 @@ async function initRoomDetailPage() {
 
   const room = data.room;
 
+  // Determine initial check-in & check-out dates from URL query or localStorage
+  const urlParams = new URLSearchParams(window.location.search);
+  const todayStr = new Date().toISOString().split('T')[0];
+  const defaultTmr = new Date(); defaultTmr.setDate(defaultTmr.getDate() + 1);
+  const defaultTmrStr = defaultTmr.toISOString().split('T')[0];
+
+  let initCi = urlParams.get('checkin') || urlParams.get('checkIn') || localStorage.getItem('hotelku_checkin') || todayStr;
+  let initCo = urlParams.get('checkout') || urlParams.get('checkOut') || localStorage.getItem('hotelku_checkout') || defaultTmrStr;
+
+  if (initCi < todayStr) initCi = todayStr;
+  if (initCo <= initCi) {
+    const nextDay = new Date(initCi);
+    nextDay.setDate(nextDay.getDate() + 1);
+    initCo = nextDay.toISOString().split('T')[0];
+  }
+
+  localStorage.setItem('hotelku_checkin', initCi);
+  localStorage.setItem('hotelku_checkout', initCo);
+
   detailContainer.innerHTML = `
     <div id="carouselMount"></div>
     <div class="room-detail-grid">
@@ -617,15 +852,15 @@ async function initRoomDetailPage() {
         </div>
         <div class="sidebar-form">
           <label>Check-in</label>
-          <input type="date" id="sidebarCheckin">
+          <input type="date" id="sidebarCheckin" min="${todayStr}" value="${initCi}">
           <label>Check-out</label>
-          <input type="date" id="sidebarCheckout">
+          <input type="date" id="sidebarCheckout" value="${initCo}">
           <div class="cost-summary" id="costSummary" style="display:none;">
             <div class="cost-row"><span id="costNights">0 malam</span><span id="costAmount">Rp 0</span></div>
             <div class="cost-row total"><span>Total</span><span id="costTotal">Rp 0</span></div>
           </div>
         </div>
-        <a href="/reservation/${room.id}" class="btn-reserve ${room.availableUnits <= 0 ? 'disabled' : ''}" id="btnReserve">
+        <a href="/reservation/${room.id}?checkIn=${encodeURIComponent(initCi)}&checkOut=${encodeURIComponent(initCo)}" class="btn-reserve ${room.availableUnits <= 0 ? 'disabled' : ''}" id="btnReserve">
           <i class="fas fa-calendar-plus"></i> Ajukan Reservasi
         </a>
       </div>
@@ -639,12 +874,16 @@ async function initRoomDetailPage() {
   const ciInput = document.getElementById('sidebarCheckin');
   const coInput = document.getElementById('sidebarCheckout');
   const costSummary = document.getElementById('costSummary');
-  const today = new Date().toISOString().split('T')[0];
-  ciInput.min = today;
-  ciInput.value = today;
-  const tmr = new Date(); tmr.setDate(tmr.getDate() + 1);
-  coInput.min = tmr.toISOString().split('T')[0];
-  coInput.value = tmr.toISOString().split('T')[0];
+  const btnReserve = document.getElementById('btnReserve');
+
+  const minInitCo = new Date(ciInput.value); minInitCo.setDate(minInitCo.getDate() + 1);
+  coInput.min = minInitCo.toISOString().split('T')[0];
+
+  function syncReserveLink() {
+    if (btnReserve && room.availableUnits > 0) {
+      btnReserve.href = `/reservation/${room.id}?checkIn=${encodeURIComponent(ciInput.value)}&checkOut=${encodeURIComponent(coInput.value)}`;
+    }
+  }
 
   function calcCost() {
     if (ciInput.value && coInput.value) {
@@ -656,15 +895,22 @@ async function initRoomDetailPage() {
         costSummary.style.display = 'block';
       }
     }
+    syncReserveLink();
   }
 
   ciInput.addEventListener('change', () => {
     const minCo = new Date(ciInput.value); minCo.setDate(minCo.getDate() + 1);
     coInput.min = minCo.toISOString().split('T')[0];
     if (new Date(coInput.value) <= new Date(ciInput.value)) coInput.value = minCo.toISOString().split('T')[0];
+    localStorage.setItem('hotelku_checkin', ciInput.value);
+    localStorage.setItem('hotelku_checkout', coInput.value);
     calcCost();
   });
-  coInput.addEventListener('change', calcCost);
+  coInput.addEventListener('change', () => {
+    localStorage.setItem('hotelku_checkin', ciInput.value);
+    localStorage.setItem('hotelku_checkout', coInput.value);
+    calcCost();
+  });
   calcCost();
 
   if (room.availableUnits <= 0) {
@@ -679,57 +925,234 @@ async function initReservationForm() {
   const formContainer = document.getElementById('reservationContent');
   if (!formContainer) return;
 
-  // Check login
-  const me = await fetch('/api/me').then(r => r.json());
-  if (!me.success) { window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname); return; }
+  // Check login status (non-blocking, coba pulihkan dari localStorage jika ada)
+  let currentUser = null;
+  try {
+    let me = await fetch('/api/me').then(r => r.json()).catch(() => ({ success: false }));
+    if (!me.success) {
+      const savedUserStr = localStorage.getItem('hotelku_user');
+      if (savedUserStr) {
+        const savedUser = JSON.parse(savedUserStr);
+        if (savedUser && (savedUser.id || savedUser.email)) {
+          const restoreRes = await fetch('/api/auth/restore-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: savedUser.id, email: savedUser.email })
+          }).then(r => r.json()).catch(() => ({ success: false }));
+          if (restoreRes.success) me = restoreRes;
+        }
+      }
+    }
+    if (me.success) currentUser = me.user;
+  } catch(e) {}
 
   const roomRes = await fetch(`/api/rooms/${roomId}`);
   const roomData = await roomRes.json();
   if (!roomData.success) { formContainer.innerHTML = '<div class="empty-state"><h3>Kamar tidak ditemukan</h3></div>'; return; }
 
   const room = roomData.room;
-  const today = new Date().toISOString().split('T')[0];
-  const tmr = new Date(); tmr.setDate(tmr.getDate() + 1);
+  const todayStr = new Date().toISOString().split('T')[0];
+  const defaultTmr = new Date(); defaultTmr.setDate(defaultTmr.getDate() + 1);
+  const defaultTmrStr = defaultTmr.toISOString().split('T')[0];
+
+  const urlParams = new URLSearchParams(window.location.search);
+  let initCi = urlParams.get('checkIn') || urlParams.get('checkin') || localStorage.getItem('hotelku_checkin') || todayStr;
+  let initCo = urlParams.get('checkOut') || urlParams.get('checkout') || localStorage.getItem('hotelku_checkout') || defaultTmrStr;
+
+  if (initCi < todayStr) initCi = todayStr;
+  if (initCo <= initCi) {
+    const nextDay = new Date(initCi);
+    nextDay.setDate(nextDay.getDate() + 1);
+    initCo = nextDay.toISOString().split('T')[0];
+  }
+
+  localStorage.setItem('hotelku_checkin', initCi);
+  localStorage.setItem('hotelku_checkout', initCo);
+
+  const minCoObj = new Date(initCi);
+  minCoObj.setDate(minCoObj.getDate() + 1);
+  const minCoStr = minCoObj.toISOString().split('T')[0];
+
+  const defaultName = currentUser ? currentUser.name : '';
+  const defaultEmail = currentUser ? currentUser.email : '';
+  const defaultPhone = currentUser ? (currentUser.phone || '') : '';
 
   formContainer.innerHTML = `
-    <div class="reservation-layout">
-      <div class="form-card">
-        <h2><i class="fas fa-calendar-plus" style="color:#C4A265;margin-right:10px;"></i>Form Reservasi</h2>
-        <form id="rsvForm">
-          <div class="form-row">
-            <div class="form-group">
-              <label><i class="fas fa-calendar-check"></i> Tanggal Check-in</label>
-              <input type="date" id="rsvCheckin" name="checkIn" min="${today}" value="${today}" required>
-            </div>
-            <div class="form-group">
-              <label><i class="fas fa-calendar-minus"></i> Tanggal Check-out</label>
-              <input type="date" id="rsvCheckout" name="checkOut" min="${tmr.toISOString().split('T')[0]}" value="${tmr.toISOString().split('T')[0]}" required>
-            </div>
-          </div>
-          <div class="form-group">
-            <label><i class="fas fa-user"></i> Nama Tamu yang Menginap</label>
-            <input type="text" id="rsvName" name="guestName" value="${me.user.name}" placeholder="Masukkan nama lengkap tamu" required>
-            <small style="display:block;margin-top:4px;font-size:0.75rem;color:#777;">*Bisa diubah jika Anda memesan kamar atas nama orang lain (keluarga / rekan)</small>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label><i class="fas fa-phone"></i> No. Telepon</label>
-              <input type="tel" id="rsvPhone" name="guestPhone" placeholder="081234567890" required>
-            </div>
-            <div class="form-group">
-              <label><i class="fas fa-envelope"></i> Email</label>
-              <input type="email" id="rsvEmail" name="guestEmail" value="${me.user.email}" placeholder="email@example.com" required>
-            </div>
-          </div>
-          <div class="form-group">
-            <label><i class="fas fa-sticky-note"></i> Catatan (Opsional)</label>
-            <textarea id="rsvNotes" name="notes" placeholder="Permintaan khusus, misalnya: minta kamar lantai atas"></textarea>
-          </div>
-          <button type="submit" class="btn-reserve" id="btnSubmitRsv">
-            <i class="fas fa-paper-plane"></i> Kirim Pengajuan Reservasi
-          </button>
-        </form>
+    <!-- Checkout Steps Indicator -->
+    <div class="checkout-steps-bar">
+      <div class="checkout-step active" id="stepIndicator1">
+        <span class="step-num">1</span>
+        <span class="step-label">Isi Data Pemesanan</span>
       </div>
+      <div class="step-divider" id="stepDivider1"></div>
+      <div class="checkout-step" id="stepIndicator2">
+        <span class="step-num">2</span>
+        <span class="step-label">Pembayaran (Payment)</span>
+      </div>
+      <div class="step-divider" id="stepDivider2"></div>
+      <div class="checkout-step" id="stepIndicator3">
+        <span class="step-num">3</span>
+        <span class="step-label">Persetujuan Resepsionis</span>
+      </div>
+    </div>
+
+    <div class="reservation-layout">
+      <!-- Left: Dynamic Steps Container -->
+      <div class="form-card" id="mainCheckoutCard">
+        
+        <!-- STEP 1: Form Data Tamu -->
+        <div id="step1DataContainer">
+          <h2><i class="fas fa-user-edit" style="color:#C4A265;margin-right:10px;"></i>Langkah 1: Data Tamu & Jadwal Menginap</h2>
+          <form id="rsvStep1Form">
+            <div class="form-row">
+              <div class="form-group">
+                <label><i class="fas fa-calendar-check"></i> Tanggal Check-in</label>
+                <input type="date" id="rsvCheckin" name="checkIn" min="${todayStr}" value="${initCi}" required>
+              </div>
+              <div class="form-group">
+                <label><i class="fas fa-calendar-minus"></i> Tanggal Check-out</label>
+                <input type="date" id="rsvCheckout" name="checkOut" min="${minCoStr}" value="${initCo}" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label><i class="fas fa-user"></i> Nama Tamu yang Menginap</label>
+              <input type="text" id="rsvName" name="guestName" value="${defaultName}" placeholder="Masukkan nama lengkap Anda" required>
+              <small style="display:block;margin-top:4px;font-size:0.75rem;color:#777;">*Bisa diubah jika Anda memesan kamar atas nama orang lain (keluarga / rekan)</small>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label><i class="fas fa-phone"></i> No. Telepon</label>
+                <input type="tel" id="rsvPhone" name="guestPhone" value="${defaultPhone}" placeholder="081234567890" required>
+              </div>
+              <div class="form-group">
+                <label><i class="fas fa-envelope"></i> Email</label>
+                <input type="email" id="rsvEmail" name="guestEmail" value="${defaultEmail}" placeholder="email@example.com" required>
+              </div>
+            </div>
+            <div class="form-group">
+              <label><i class="fas fa-sticky-note"></i> Catatan Khusus (Opsional)</label>
+              <textarea id="rsvNotes" name="notes" placeholder="Permintaan khusus, misalnya: minta kamar lantai atas atau non-smoking room"></textarea>
+            </div>
+            <button type="submit" class="btn-reserve" id="btnGoToPayment" style="background: linear-gradient(135deg, #C4A265, #A88344); color: #fff; font-weight: 700; border: none; padding: 14px; border-radius: 8px; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; box-shadow: 0 4px 15px rgba(196,162,101,0.35);">
+              Lanjut ke Pembayaran <i class="fas fa-arrow-right"></i>
+            </button>
+          </form>
+        </div>
+
+        <!-- STEP 2: Payment Container (Initially Hidden) -->
+        <div id="step2PaymentContainer" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="margin: 0;"><i class="fas fa-credit-card" style="color:#C4A265;margin-right:10px;"></i>Langkah 2: Pilih Metode Pembayaran</h2>
+            <span style="font-size: 0.78rem; background: #ecfdf5; color: #065f46; padding: 4px 10px; border-radius: 20px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+              <i class="fas fa-shield-alt"></i> Pembayaran Aman
+            </span>
+          </div>
+
+          <!-- Total Bill Callout Banner -->
+          <div style="background: #fdfbf7; border: 1.5px solid #ebdcc5; border-radius: 10px; padding: 16px 20px; margin-bottom: 22px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div>
+              <span style="font-size: 0.78rem; color: #8A6D3B; font-weight: 700; text-transform: uppercase;">Total yang Harus Dibayar</span>
+              <div style="font-size: 1.5rem; font-weight: 800; color: #1a1a1a; font-family: 'Playfair Display', serif;" id="payTotalBanner">${formatCurrency(room.price)}</div>
+            </div>
+            <div style="text-align: right; font-size: 0.8rem; color: #6b7280;">
+              <div><strong id="payNightsBanner">1 malam</strong> menginap</div>
+              <div style="font-size: 0.75rem; color: #9ca3af;">Sudah termasuk pajak & layanan</div>
+            </div>
+          </div>
+
+          <!-- Pilihan Metode Pembayaran -->
+          <div class="payment-methods-list" id="paymentMethodsList">
+            <!-- 1. QRIS -->
+            <div class="payment-method-item selected" data-method="QRIS">
+              <div class="pm-left">
+                <div class="pm-radio"></div>
+                <div class="pm-info">
+                  <h4>QRIS (Instant Pay / Semua E-Wallet)</h4>
+                  <p>BCA Mobile, GoPay, OVO, DANA, ShopeePay, Livin'</p>
+                </div>
+              </div>
+              <div class="pm-icons">
+                <span class="pm-badge" style="background:#fee2e2;color:#991b1b;"><i class="fas fa-qrcode"></i> QRIS</span>
+              </div>
+            </div>
+
+            <!-- 2. Virtual Account Bank -->
+            <div class="payment-method-item" data-method="BCA Virtual Account">
+              <div class="pm-left">
+                <div class="pm-radio"></div>
+                <div class="pm-info">
+                  <h4>BCA Virtual Account</h4>
+                  <p>Verifikasi instan 24 jam bebas biaya admin</p>
+                </div>
+              </div>
+              <div class="pm-icons">
+                <span class="pm-badge" style="background:#eff6ff;color:#1e40af;"><i class="fas fa-university"></i> BCA VA</span>
+              </div>
+            </div>
+
+            <!-- 3. Mandiri Virtual Account -->
+            <div class="payment-method-item" data-method="Mandiri Virtual Account">
+              <div class="pm-left">
+                <div class="pm-radio"></div>
+                <div class="pm-info">
+                  <h4>Mandiri Virtual Account</h4>
+                  <p>Transfer via Livin' by Mandiri atau ATM</p>
+                </div>
+              </div>
+              <div class="pm-icons">
+                <span class="pm-badge" style="background:#fef3c7;color:#92400e;"><i class="fas fa-university"></i> Mandiri</span>
+              </div>
+            </div>
+
+            <!-- 4. Kartu Kredit / Debit -->
+            <div class="payment-method-item" data-method="Kartu Kredit / Debit">
+              <div class="pm-left">
+                <div class="pm-radio"></div>
+                <div class="pm-info">
+                  <h4>Kartu Kredit / Debit Online</h4>
+                  <p>Visa, Mastercard, JCB, American Express</p>
+                </div>
+              </div>
+              <div class="pm-icons">
+                <span class="pm-badge"><i class="fab fa-cc-visa"></i> <i class="fab fa-cc-mastercard"></i></span>
+              </div>
+            </div>
+
+            <!-- 5. Bayar di Hotel -->
+            <div class="payment-method-item" data-method="Bayar di Hotel">
+              <div class="pm-left">
+                <div class="pm-radio"></div>
+                <div class="pm-info">
+                  <h4>Bayar di Hotel (Front Desk)</h4>
+                  <p>Bayar tunai atau EDC saat Anda check-in di hotel</p>
+                </div>
+              </div>
+              <div class="pm-icons">
+                <span class="pm-badge" style="background:#f3f4f6;color:#374151;"><i class="fas fa-hotel"></i> Resepsionis</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dynamic Payment Details Box -->
+          <div class="payment-details-box" id="paymentDetailsBox">
+            <!-- Box Content populated by JS based on selection -->
+          </div>
+
+          <!-- Action Buttons (Centered) -->
+          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; margin-top: 28px; width: 100%; text-align: center;">
+            <button type="button" id="btnConfirmPayment" style="background: linear-gradient(135deg, #059669, #10b981); color: #fff; font-weight: 700; border: none; padding: 15px 36px; border-radius: 8px; font-size: 1.05rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: 100%; max-width: 440px; margin: 0 auto; box-shadow: 0 4px 15px rgba(16,185,129,0.35); transition: all 0.2s ease;">
+              <i class="fas fa-check-circle" style="font-size: 1.15rem;"></i>
+              <span>Konfirmasi & Bayar Sekarang</span>
+            </button>
+            <button type="button" class="btn btn-outline" id="btnBackToStep1" style="background: transparent; border: none; color: #6b7280; font-size: 0.88rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 14px; text-decoration: underline; margin: 0 auto;">
+              <i class="fas fa-arrow-left"></i> Kembali & Ubah Data Pemesanan
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right: Sticky Room Summary -->
       <div>
         <div class="room-summary-card">
           <div class="summary-img"><img src="${room.photos[0]}" alt="${room.name}"></div>
@@ -744,6 +1167,18 @@ async function initReservationForm() {
               <div class="cost-row"><span id="rsvNightsLabel">1 malam</span><span id="rsvSubtotal">${formatCurrency(room.price)}</span></div>
               <div class="cost-row total"><span>Total Biaya</span><span id="rsvTotal">${formatCurrency(room.price)}</span></div>
             </div>
+            
+            <div style="margin-top: 18px; padding-top: 14px; border-top: 1px dashed #e5e7eb; font-size: 0.78rem; color: #6b7280; line-height: 1.5;">
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px; color:#059669;">
+                <i class="fas fa-check-circle"></i> <span>Konfirmasi Instan ke Resepsionis</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                <i class="fas fa-file-invoice" style="color:#C4A265;"></i> <span>E-Invoice Resmi Terbit Setelah ACC</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-door-open" style="color:#2563eb;"></i> <span>Notifikasi Kamar Ready Saat Bersih</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -752,14 +1187,24 @@ async function initReservationForm() {
 
   const ciInput = document.getElementById('rsvCheckin');
   const coInput = document.getElementById('rsvCheckout');
+  let currentTotalAmount = room.price;
+  let currentNights = 1;
+  let selectedMethod = 'QRIS';
 
   function updateCost() {
     if (ciInput.value && coInput.value) {
       const nights = Math.ceil((new Date(coInput.value) - new Date(ciInput.value)) / 86400000);
       if (nights > 0) {
+        currentNights = nights;
+        currentTotalAmount = nights * room.price;
         document.getElementById('rsvNightsLabel').textContent = nights + ' malam';
-        document.getElementById('rsvSubtotal').textContent = formatCurrency(nights * room.price);
-        document.getElementById('rsvTotal').textContent = formatCurrency(nights * room.price);
+        document.getElementById('rsvSubtotal').textContent = formatCurrency(currentTotalAmount);
+        document.getElementById('rsvTotal').textContent = formatCurrency(currentTotalAmount);
+        
+        const payTotalBanner = document.getElementById('payTotalBanner');
+        if (payTotalBanner) payTotalBanner.textContent = formatCurrency(currentTotalAmount);
+        const payNightsBanner = document.getElementById('payNightsBanner');
+        if (payNightsBanner) payNightsBanner.textContent = nights + ' malam';
       }
     }
   }
@@ -768,17 +1213,231 @@ async function initReservationForm() {
     const minCo = new Date(ciInput.value); minCo.setDate(minCo.getDate() + 1);
     coInput.min = minCo.toISOString().split('T')[0];
     if (new Date(coInput.value) <= new Date(ciInput.value)) coInput.value = minCo.toISOString().split('T')[0];
+    localStorage.setItem('hotelku_checkin', ciInput.value);
+    localStorage.setItem('hotelku_checkout', coInput.value);
     updateCost();
   });
-  coInput.addEventListener('change', updateCost);
+
+  coInput.addEventListener('change', () => {
+    localStorage.setItem('hotelku_checkin', ciInput.value);
+    localStorage.setItem('hotelku_checkout', coInput.value);
+    updateCost();
+  });
   updateCost();
 
-  // Submit
-  document.getElementById('rsvForm').addEventListener('submit', async (e) => {
+  // Dynamic Payment Method Detail Box
+  function renderPaymentDetailBox(method) {
+    const box = document.getElementById('paymentDetailsBox');
+    if (!box) return;
+
+    if (method === 'QRIS') {
+      box.innerHTML = `
+        <div style="text-align: center;">
+          <div style="font-weight: 700; color: #1a1a1a; font-size: 0.95rem; margin-bottom: 4px;">
+            <i class="fas fa-qrcode" style="color:#C4A265;"></i> Scan Kode QRIS HotelKu
+          </div>
+          <p style="font-size: 0.8rem; color: #6b7280; margin: 0 0 14px 0;">
+            Buka aplikasi m-Banking (BCA, Mandiri, BRI, BNI) atau E-Wallet (GoPay, OVO, DANA, ShopeePay) lalu arahkan kamera ke QR Code berikut:
+          </p>
+
+          <div class="qris-qr-container">
+            <div style="font-size: 0.75rem; font-weight: 800; letter-spacing: 1px; color: #0a0a0a; margin-bottom: 8px;">
+              QRIS PEMBAYARAN HOTELKU YOGYAKARTA
+            </div>
+            <!-- Dynamic Vector QR Mockup -->
+            <div style="background: #fff; padding: 12px; border: 2px solid #111; border-radius: 8px; display: inline-block;">
+              <svg width="180" height="180" viewBox="0 0 100 100" style="display:block;">
+                <rect width="100" height="100" fill="#ffffff"/>
+                <!-- Top Left Marker -->
+                <rect x="5" y="5" width="28" height="28" fill="#111"/>
+                <rect x="9" y="9" width="20" height="20" fill="#fff"/>
+                <rect x="13" y="13" width="12" height="12" fill="#111"/>
+                <!-- Top Right Marker -->
+                <rect x="67" y="5" width="28" height="28" fill="#111"/>
+                <rect x="71" y="9" width="20" height="20" fill="#fff"/>
+                <rect x="75" y="13" width="12" height="12" fill="#111"/>
+                <!-- Bottom Left Marker -->
+                <rect x="5" y="67" width="28" height="28" fill="#111"/>
+                <rect x="9" y="71" width="20" height="20" fill="#fff"/>
+                <rect x="13" y="75" width="12" height="12" fill="#111"/>
+                <!-- Center HotelKu Logo Badge -->
+                <rect x="40" y="40" width="20" height="20" rx="4" fill="#C4A265"/>
+                <text x="50" y="54" font-size="11" font-weight="bold" fill="#fff" text-anchor="middle">✦</text>
+                <!-- Matrix Patterns -->
+                <rect x="37" y="10" width="6" height="6" fill="#111"/>
+                <rect x="47" y="15" width="8" height="6" fill="#111"/>
+                <rect x="57" y="8" width="6" height="8" fill="#111"/>
+                <rect x="10" y="37" width="6" height="6" fill="#111"/>
+                <rect x="20" y="47" width="6" height="6" fill="#111"/>
+                <rect x="67" y="37" width="6" height="6" fill="#111"/>
+                <rect x="77" y="47" width="8" height="6" fill="#111"/>
+                <rect x="87" y="37" width="6" height="8" fill="#111"/>
+                <rect x="37" y="67" width="6" height="6" fill="#111"/>
+                <rect x="47" y="77" width="8" height="6" fill="#111"/>
+                <rect x="57" y="87" width="6" height="6" fill="#111"/>
+                <rect x="67" y="67" width="6" height="8" fill="#111"/>
+                <rect x="77" y="77" width="6" height="6" fill="#111"/>
+                <rect x="87" y="87" width="6" height="6" fill="#111"/>
+              </svg>
+            </div>
+            <div style="font-size: 0.72rem; color: #4b5563; margin-top: 10px;">
+              NMID: <strong>ID102455588801</strong> · HotelKu Official Merchant
+            </div>
+          </div>
+
+          <div style="margin-top: 12px; font-size: 0.8rem; color: #b45309; background: #fef3c7; padding: 8px 12px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px;">
+            <i class="fas fa-stopwatch"></i> Selesaikan pembayaran dalam <strong>14:59</strong> menit
+          </div>
+        </div>
+      `;
+    } else if (method.includes('Virtual Account')) {
+      const bankName = method.includes('BCA') ? 'BCA' : 'Mandiri';
+      const vaNum = bankName === 'BCA' ? '8277 0812 3456 7890' : '8890 0812 3456 7890';
+      box.innerHTML = `
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="font-weight: 700; color: #1a1a1a; font-size: 0.95rem;">
+              <i class="fas fa-university" style="color:#C4A265;"></i> Nomor ${bankName} Virtual Account
+            </span>
+            <span style="font-size: 0.72rem; background: #e0e7ff; color: #3730a3; padding: 2px 8px; border-radius: 4px; font-weight: 700;">Verifikasi Otomatis</span>
+          </div>
+
+          <div class="va-copy-box">
+            <span style="font-family: monospace; font-size: 1.25rem; font-weight: 800; color: #1e3a8a; letter-spacing: 1px;" id="vaNumberDisplay">${vaNum}</span>
+            <button type="button" onclick="navigator.clipboard.writeText('${vaNum.replace(/\\s+/g, '')}'); showToast('Nomor VA berhasil disalin ke clipboard!', 'success');" style="background: #C4A265; color: #fff; border: none; padding: 6px 14px; border-radius: 4px; font-size: 0.8rem; font-weight: 700; cursor: pointer;">
+              <i class="fas fa-copy"></i> Salin
+            </button>
+          </div>
+
+          <div style="font-size: 0.8rem; color: #4b5563; line-height: 1.6;">
+            <div>Atas Nama: <strong>HotelKu Official Booking</strong></div>
+            <div style="font-size: 0.75rem; color: #6b7280; margin-top: 4px;">
+              Petunjuk: Masuk ke menu m-Banking / ATM > Transfer > Virtual Account > Masukkan nomor di atas > Konfirmasi nama HotelKu.
+            </div>
+          </div>
+        </div>
+      `;
+    } else if (method.includes('Kartu Kredit')) {
+      box.innerHTML = `
+        <div>
+          <div style="font-weight: 700; color: #1a1a1a; font-size: 0.95rem; margin-bottom: 12px;">
+            <i class="fas fa-credit-card" style="color:#C4A265;"></i> Informasi Kartu Kredit / Debit Online
+          </div>
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label style="font-size:0.75rem; font-weight:700; color:#374151;">Nomor Kartu (16 Digit)</label>
+            <input type="text" placeholder="4111 2222 3333 4444" maxlength="19" style="width:100%; padding:10px 14px; border:1.5px solid #d1d5db; border-radius:6px; font-family:monospace; font-size:0.95rem;">
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="font-size:0.75rem; font-weight:700; color:#374151;">Masa Berlaku (MM/YY)</label>
+              <input type="text" placeholder="12/28" maxlength="5" style="width:100%; padding:10px 14px; border:1.5px solid #d1d5db; border-radius:6px; font-size:0.9rem;">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="font-size:0.75rem; font-weight:700; color:#374151;">CVV / CVC (3 Digit)</label>
+              <input type="password" placeholder="•••" maxlength="4" style="width:100%; padding:10px 14px; border:1.5px solid #d1d5db; border-radius:6px; font-size:0.9rem;">
+            </div>
+          </div>
+          <div style="font-size: 0.72rem; color: #6b7280; margin-top: 10px;">
+            <i class="fas fa-lock" style="color:#10b981;"></i> Dilindungi enkripsi 256-bit SSL & 3D Secure Verification.
+          </div>
+        </div>
+      `;
+    } else {
+      // Bayar di Hotel
+      box.innerHTML = `
+        <div style="text-align: center; padding: 10px;">
+          <div style="width: 48px; height: 48px; border-radius: 50%; background: #fef3c7; color: #d97706; display: inline-flex; align-items: center; justify-content: center; font-size: 1.3rem; margin-bottom: 8px;">
+            <i class="fas fa-hotel"></i>
+          </div>
+          <div style="font-weight: 700; color: #1a1a1a; font-size: 0.95rem; margin-bottom: 4px;">
+            Pembayaran Langsung di Meja Resepsionis
+          </div>
+          <p style="font-size: 0.8rem; color: #6b7280; margin: 0; line-height: 1.5;">
+            Anda dapat menyelesaikan pelunasan kamar saat tiba di hotel pada tanggal <strong>${formatDate(ciInput.value)}</strong> menggunakan Uang Tunai, Kartu Debit, atau Kartu Kredit.
+          </p>
+          <div style="margin-top: 10px; font-size: 0.75rem; color: #047857; background: #ecfdf5; padding: 6px 12px; border-radius: 6px; display: inline-block;">
+            <i class="fas fa-info-circle"></i> Reservasi Anda tetap akan dikirim ke Resepsionis untuk reservasi unit kamar.
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  // Initial render for default QRIS
+  renderPaymentDetailBox(selectedMethod);
+
+  // Method Selection Listener
+  document.querySelectorAll('.payment-method-item').forEach(item => {
+    item.addEventListener('click', () => {
+      document.querySelectorAll('.payment-method-item').forEach(i => i.classList.remove('selected'));
+      item.classList.add('selected');
+      selectedMethod = item.dataset.method;
+      renderPaymentDetailBox(selectedMethod);
+    });
+  });
+
+  // Step 1 Submit -> Advance to Step 2 (Payment)
+  const step1Form = document.getElementById('rsvStep1Form');
+  const step1Container = document.getElementById('step1DataContainer');
+  const step2Container = document.getElementById('step2PaymentContainer');
+  const stepInd1 = document.getElementById('stepIndicator1');
+  const stepInd2 = document.getElementById('stepIndicator2');
+  const stepDiv1 = document.getElementById('stepDivider1');
+
+  step1Form.addEventListener('submit', (e) => {
     e.preventDefault();
-    const btn = document.getElementById('btnSubmitRsv');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengirim...';
+
+    // Validate inputs
+    const guestName = document.getElementById('rsvName').value.trim();
+    const guestPhone = document.getElementById('rsvPhone').value.trim();
+    const guestEmail = document.getElementById('rsvEmail').value.trim();
+
+    if (!guestName || !guestPhone || !guestEmail) {
+      showToast('Mohon lengkapi seluruh data pemesanan', 'error');
+      return;
+    }
+
+    // Smooth transition to Step 2
+    step1Container.style.display = 'none';
+    step2Container.style.display = 'block';
+
+    stepInd1.classList.remove('active');
+    stepInd1.classList.add('completed');
+    stepInd1.querySelector('.step-num').innerHTML = '<i class="fas fa-check"></i>';
+    
+    stepDiv1.classList.add('active');
+    stepInd2.classList.add('active');
+
+    updateCost();
+    renderPaymentDetailBox(selectedMethod);
+
+    window.scrollTo({ top: 120, behavior: 'smooth' });
+    showToast('Data tamu terverifikasi. Silakan pilih metode pembayaran Anda.', 'info');
+  });
+
+  // Back to Step 1
+  document.getElementById('btnBackToStep1').addEventListener('click', () => {
+    step2Container.style.display = 'none';
+    step1Container.style.display = 'block';
+
+    stepInd1.classList.remove('completed');
+    stepInd1.classList.add('active');
+    stepInd1.querySelector('.step-num').textContent = '1';
+
+    stepDiv1.classList.remove('active');
+    stepInd2.classList.remove('active');
+
+    window.scrollTo({ top: 120, behavior: 'smooth' });
+  });
+
+  // Step 2: Confirm & Pay -> Submit to Server
+  const btnConfirmPay = document.getElementById('btnConfirmPayment');
+  btnConfirmPay.addEventListener('click', async () => {
+    btnConfirmPay.disabled = true;
+    btnConfirmPay.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memverifikasi Pembayaran...';
+
+    const paymentRef = 'PAY-' + Date.now().toString().slice(-6);
+    const paymentStatus = selectedMethod === 'Bayar di Hotel' ? 'pay_at_hotel' : 'paid';
 
     try {
       const res = await fetch('/api/reservations', {
@@ -788,27 +1447,94 @@ async function initReservationForm() {
           roomId: parseInt(roomId),
           checkIn: ciInput.value,
           checkOut: coInput.value,
-          guestName: document.getElementById('rsvName').value,
-          guestPhone: document.getElementById('rsvPhone').value,
-          guestEmail: document.getElementById('rsvEmail').value,
-          notes: document.getElementById('rsvNotes').value
+          guestName: document.getElementById('rsvName').value.trim(),
+          guestPhone: document.getElementById('rsvPhone').value.trim(),
+          guestEmail: document.getElementById('rsvEmail').value.trim(),
+          notes: document.getElementById('rsvNotes').value.trim(),
+          paymentMethod: selectedMethod,
+          paymentStatus: paymentStatus,
+          paymentRef: paymentRef
         })
       });
       const data = await res.json();
 
       if (data.success) {
-        showToast(data.message, 'success');
-        setTimeout(() => { window.location.href = '/my-reservations'; }, 1500);
+        if (data.user) {
+          localStorage.setItem('hotelku_user', JSON.stringify(data.user));
+        }
+
+        // Show celebratory success modal dialog
+        showPaymentSuccessModal({
+          reservationId: data.reservation ? data.reservation.id : 'RSV-NEW',
+          guestName: document.getElementById('rsvName').value.trim(),
+          roomName: room.name,
+          amount: currentTotalAmount,
+          method: selectedMethod,
+          paymentRef: paymentRef
+        });
+
       } else {
-        showToast(data.message, 'error');
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Kirim Pengajuan Reservasi';
+        showToast(data.message || 'Gagal memproses pembayaran', 'error');
+        btnConfirmPay.disabled = false;
+        btnConfirmPay.innerHTML = '<i class="fas fa-check-circle"></i> Konfirmasi & Bayar Sekarang';
       }
-    } catch {
-      showToast('Terjadi kesalahan', 'error');
-      btn.disabled = false;
-      btn.innerHTML = '<i class="fas fa-paper-plane"></i> Kirim Pengajuan Reservasi';
+    } catch (err) {
+      showToast('Terjadi gangguan jaringan saat memproses pembayaran', 'error');
+      btnConfirmPay.disabled = false;
+      btnConfirmPay.innerHTML = '<i class="fas fa-check-circle"></i> Konfirmasi & Bayar Sekarang';
     }
+  });
+}
+
+// Modal Pop-Up Konfirmasi Pembayaran Berhasil & Diteruskan ke Resepsionis
+function showPaymentSuccessModal(details) {
+  const existing = document.getElementById('paymentSuccessModalOverlay');
+  if (existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'paymentSuccessModalOverlay';
+  overlay.style.cssText = 'position:fixed; inset:0; background:rgba(10,10,10,0.75); backdrop-filter:blur(6px); z-index:999999; display:flex; align-items:center; justify-content:center; padding:20px; animation:fadeIn 0.3s ease;';
+
+  overlay.innerHTML = `
+    <div style="background:#fff; border-radius:16px; max-width:480px; width:100%; padding:32px 28px; text-align:center; box-shadow:0 25px 50px -12px rgba(0,0,0,0.35); position:relative;">
+      <div style="width:72px; height:72px; border-radius:50%; background:linear-gradient(135deg, #10b981, #059669); color:#fff; display:inline-flex; align-items:center; justify-content:center; font-size:2.2rem; margin-bottom:18px; box-shadow:0 8px 24px rgba(16,185,129,0.35);">
+        <i class="fas fa-check"></i>
+      </div>
+      
+      <h2 style="font-family:'Playfair Display', serif; font-size:1.5rem; color:#1a1a1a; margin:0 0 6px 0;">
+        Pembayaran Berhasil!
+      </h2>
+      <p style="font-size:0.88rem; color:#4b5563; margin:0 0 20px 0; line-height:1.5;">
+        Terima kasih <strong>${details.guestName}</strong>. Pembayaran sebesar <strong>${formatCurrency(details.amount)}</strong> via <strong>${details.method}</strong> telah diverifikasi.
+      </p>
+
+      <!-- Status Flow Card -->
+      <div style="background:#fdfbf7; border:1px solid #ebdcc5; border-radius:10px; padding:16px; margin-bottom:24px; text-align:left;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+          <span style="width:24px; height:24px; border-radius:50%; background:#10b981; color:#fff; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700;">✓</span>
+          <span style="font-size:0.82rem; color:#065f46; font-weight:700;">1. Pembayaran Lunas (Ref: ${details.paymentRef})</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+          <span style="width:24px; height:24px; border-radius:50%; background:#f59e0b; color:#fff; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700;"><i class="fas fa-spinner fa-spin"></i></span>
+          <span style="font-size:0.82rem; color:#92400e; font-weight:700;">2. Diteruskan ke Meja Resepsionis untuk Disetujui (ACC)</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="width:24px; height:24px; border-radius:50%; background:#e5e7eb; color:#6b7280; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700;">3</span>
+          <span style="font-size:0.82rem; color:#6b7280;">3. Terbit E-Invoice & Notifikasi Kamar Ready Check-In</span>
+        </div>
+      </div>
+
+      <button type="button" id="btnGoToMyReservations" style="width:100%; background:linear-gradient(135deg, #C4A265, #A88344); color:#fff; font-weight:700; border:none; padding:14px; border-radius:8px; font-size:0.95rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 4px 15px rgba(196,162,101,0.35);">
+        Lihat Status Pemesanan Saya <i class="fas fa-arrow-right"></i>
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  document.getElementById('btnGoToMyReservations').addEventListener('click', () => {
+    overlay.remove();
+    window.location.href = '/my-reservations';
   });
 }
 
@@ -916,13 +1642,14 @@ async function initAdminReservations(statusFilter = 'all') {
         <h4>${rsv.roomName} — ${rsv.id}</h4>
         <div class="rsv-guest"><i class="fas fa-user" style="color:#C4A265;margin-right:6px;"></i>${rsv.guestName} · ${rsv.guestPhone}</div>
         <div class="rsv-dates"><i class="fas fa-calendar" style="margin-right:6px;"></i>${formatDate(rsv.checkIn)} — ${formatDate(rsv.checkOut)} (${rsv.totalNights} malam)</div>
+        <div style="margin-top: 5px;">${getPaymentBadge(rsv)}</div>
         ${rsv.notes ? `<div style="font-size:0.8rem;color:#888;margin-top:4px;"><i class="fas fa-sticky-note"></i> ${rsv.notes}</div>` : ''}
       </div>
       <div class="rsv-right">
         <span class="rsv-amount">${formatCurrency(rsv.totalPrice)}</span>
         ${getStatusBadge(rsv.status)}
         ${rsv.status === 'pending' ? `
-          <button class="btn-approve" onclick="approveRsv('${rsv.id}')"><i class="fas fa-check"></i> ACC</button>
+          <button class="btn-approve" onclick="approveRsv('${rsv.id}')"><i class="fas fa-check"></i> ACC (Setujui)</button>
           <button class="btn-reject" onclick="rejectRsv('${rsv.id}')"><i class="fas fa-times"></i> Tolak</button>
         ` : ''}
       </div>
@@ -964,7 +1691,7 @@ async function initAdminCheckin() {
             <i class="fas fa-bell"></i> Beri Tahu: Kamar Siap
           </button>
         `}
-        <button class="btn-checkin" style="margin-top:6px;" onclick="processCheckin('${rsv.id}')"><i class="fas fa-sign-in-alt"></i> Proses Check-in</button>
+        <button class="btn-checkin" style="margin-top:6px; background:#10b981; color:#fff; font-weight:700; border:none; padding:8px 16px; border-radius:6px; cursor:pointer;" onclick="processCheckin('${rsv.id}')"><i class="fas fa-sign-in-alt"></i> Check In Sekarang</button>
       </div>
     </div>
   `).join('');
@@ -1000,7 +1727,7 @@ async function initAdminCheckout() {
       <div class="rsv-right">
         <span class="rsv-amount">${formatCurrency(rsv.totalPrice)}</span>
         ${getStatusBadge(rsv.status)}
-        <button class="btn-checkout" style="margin-top:6px;" onclick="processCheckout('${rsv.id}')"><i class="fas fa-sign-out-alt"></i> Proses Check-out</button>
+        <button class="btn-checkout" style="margin-top:6px; background:#d97706; color:#fff; font-weight:700; border:none; padding:8px 16px; border-radius:6px; cursor:pointer;" onclick="processCheckout('${rsv.id}')"><i class="fas fa-sign-out-alt"></i> Check Out Sekarang</button>
       </div>
     </div>
   `).join('');
@@ -1015,6 +1742,15 @@ async function approveRsv(id) {
   showToast(data.message, data.success ? 'success' : 'error');
   if (data.success) setTimeout(() => location.reload(), 800);
 }
+
+async function approveAndCheckin(id) {
+  if (!confirm('Setujui dan langsung proses Check-In Sekarang untuk reservasi ' + id + '?')) return;
+  const res = await fetch(`/api/reservations/${id}/approve-checkin`, { method: 'PUT' });
+  const data = await res.json();
+  showToast(data.message, data.success ? 'success' : 'error');
+  if (data.success) setTimeout(() => location.reload(), 800);
+}
+window.approveAndCheckin = approveAndCheckin;
 
 async function rejectRsv(id) {
   showModal('Tolak Reservasi', '<p style="margin-bottom:12px;color:#888;">Berikan alasan penolakan:</p><textarea id="rejectReason" placeholder="Alasan penolakan..."></textarea>', async (overlay) => {
@@ -1031,7 +1767,7 @@ async function rejectRsv(id) {
 }
 
 async function processCheckin(id) {
-  if (!confirm('Proses check-in untuk reservasi ' + id + '?')) return;
+  if (!confirm('Proses Check-In Sekarang untuk reservasi ' + id + '?')) return;
   const res = await fetch(`/api/reservations/${id}/checkin`, { method: 'PUT' });
   const data = await res.json();
   showToast(data.message, data.success ? 'success' : 'error');
@@ -1039,7 +1775,7 @@ async function processCheckin(id) {
 }
 
 async function processCheckout(id) {
-  if (!confirm('Proses check-out untuk reservasi ' + id + '?')) return;
+  if (!confirm('Proses Check-Out Sekarang untuk reservasi ' + id + '?')) return;
   const res = await fetch(`/api/reservations/${id}/checkout`, { method: 'PUT' });
   const data = await res.json();
   showToast(data.message, data.success ? 'success' : 'error');
@@ -1066,44 +1802,7 @@ async function loadGuestAlerts() {
     const { checkoutReminder, roomReadyAlert } = json.data;
     let html = '';
 
-    // 1. Render Room Ready Alert Banner (Emerald Green)
-    if (roomReadyAlert) {
-      html += `
-        <div style="background: linear-gradient(135deg, #ecfdf5, #d1fae5); border: 2px solid #10b981; border-radius: 12px; padding: 22px 24px; margin-bottom: 20px; box-shadow: 0 4px 20px rgba(16,185,129,0.15); display: flex; flex-direction: column; gap: 14px;">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-              <div style="width: 42px; height: 42px; border-radius: 50%; background: #10b981; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
-                <i class="fas fa-door-open"></i>
-              </div>
-              <div>
-                <span style="background: #059669; color: #fff; padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 0.72rem; letter-spacing: 0.5px;">
-                  ✦ EARLY CHECK-IN PRIVILEGE ✦
-                </span>
-                <h3 style="font-family: 'Playfair Display', serif; font-size: 1.25rem; color: #064e3b; margin: 4px 0 0 0;">
-                  Kamar Anda Sudah Selesai Disiapkan & Siap Huni!
-                </h3>
-              </div>
-            </div>
-            <span class="status-badge" style="background: #059669; color: #fff; font-weight: 700; padding: 6px 14px; font-size: 0.78rem;">
-              <i class="fas fa-bolt"></i> Fast-Track Key Handover
-            </span>
-          </div>
-
-          <p style="font-size: 0.9rem; color: #065f46; line-height: 1.6; margin: 0;">
-            Selamat datang <strong>Bpk/Ibu ${roomReadyAlert.guestName}</strong>! Kamar <strong>${roomReadyAlert.roomName} (Unit ${roomReadyAlert.unitNumber})</strong> telah siap lebih awal pada pukul <strong>${roomReadyAlert.readyTime}</strong>. Anda dapat langsung menuju meja resepsionis untuk mengambil kunci kamar tanpa perlu mengantre.
-          </p>
-
-          <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center; border-top: 1px dashed #6ee7b7; padding-top: 14px;">
-            <button class="btn btn-sm" style="background: #075e54; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 8px;" onclick='openWhatsappPreview("room_ready", ${JSON.stringify(roomReadyAlert).replace(/'/g, "\\'")})'>
-              <i class="fab fa-whatsapp" style="font-size: 1.1rem; color: #25d366;"></i> Lihat Simulasi Notifikasi WhatsApp
-            </button>
-            <span style="font-size: 0.78rem; color: #047857;">
-              <i class="fas fa-check-circle"></i> Petugas resepsionis telah menyiagakan kunci dan welcome drink Anda.
-            </span>
-          </div>
-        </div>
-      `;
-    }
+    // Room Ready Alert Banner removed per user request
 
     // 2. Render Checkout Reminder Banner (Amber / Gold)
     if (checkoutReminder) {

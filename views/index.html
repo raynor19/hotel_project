@@ -22,7 +22,7 @@
           <span class="topbar-item"><i class="fas fa-phone-alt"></i> +62 274 555-888</span>
         </div>
         <div class="topbar-right">
-          <div class="topbar-clock-badge">
+          <div class="topbar-clock-badge notranslate">
             <span class="live-pulse-dot"></span>
             <i class="far fa-calendar-alt"></i>
             <span class="realtime-date">Memuat tanggal...</span>
@@ -44,13 +44,13 @@
       </a>
 
       <ul class="nav-menu" id="navMenu">
-        <li><a href="#home" class="nav-link active">Home</a></li>
-        <li><a href="/rooms" class="nav-link">Pilihan Kamar</a></li>
-        <li><a href="#facilities" class="nav-link">Fasilitas</a></li>
-        <li><a href="#about" class="nav-link">Tentang Kami</a></li>
-        <li><a href="#contact" class="nav-link">Kontak</a></li>
-        <li class="guest-nav-item" style="display: none;"><a href="/my-reservations" class="nav-link">Pesanan Saya</a></li>
-        <li class="guest-nav-item" style="display: none;"><a href="/profile" class="nav-link">Profil</a></li>
+        <li><a href="#home" class="nav-link active" data-i18n="navHome">Home</a></li>
+        <li><a href="/rooms" class="nav-link" data-i18n="navRooms">Pilihan Kamar</a></li>
+        <li><a href="#facilities" class="nav-link" data-i18n="navFacilities">Fasilitas</a></li>
+        <li><a href="#about" class="nav-link" data-i18n="navAbout">Tentang Kami</a></li>
+        <li><a href="#contact" class="nav-link" data-i18n="navContact">Kontak</a></li>
+        <li class="guest-nav-item" style="display: none;"><a href="/my-reservations" class="nav-link" data-i18n="navMyReservations">Pesanan Saya</a></li>
+        <li class="guest-nav-item" style="display: none;"><a href="/profile" class="nav-link" data-i18n="navProfile">Profil</a></li>
         <li class="admin-nav-item" style="display: none;"><a href="/admin/dashboard" class="nav-link" style="color: #C4A265;">Admin Console</a></li>
         <li class="receptionist-nav-item" style="display: none;"><a href="/receptionist/dashboard" class="nav-link" style="color: #D4B87A;">Konsol Resepsionis</a></li>
       </ul>
@@ -59,11 +59,11 @@
         <div id="navGuestAuthButtons" style="display: flex; gap: 8px; align-items: center;">
           <a href="/login" class="btn-signin" id="navSignInBtn">
             <i class="fas fa-user"></i>
-            <span>Masuk</span>
+            <span data-i18n="navSignIn">Masuk</span>
           </a>
           <a href="/register" class="btn btn-outline btn-sm" id="navRegisterBtn" style="padding: 8px 14px; font-size: 0.75rem;">
             <i class="fas fa-user-plus"></i>
-            <span>Daftar</span>
+            <span data-i18n="navRegister">Daftar</span>
           </a>
         </div>
         <div id="navUserLogged" style="display: none; align-items: center; gap: 12px;">
@@ -96,18 +96,18 @@
     <div class="hero-overlay"></div>
 
     <div class="hero-content">
-      <p class="hero-subtitle animate-fade-up">✦ WELCOME TO HOTELKU ✦</p>
-      <h1 class="hero-title animate-fade-up delay-1">
+      <p class="hero-subtitle animate-fade-up" data-i18n="heroSub">✦ WELCOME TO HOTELKU ✦</p>
+      <h1 class="hero-title animate-fade-up delay-1" data-i18n="heroTitle">
         Pengalaman Menginap<br>
         <span class="text-gold">Tak Terlupakan</span>
       </h1>
-      <p class="hero-desc animate-fade-up delay-2">
+      <p class="hero-desc animate-fade-up delay-2" data-i18n="heroDesc">
         Nikmati kemewahan dan ketenangan di jantung kota Yogyakarta.<br>
         Terinspirasi oleh keindahan budaya Jawa yang timeless.
       </p>
       <div class="hero-buttons animate-fade-up delay-3">
-        <a href="/rooms" class="btn btn-primary">Lihat Semua Kamar</a>
-        <a href="/rooms" class="btn btn-outline">Reservasi Sekarang</a>
+        <a href="/rooms" class="btn btn-primary" data-i18n="btnSeeRooms">Lihat Semua Kamar</a>
+        <a href="/rooms" class="btn btn-outline" data-i18n="btnBookNow">Reservasi Sekarang</a>
       </div>
     </div>
 
@@ -131,15 +131,15 @@
     <div class="container">
       <form class="booking-form" id="bookingForm" action="/rooms" method="GET">
         <div class="booking-field">
-          <label><i class="fas fa-calendar-check"></i> Check-in</label>
+          <label><i class="fas fa-calendar-check"></i> <span data-i18n="checkInLabel">Check-in</span></label>
           <input type="date" name="checkin" required>
         </div>
         <div class="booking-field">
-          <label><i class="fas fa-calendar-minus"></i> Check-out</label>
+          <label><i class="fas fa-calendar-minus"></i> <span data-i18n="checkOutLabel">Check-out</span></label>
           <input type="date" name="checkout" required>
         </div>
         <div class="booking-field">
-          <label><i class="fas fa-user-friends"></i> Tamu</label>
+          <label><i class="fas fa-user-friends"></i> <span data-i18n="guestsLabel">Tamu</span></label>
           <select name="guests">
             <option value="1">1 Tamu</option>
             <option value="2" selected>2 Tamu</option>
@@ -148,7 +148,7 @@
           </select>
         </div>
         <div class="booking-field">
-          <label><i class="fas fa-bed"></i> Kamar</label>
+          <label><i class="fas fa-bed"></i> <span data-i18n="roomsLabel">Kamar</span></label>
           <select name="rooms">
             <option value="1" selected>1 Kamar</option>
             <option value="2">2 Kamar</option>
@@ -156,7 +156,7 @@
           </select>
         </div>
         <button type="submit" class="btn btn-book">
-          <i class="fas fa-search"></i> Cari Kamar
+          <i class="fas fa-search"></i> <span data-i18n="btnSearchRooms">Cari Kamar</span>
         </button>
       </form>
     </div>
@@ -166,8 +166,8 @@
   <section class="section rooms-section" id="rooms">
     <div class="container">
       <div class="section-header">
-        <span class="section-label">✦ OUR ROOMS ✦</span>
-        <h2 class="section-title">Pilihan Kamar <span class="text-gold">Eksklusif</span></h2>
+        <span class="section-label" data-i18n="ourRoomsLabel">✦ OUR ROOMS ✦</span>
+        <h2 class="section-title" data-i18n="ourRoomsTitle">Pilihan Kamar <span class="text-gold">Eksklusif</span></h2>
         <p class="section-desc">Setiap kamar dirancang dengan sentuhan kemewahan dan kenyamanan, terinspirasi oleh keanggunan budaya Jawa.</p>
       </div>
 
@@ -190,9 +190,9 @@
             <div class="room-footer">
               <div class="room-price">
                 <span class="price">Rp 550.000</span>
-                <span class="per-night">/ malam</span>
+                <span class="per-night" data-i18n="perNight">/ malam</span>
               </div>
-              <a href="/rooms/2" class="btn btn-small">Lihat Kamar</a>
+              <a href="/rooms/2" class="btn btn-small" data-i18n="btnViewRoom">Lihat Kamar</a>
             </div>
           </div>
         </div>
@@ -215,9 +215,9 @@
             <div class="room-footer">
               <div class="room-price">
                 <span class="price">Rp 750.000</span>
-                <span class="per-night">/ malam</span>
+                <span class="per-night" data-i18n="perNight">/ malam</span>
               </div>
-              <a href="/rooms/3" class="btn btn-small">Lihat Kamar</a>
+              <a href="/rooms/3" class="btn btn-small" data-i18n="btnViewRoom">Lihat Kamar</a>
             </div>
           </div>
         </div>
@@ -240,15 +240,15 @@
             <div class="room-footer">
               <div class="room-price">
                 <span class="price">Rp 3.500.000</span>
-                <span class="per-night">/ malam</span>
+                <span class="per-night" data-i18n="perNight">/ malam</span>
               </div>
-              <a href="/rooms/6" class="btn btn-small">Lihat Kamar</a>
+              <a href="/rooms/6" class="btn btn-small" data-i18n="btnViewRoom">Lihat Kamar</a>
             </div>
           </div>
         </div>
       </div>
       <div style="text-align: center; margin-top: 40px;">
-        <a href="/rooms" class="btn btn-primary">Lihat Semua 6 Tipe Kamar <i class="fas fa-arrow-right"></i></a>
+        <a href="/rooms" class="btn btn-primary">Lihat Semua 10 Tipe Kamar <i class="fas fa-arrow-right"></i></a>
       </div>
     </div>
   </section>
@@ -429,7 +429,8 @@
     </div>
   </footer>
 
-  <script src="/js/app.js"></script>
+  <script src="/js/app.js?v=7"></script>
+  <script src="/js/i18n.js?v=7"></script>
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
       try {

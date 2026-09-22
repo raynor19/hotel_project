@@ -2,54 +2,181 @@
    HOTELKU — Frontend JavaScript
    ============================================================ */
 
-// ==================== REALTIME CLOCK & DATE ====================
+// ==================== GLOBAL AUTH FETCH INTERCEPTOR ====================
+(function() {
+  if (window.__hotelkuFetchWrapped) return;
+  window.__hotelkuFetchWrapped = true;
+  const origFetch = window.fetch;
+  window.fetch = function(url, options = {}) {
+    try {
+      const savedUserStr = localStorage.getItem('hotelku_user');
+      if (savedUserStr && typeof url === 'string' && url.startsWith('/api')) {
+        const savedUser = JSON.parse(savedUserStr);
+        if (savedUser && savedUser.id) {
+          options = options || {};
+          options.headers = options.headers || {};
+          if (options.headers instanceof Headers) {
+            if (!options.headers.has('x-user-id')) options.headers.set('x-user-id', String(savedUser.id));
+            if (!options.headers.has('x-user-email')) options.headers.set('x-user-email', String(savedUser.email));
+          } else if (typeof options.headers === 'object') {
+            if (!options.headers['x-user-id']) options.headers['x-user-id'] = String(savedUser.id);
+            if (!options.headers['x-user-email']) options.headers['x-user-email'] = String(savedUser.email);
+          }
+        }
+      }
+    } catch(e) {}
+    return origFetch.apply(this, [url, options]);
+  };
+})();
+
+/// ==================== REALTIME CLOCK & DATE ====================
 function initRealtimeClock() {
-  const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-  const months = [
-    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-  ];
+  const tzConfig = {
+    id: { timeZone: 'Asia/Jakarta', tzCode: 'WIB' },
+    en: { timeZone: 'Europe/London', tzCode: 'BST' },
+    ja: { timeZone: 'Asia/Tokyo', tzCode: 'JST' },
+    ar: { timeZone: 'Asia/Riyadh', tzCode: 'AST' },
+    zh: { timeZone: 'Asia/Shanghai', tzCode: 'CST' }
+  };
+
+  const weekIndexMap = { 'Sun': 0, 'Mon': 1, 'Tue': 2, 'Wed': 3, 'Thu': 4, 'Fri': 5, 'Sat': 6 };
+
+  const days = {
+    id: ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'],
+    en: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+    ar: ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'],
+    ja: ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'],
+    zh: ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']
+  };
+
+  const months = {
+    id: ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'],
+    en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+    ar: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'],
+    ja: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+    zh: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
+  };
 
   function updateClock() {
+    const lang = (window.getCurrentLanguage && window.getCurrentLanguage()) || localStorage.getItem('hotelku_lang') || 'id';
+    const cfg = tzConfig[lang] || tzConfig.id;
     const now = new Date();
-    const dayName = days[now.getDay()];
-    const dateNum = now.getDate();
-    const monthName = months[now.getMonth()];
-    const year = now.getFullYear();
 
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    const seconds = String(now.getSeconds()).padStart(2, '0');
+    let parts = {};
+    try {
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: cfg.timeZone,
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        weekday: 'short',
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric',
+        hour12: false
+      });
+      formatter.formatToParts(now).forEach(p => { parts[p.type] = p.value; });
+    } catch (e) {
+      parts = {
+        year: String(now.getFullYear()),
+        month: String(now.getMonth() + 1),
+        day: String(now.getDate()),
+        weekday: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][now.getDay()],
+        hour: String(now.getHours()),
+        minute: String(now.getMinutes()),
+        second: String(now.getSeconds())
+      };
+    }
 
-    const dateFormatted = `${dayName}, ${dateNum} ${monthName} ${year}`;
-    const timeFormatted = `${hours}:${minutes}:${seconds} WIB`;
-    const fullFormatted = `${dayName}, ${dateNum} ${monthName} ${year} • ${timeFormatted}`;
+    const year = parseInt(parts.year, 10);
+    const monthIdx = parseInt(parts.month, 10) - 1;
+    const dateNum = parseInt(parts.day, 10);
+    const dayIdx = weekIndexMap[parts.weekday] !== undefined ? weekIndexMap[parts.weekday] : 0;
+
+    let h24 = parseInt(parts.hour, 10);
+    if (h24 === 24) h24 = 0;
+    const hours24 = String(h24).padStart(2, '0');
+    const minutes = String(parts.minute || '00').padStart(2, '0');
+    const seconds = String(parts.second || '00').padStart(2, '0');
+    const h12 = h24 % 12 || 12;
+    const hours12 = String(h12).padStart(2, '0');
+
+    const dayList = days[lang] || days.id;
+    const monthList = months[lang] || months.id;
+    const dayName = dayList[dayIdx];
+    const monthName = monthList[monthIdx];
+
+    let dateFormatted = '';
+    let timeFormatted = '';
+    let yearFormatted = String(year);
+
+    if (lang === 'en') {
+      dateFormatted = `${dayName}, ${monthName} ${dateNum}, ${year}`;
+      timeFormatted = `${hours12}:${minutes}:${seconds} ${h24 >= 12 ? 'PM' : 'AM'} ${cfg.tzCode}`;
+    } else if (lang === 'ja') {
+      yearFormatted = `${year}年`;
+      dateFormatted = `${year}年${monthIdx + 1}月${dateNum}日 (${dayName})`;
+      timeFormatted = `${hours24}:${minutes}:${seconds} ${cfg.tzCode}`;
+    } else if (lang === 'zh') {
+      yearFormatted = `${year}年`;
+      const period = h24 < 6 ? '凌晨' : h24 < 12 ? '上午' : h24 < 18 ? '下午' : '晚上';
+      dateFormatted = `${year}年${monthIdx + 1}月${dateNum}日 ${dayName}`;
+      timeFormatted = `${period} ${hours12}:${minutes}:${seconds} ${cfg.tzCode}`;
+    } else if (lang === 'ar') {
+      const ampm = h24 >= 12 ? 'م' : 'ص';
+      dateFormatted = `${dayName}، ${dateNum} ${monthName} ${year}`;
+      timeFormatted = `${hours12}:${minutes}:${seconds} ${ampm} ${cfg.tzCode}`;
+    } else {
+      // Bahasa Indonesia (default Jakarta WIB)
+      dateFormatted = `${dayName}, ${dateNum} ${monthName} ${year}`;
+      timeFormatted = `${hours24}:${minutes}:${seconds} ${cfg.tzCode}`;
+    }
+
+    const fullFormatted = `${dateFormatted} • ${timeFormatted}`;
+
+    document.querySelectorAll('.topbar-clock-badge').forEach(el => {
+      el.classList.add('notranslate');
+      el.setAttribute('dir', 'ltr');
+    });
 
     document.querySelectorAll('.realtime-full-datetime').forEach(el => {
+      el.classList.add('notranslate');
+      el.setAttribute('dir', 'ltr');
       el.textContent = fullFormatted;
     });
     document.querySelectorAll('.realtime-date').forEach(el => {
+      el.classList.add('notranslate');
       el.textContent = dateFormatted;
     });
     document.querySelectorAll('.realtime-clock').forEach(el => {
+      el.classList.add('notranslate');
+      el.setAttribute('dir', 'ltr');
       el.textContent = timeFormatted;
     });
     document.querySelectorAll('.realtime-day').forEach(el => {
+      el.classList.add('notranslate');
       el.textContent = dayName;
     });
     document.querySelectorAll('.realtime-daynum').forEach(el => {
-      el.textContent = dateNum;
+      el.classList.add('notranslate');
+      el.textContent = String(dateNum);
     });
     document.querySelectorAll('.realtime-month').forEach(el => {
+      el.classList.add('notranslate');
       el.textContent = monthName;
     });
     document.querySelectorAll('.realtime-year').forEach(el => {
-      el.textContent = year;
+      el.classList.add('notranslate');
+      el.textContent = yearFormatted;
     });
   }
 
+  window.updateRealtimeClock = updateClock;
   updateClock();
-  setInterval(updateClock, 1000);
+  if (!window.__hotelkuClockInterval) {
+    window.__hotelkuClockInterval = setInterval(updateClock, 1000);
+  }
+  window.addEventListener('languageChanged', updateClock);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -222,6 +349,19 @@ document.addEventListener('DOMContentLoaded', () => {
       btnLoader.style.display = loading ? 'inline-flex' : 'none';
     }
 
+    // Check if redirected from registration
+    const pageParams = new URLSearchParams(window.location.search);
+    if (pageParams.get('registered') === '1' || pageParams.get('registered') === 'true') {
+      showAlert('success', 'Pendaftaran berhasil! Silakan masukkan email dan password Anda untuk masuk.');
+      const regEmail = pageParams.get('email');
+      if (regEmail && emailInput) {
+        emailInput.value = regEmail;
+        if (passwordInput) {
+          setTimeout(() => passwordInput.focus(), 200);
+        }
+      }
+    }
+
     // Submit handler
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -265,6 +405,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (data.success) {
           showAlert('success', data.message);
+          if (data.user) {
+            localStorage.setItem('hotelku_user', JSON.stringify(data.user));
+          }
           
           const params = new URLSearchParams(window.location.search);
           const redirectUrl = params.get('redirect');
@@ -383,33 +526,67 @@ document.addEventListener('DOMContentLoaded', () => {
   const bookingForm = document.getElementById('bookingForm');
 
   if (bookingForm) {
-    // Set default dates
     const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
     const checkinInput = bookingForm.querySelector('input[name="checkin"]');
     const checkoutInput = bookingForm.querySelector('input[name="checkout"]');
 
     if (checkinInput && checkoutInput) {
-      checkinInput.value = today.toISOString().split('T')[0];
-      checkoutInput.value = tomorrow.toISOString().split('T')[0];
-      checkinInput.min = today.toISOString().split('T')[0];
+      checkinInput.min = todayStr;
+
+      let savedCi = localStorage.getItem('hotelku_checkin');
+      let savedCo = localStorage.getItem('hotelku_checkout');
+
+      if (savedCi && savedCi >= todayStr) {
+        checkinInput.value = savedCi;
+      } else {
+        checkinInput.value = todayStr;
+      }
+
+      const minCheckout = new Date(checkinInput.value);
+      minCheckout.setDate(minCheckout.getDate() + 1);
+      const minCheckoutStr = minCheckout.toISOString().split('T')[0];
+      checkoutInput.min = minCheckoutStr;
+
+      if (savedCo && savedCo > checkinInput.value) {
+        checkoutInput.value = savedCo;
+      } else {
+        checkoutInput.value = minCheckoutStr;
+      }
 
       checkinInput.addEventListener('change', () => {
-        const minCheckout = new Date(checkinInput.value);
-        minCheckout.setDate(minCheckout.getDate() + 1);
-        checkoutInput.min = minCheckout.toISOString().split('T')[0];
+        const minCo = new Date(checkinInput.value);
+        minCo.setDate(minCo.getDate() + 1);
+        const minCoStr = minCo.toISOString().split('T')[0];
+        checkoutInput.min = minCoStr;
         if (new Date(checkoutInput.value) <= new Date(checkinInput.value)) {
-          checkoutInput.value = minCheckout.toISOString().split('T')[0];
+          checkoutInput.value = minCoStr;
         }
+        localStorage.setItem('hotelku_checkin', checkinInput.value);
+        localStorage.setItem('hotelku_checkout', checkoutInput.value);
+      });
+
+      checkoutInput.addEventListener('change', () => {
+        localStorage.setItem('hotelku_checkin', checkinInput.value);
+        localStorage.setItem('hotelku_checkout', checkoutInput.value);
       });
     }
 
     bookingForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      // Redirect to login for booking
-      window.location.href = '/login';
+      const ci = checkinInput.value;
+      const co = checkoutInput.value;
+      if (ci && co) {
+        localStorage.setItem('hotelku_checkin', ci);
+        localStorage.setItem('hotelku_checkout', co);
+        window.location.href = `/rooms?checkin=${encodeURIComponent(ci)}&checkout=${encodeURIComponent(co)}`;
+      } else {
+        window.location.href = '/rooms';
+      }
     });
   }
 

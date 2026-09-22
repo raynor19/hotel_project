@@ -23,7 +23,7 @@
           <span class="topbar-item"><i class="fas fa-phone-alt"></i> +62 274 555-888</span>
         </div>
         <div class="topbar-right">
-          <div class="topbar-clock-badge">
+          <div class="topbar-clock-badge notranslate">
             <span class="live-pulse-dot"></span>
             <i class="far fa-calendar-alt"></i>
             <span class="realtime-date">Memuat tanggal...</span>
@@ -90,50 +90,287 @@
       </div>
     </div>
 
-    <!-- Reviews Section -->
-    <section class="room-reviews-section" style="margin-top: 50px; padding-top: 40px; border-top: 1px solid #e5e5df;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+    <!-- Reviews Section (Dikecualikan dari terjemahan sesuai instruksi) -->
+    <section class="room-reviews-section notranslate" id="roomReviewsSection" style="margin-top: 50px; padding-top: 40px; border-top: 1px solid #e5e5df;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 24px;">
         <div>
           <span class="section-label" style="text-align: left; margin-bottom: 4px;">✦ ULASAN & PENGALAMAN TAMU ✦</span>
-          <h2 style="font-family: 'Playfair Display', serif; font-size: 1.6rem; color: #1a1a1a;">Ulasan Tamu</h2>
+          <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <h2 style="font-family: 'Playfair Display', serif; font-size: 1.6rem; color: #1a1a1a; margin: 0;">Ulasan Tamu</h2>
+            <span id="roomAvgRatingBadge" style="display: none; align-items: center; gap: 6px; background: #fff8e7; border: 1px solid #f39c12; color: #b45309; padding: 4px 12px; border-radius: 20px; font-weight: 700; font-size: 0.85rem;">
+              <i class="fas fa-star" style="color: #f39c12;"></i> <span id="avgRatingNum">5.0</span>
+              <span style="color: #888; font-weight: 400;">(<span id="totalReviewCount">0</span> ulasan)</span>
+            </span>
+          </div>
         </div>
+        <div id="roomWriteReviewAction"></div>
       </div>
-      <div id="roomReviewsList" style="display: grid; gap: 16px;">
-        <div style="color: #888; font-size: 0.9rem; padding: 20px 0;">Memuat ulasan...</div>
+      <div id="roomReviewsList" class="notranslate" style="display: grid; gap: 16px;">
+        <div style="color: #888; font-size: 0.9rem; padding: 20px 0;"><i class="fas fa-spinner fa-spin"></i> Memuat ulasan...</div>
       </div>
     </section>
   </main>
 
-  <script src="/js/pages.js"></script>
+  <!-- Modal Tulis Ulasan Tamu -->
+  <div id="roomReviewModal" class="modal-overlay hide" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; justify-content: center; align-items: center; padding: 20px;">
+    <div class="modal-box" style="background: #fff; max-width: 460px; width: 100%; border-radius: 12px; padding: 28px; box-shadow: 0 10px 30px rgba(0,0,0,0.25); position: relative;">
+      <button type="button" id="btnCloseRoomReview" style="position: absolute; top: 16px; right: 16px; background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #888;">✕</button>
+      <div style="text-align: center; margin-bottom: 20px;">
+        <div style="font-size: 2rem; color: #C4A265; margin-bottom: 6px;">★</div>
+        <h3 style="font-family: 'Playfair Display', serif; font-size: 1.35rem; color: #1a1a1a; margin-bottom: 4px;">Ulasan & Pengalaman Menginap</h3>
+        <p id="roomReviewSubtitle" style="font-size: 0.85rem; color: #666; margin: 0;">Bagikan pengalaman menginap Anda</p>
+      </div>
+      <form id="roomReviewForm">
+        <input type="hidden" id="roomReviewReservationId" value="">
+        <div style="text-align: center; margin-bottom: 24px;">
+          <label style="display: block; font-size: 0.88rem; font-weight: 700; color: #1a1a1a; margin-bottom: 8px;">
+            Tekan Bintang untuk Memilih Rating:
+          </label>
+          <div id="roomStarRatingGroup" style="display: inline-flex; gap: 4px; align-items: center; justify-content: center; user-select: none;">
+            <button type="button" class="room-star-btn" data-val="1" onclick="highlightRoomStars(1)" title="1 Bintang - Sangat Buruk" style="background: none; border: none; font-size: 2.8rem; line-height: 1; color: #f59e0b; padding: 4px 6px; cursor: pointer; transition: transform 0.15s ease, color 0.15s ease; outline: none; touch-action: manipulation;">★</button>
+            <button type="button" class="room-star-btn" data-val="2" onclick="highlightRoomStars(2)" title="2 Bintang - Kurang Memuaskan" style="background: none; border: none; font-size: 2.8rem; line-height: 1; color: #f59e0b; padding: 4px 6px; cursor: pointer; transition: transform 0.15s ease, color 0.15s ease; outline: none; touch-action: manipulation;">★</button>
+            <button type="button" class="room-star-btn" data-val="3" onclick="highlightRoomStars(3)" title="3 Bintang - Cukup Baik" style="background: none; border: none; font-size: 2.8rem; line-height: 1; color: #f59e0b; padding: 4px 6px; cursor: pointer; transition: transform 0.15s ease, color 0.15s ease; outline: none; touch-action: manipulation;">★</button>
+            <button type="button" class="room-star-btn" data-val="4" onclick="highlightRoomStars(4)" title="4 Bintang - Sangat Baik" style="background: none; border: none; font-size: 2.8rem; line-height: 1; color: #f59e0b; padding: 4px 6px; cursor: pointer; transition: transform 0.15s ease, color 0.15s ease; outline: none; touch-action: manipulation;">★</button>
+            <button type="button" class="room-star-btn" data-val="5" onclick="highlightRoomStars(5)" title="5 Bintang - Sempurna" style="background: none; border: none; font-size: 2.8rem; line-height: 1; color: #f59e0b; padding: 4px 6px; cursor: pointer; transition: transform 0.15s ease, color 0.15s ease; outline: none; touch-action: manipulation;">★</button>
+          </div>
+          <input type="hidden" id="roomReviewRatingVal" value="5">
+
+          <!-- Tombol Pilihan Angka Rating (1 s/d 5 Bintang) -->
+          <div style="display: flex; justify-content: center; gap: 6px; margin-top: 10px; flex-wrap: wrap;">
+            <button type="button" class="room-chip" data-chip="1" onclick="highlightRoomStars(1)" style="padding: 5px 12px; font-size: 0.78rem; border-radius: 20px; border: 1px solid #d1d5db; background: #fff; color: #555; cursor: pointer; transition: all 0.2s;">1 ★</button>
+            <button type="button" class="room-chip" data-chip="2" onclick="highlightRoomStars(2)" style="padding: 5px 12px; font-size: 0.78rem; border-radius: 20px; border: 1px solid #d1d5db; background: #fff; color: #555; cursor: pointer; transition: all 0.2s;">2 ★</button>
+            <button type="button" class="room-chip" data-chip="3" onclick="highlightRoomStars(3)" style="padding: 5px 12px; font-size: 0.78rem; border-radius: 20px; border: 1px solid #d1d5db; background: #fff; color: #555; cursor: pointer; transition: all 0.2s;">3 ★</button>
+            <button type="button" class="room-chip" data-chip="4" onclick="highlightRoomStars(4)" style="padding: 5px 12px; font-size: 0.78rem; border-radius: 20px; border: 1px solid #d1d5db; background: #fff; color: #555; cursor: pointer; transition: all 0.2s;">4 ★</button>
+            <button type="button" class="room-chip active" data-chip="5" onclick="highlightRoomStars(5)" style="padding: 5px 12px; font-size: 0.78rem; border-radius: 20px; border: 1.5px solid #f59e0b; background: #fffbeb; color: #b45309; font-weight: 700; cursor: pointer; transition: all 0.2s;">5 ★ Sempurna</button>
+          </div>
+
+          <div id="roomRatingText" style="display: inline-block; font-size: 0.85rem; color: #92400e; font-weight: 800; margin-top: 10px; background: #fef3c7; border: 1px solid #fde68a; padding: 4px 14px; border-radius: 14px;">
+            ★ 5 dari 5 Bintang — Sempurna!
+          </div>
+        </div>
+        <div style="margin-bottom: 20px;">
+          <label for="roomReviewComment" style="display: block; font-size: 0.85rem; font-weight: 700; color: #333; margin-bottom: 6px;">Ceritakan Pengalaman Anda</label>
+          <textarea id="roomReviewComment" rows="4" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.88rem; font-family: inherit; resize: vertical; box-sizing: border-box;" placeholder="Contoh: Kamar sangat bersih, kasur empuk, dan pelayanan staf sangat ramah serta profesional!" required></textarea>
+        </div>
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+          <button type="button" id="btnCancelRoomReview" class="btn btn-outline btn-sm" style="padding: 10px 18px;">Batal</button>
+          <button type="submit" id="btnSubmitRoomReview" class="btn btn-primary btn-sm" style="padding: 10px 22px; font-weight: 700;">
+            <i class="fas fa-paper-plane"></i> Publikasikan Ulasan
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/i18n.js?v=7"></script>
+  <script src="/js/pages.js?v=7"></script>
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
       await initNavbar();
       await initRoomDetailPage();
+      await loadRoomReviewsAndActions();
 
-      // Load Room Reviews
+      // Scroll to reviews if hash is present
+      if (window.location.hash === '#roomReviewsList' || window.location.hash === '#roomReviewsSection') {
+        setTimeout(() => {
+          const target = document.getElementById('roomReviewsSection');
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth' });
+          }
+        }, 500);
+      }
+    });
+
+    let currentEligibleReservation = null;
+
+    async function loadRoomReviewsAndActions() {
       const roomId = window.location.pathname.split('/').pop();
       const reviewsContainer = document.getElementById('roomReviewsList');
+      const avgBadge = document.getElementById('roomAvgRatingBadge');
+      const avgNum = document.getElementById('avgRatingNum');
+      const totalCount = document.getElementById('totalReviewCount');
+      const writeActionContainer = document.getElementById('roomWriteReviewAction');
+
       try {
-        const res = await fetch(`/api/reviews/room/${roomId}`);
-        const data = await res.json();
-        if (data.success && data.reviews.length > 0) {
-          reviewsContainer.innerHTML = data.reviews.map(rev => `
-            <div style="background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.04);">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <span style="font-weight: 700; color: #1a1a1a;"><i class="fas fa-user-circle" style="color: #C4A265; margin-right: 6px;"></i> ${rev.userName}</span>
-                <span style="color: #f39c12; font-size: 0.85rem;">
-                  ${'★'.repeat(rev.rating)}${'☆'.repeat(5 - rev.rating)}
-                </span>
-              </div>
-              <p style="color: #555; font-size: 0.9rem; margin-bottom: 8px; line-height: 1.6;">"${rev.comment}"</p>
-              <span style="font-size: 0.75rem; color: #aaa;">${formatDate(rev.createdAt)}</span>
-            </div>
-          `).join('');
+        const [revRes, canReviewRes] = await Promise.all([
+          fetch(`/api/reviews/room/${roomId}`).then(r => r.json()),
+          fetch(`/api/reviews/can-review/${roomId}`).then(r => r.json()).catch(() => ({ success: false }))
+        ]);
+
+        // Check if user can review
+        if (canReviewRes && canReviewRes.success && canReviewRes.canReview) {
+          currentEligibleReservation = canReviewRes.reservation;
+          writeActionContainer.innerHTML = `
+            <button id="btnOpenRoomReview" class="btn btn-primary btn-sm" style="background: linear-gradient(135deg, #C4A265, #D4B87A); color: #0a0a0a; font-weight: 700; border: none; padding: 8px 16px; border-radius: 6px; box-shadow: 0 2px 8px rgba(196,162,101,0.3); display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <i class="fas fa-star"></i> Tulis Ulasan Kamar Ini
+            </button>
+          `;
+          document.getElementById('btnOpenRoomReview')?.addEventListener('click', openRoomReviewModal);
         } else {
-          reviewsContainer.innerHTML = '<p style="color: #888; font-size: 0.9rem; font-style: italic;">Belum ada ulasan untuk kamar ini. Jadilah tamu pertama yang memberikan ulasan setelah masa inap Anda selesai!</p>';
+          writeActionContainer.innerHTML = '';
+        }
+
+        if (revRes.success && revRes.reviews.length > 0) {
+          avgBadge.style.display = 'inline-flex';
+          avgNum.textContent = revRes.avgRating;
+          totalCount.textContent = revRes.total;
+
+          const currentUserId = revRes.currentUserId;
+
+          reviewsContainer.innerHTML = revRes.reviews.map(rev => {
+            const isMyReview = currentUserId && (rev.userId === currentUserId);
+            return `
+              <div style="${isMyReview ? 'background: #fffdf7; border: 1.5px solid #C4A265; box-shadow: 0 4px 14px rgba(196,162,101,0.18);' : 'background: #fff; border: 1px solid #eee; box-shadow: 0 2px 8px rgba(0,0,0,0.04);'} padding: 22px; border-radius: 10px; position: relative; transition: transform 0.2s ease;">
+                ${isMyReview ? `
+                  <div style="position: absolute; top: -11px; right: 18px; background: #C4A265; color: #fff; font-size: 0.72rem; font-weight: 800; padding: 2px 10px; border-radius: 12px; letter-spacing: 0.5px; box-shadow: 0 2px 4px rgba(0,0,0,0.15);">
+                    <i class="fas fa-check"></i> ULASAN ANDA
+                  </div>
+                ` : ''}
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 6px;">
+                  <span style="font-weight: 700; color: #1a1a1a; display: inline-flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-user-circle" style="color: ${isMyReview ? '#C4A265' : '#888'}; font-size: 1.15rem;"></i>
+                    ${rev.userName}
+                    ${isMyReview ? '<span style="font-size: 0.75rem; color: #b45309; font-weight: 700; background: #fef3c7; padding: 2px 6px; border-radius: 4px;">Tamu Terverifikasi</span>' : ''}
+                  </span>
+                  <span style="color: #f39c12; font-size: 0.95rem; letter-spacing: 2px;">
+                    ${'★'.repeat(rev.rating)}${'☆'.repeat(5 - rev.rating)}
+                  </span>
+                </div>
+                <p style="color: #444; font-size: 0.92rem; margin-bottom: 10px; line-height: 1.65; white-space: pre-line;">"${rev.comment}"</p>
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; color: #999;">
+                  <span><i class="far fa-clock"></i> ${formatDate(rev.createdAt)}</span>
+                  <span><i class="fas fa-check-circle" style="color: #22c55e;"></i> Telah Selesai Menginap</span>
+                </div>
+              </div>
+            `;
+          }).join('');
+        } else {
+          avgBadge.style.display = 'none';
+          reviewsContainer.innerHTML = `
+            <div style="background: #fafafa; border: 1px dashed #ddd; border-radius: 10px; padding: 36px 20px; text-align: center;">
+              <i class="far fa-comment-dots" style="font-size: 2.2rem; color: #C4A265; margin-bottom: 12px;"></i>
+              <h4 style="font-size: 1rem; color: #333; margin-bottom: 6px;">Belum Ada Ulasan untuk Kamar Ini</h4>
+              <p style="color: #777; font-size: 0.85rem; max-width: 480px; margin: 0 auto;">Jadilah tamu pertama yang memberikan ulasan setelah menyelesaikan masa inap Anda di HotelKu Yogyakarta!</p>
+            </div>
+          `;
         }
       } catch (err) {
         reviewsContainer.innerHTML = '<p style="color: #888; font-size: 0.9rem;">Belum ada ulasan.</p>';
+      }
+    }
+
+    // Star Selector Setup
+    const starLabels = {
+      1: '★ 1 dari 5 Bintang — Sangat Buruk',
+      2: '★ 2 dari 5 Bintang — Kurang Memuaskan',
+      3: '★ 3 dari 5 Bintang — Cukup Baik',
+      4: '★ 4 dari 5 Bintang — Sangat Baik',
+      5: '★ 5 dari 5 Bintang — Sempurna!'
+    };
+
+    window.highlightRoomStars = function(val) {
+      val = parseInt(val) || 5;
+      const ratingInput = document.getElementById('roomReviewRatingVal');
+      if (ratingInput) ratingInput.value = val;
+
+      document.querySelectorAll('#roomStarRatingGroup .room-star-btn, #roomStarRatingGroup .room-star').forEach(star => {
+        const starVal = parseInt(star.getAttribute('data-val') || star.dataset.val);
+        if (starVal <= val) {
+          star.style.color = '#f59e0b';
+          star.style.textShadow = '0 2px 10px rgba(245, 158, 11, 0.5)';
+        } else {
+          star.style.color = '#d1d5db';
+          star.style.textShadow = 'none';
+        }
+        if (starVal === val) {
+          star.style.transform = 'scale(1.25)';
+          setTimeout(() => { star.style.transform = 'scale(1)'; }, 150);
+        } else {
+          star.style.transform = 'scale(1)';
+        }
+      });
+
+      document.querySelectorAll('.room-chip').forEach((chip) => {
+        const cVal = parseInt(chip.getAttribute('data-chip'));
+        if (cVal === val) {
+          chip.style.borderColor = '#f59e0b';
+          chip.style.borderWidth = '1.5px';
+          chip.style.background = '#fffbeb';
+          chip.style.color = '#b45309';
+          chip.style.fontWeight = '700';
+        } else {
+          chip.style.borderColor = '#d1d5db';
+          chip.style.borderWidth = '1px';
+          chip.style.background = '#ffffff';
+          chip.style.color = '#555';
+          chip.style.fontWeight = 'normal';
+        }
+      });
+
+      const txt = document.getElementById('roomRatingText');
+      if (txt) txt.textContent = starLabels[val] || `★ ${val} / 5 Bintang`;
+    };
+
+    document.getElementById('roomStarRatingGroup')?.addEventListener('mouseleave', () => {
+      const current = parseInt(document.getElementById('roomReviewRatingVal')?.value || '5');
+      highlightRoomStars(current);
+    });
+
+    function openRoomReviewModal() {
+      if (!currentEligibleReservation) return;
+      document.getElementById('roomReviewReservationId').value = currentEligibleReservation.id;
+      document.getElementById('roomReviewSubtitle').textContent = `Reservasi: ${currentEligibleReservation.id} · ${currentEligibleReservation.roomName}`;
+      document.getElementById('roomReviewRatingVal').value = '5';
+      highlightRoomStars(5);
+      document.getElementById('roomReviewComment').value = '';
+      const modal = document.getElementById('roomReviewModal');
+      modal.style.display = 'flex';
+      modal.classList.remove('hide');
+    }
+
+    function closeRoomReviewModal() {
+      const modal = document.getElementById('roomReviewModal');
+      modal.style.display = 'none';
+      modal.classList.add('hide');
+    }
+
+    document.getElementById('btnCloseRoomReview')?.addEventListener('click', closeRoomReviewModal);
+    document.getElementById('btnCancelRoomReview')?.addEventListener('click', closeRoomReviewModal);
+
+    document.getElementById('roomReviewForm')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const reservationId = document.getElementById('roomReviewReservationId').value;
+      const rating = document.getElementById('roomReviewRatingVal').value;
+      const comment = document.getElementById('roomReviewComment').value.trim();
+
+      if (!comment) {
+        alert('Silakan tuliskan komentar ulasan Anda.');
+        return;
+      }
+
+      const btnSubmit = document.getElementById('btnSubmitRoomReview');
+      btnSubmit.disabled = true;
+      btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+
+      try {
+        const res = await fetch('/api/reviews', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reservationId, rating, comment })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert('✦ Terima kasih! Ulasan Anda berhasil diterbitkan dan langsung tampil pada kamar ini.');
+          closeRoomReviewModal();
+          await loadRoomReviewsAndActions();
+        } else {
+          alert(data.message || 'Gagal menyimpan ulasan');
+        }
+      } catch (err) {
+        alert('Terjadi kesalahan jaringan.');
+      } finally {
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = '<i class="fas fa-paper-plane"></i> Publikasikan Ulasan';
       }
     });
   </script>

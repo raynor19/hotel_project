@@ -46,5 +46,61 @@
     "password": "agil123",
     "role": "guest",
     "phone": "123456"
+  },
+  {
+    "id": 7,
+    "name": "yantoy",
+    "email": "yanto@gmail.com",
+    "password": "badak123",
+    "role": "guest",
+    "phone": "12345678"
+  },
+  {
+    "id": 8,
+    "name": "kontol",
+    "email": "kontol@gmail.com",
+    "password": "kontol123",
+    "role": "guest",
+    "phone": "08123456"
+  },
+  {
+    "id": 9,
+    "name": "pragos",
+    "email": "prabu@gmail.com",
+    "password": "prabu123",
+    "role": "guest",
+    "phone": "0821179327792"
+  },
+  {
+    "id": 10,
+    "name": "Adil",
+    "email": "adil@gmail.com",
+    "password": "Adil123",
+    "role": "guest",
+    "phone": "081288025444"
+  },
+  {
+    "id": 11,
+    "name": "Tamu Baru Test",
+    "email": "tamu_baru_1790070428536@example.com",
+    "password": "password123",
+    "role": "guest",
+    "phone": "081234567890"
+  },
+  {
+    "id": 12,
+    "name": "Tamu Baru Test",
+    "email": "tamu_baru_1790070582188@example.com",
+    "password": "password123",
+    "role": "guest",
+    "phone": "081234567890"
+  },
+  {
+    "id": 13,
+    "name": "fira",
+    "email": "fira@gmail.com",
+    "password": "fira123",
+    "role": "guest",
+    "phone": "0812345432"
   }
 ]

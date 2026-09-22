@@ -23,7 +23,7 @@
           <span class="topbar-item"><i class="fas fa-sign-out-alt"></i> Front Desk Check-Out</span>
         </div>
         <div class="topbar-right">
-          <div class="topbar-clock-badge">
+          <div class="topbar-clock-badge notranslate">
             <span class="live-pulse-dot"></span>
             <i class="far fa-calendar-alt"></i>
             <span class="realtime-date">Memuat tanggal...</span>
@@ -74,7 +74,7 @@
 
   <!-- Page Content -->
   <main class="page-content">
-    <div style="background: #fbf0ff; border-left: 4px solid #8e44ad; padding: 16px 20px; border-radius: 8px; margin-bottom: 24px; font-size: 0.85rem; color: #581d6f;">
+    <div style="background: #fbf0ff; border-left: 4px solid #8e44ad; padding: 16px 20px; border-radius: 8px; margin-bottom: 24px; font-size: 0.85rem; color: #581d6f;" data-i18n-html="adminCheckoutNotice">
       <i class="fas fa-info-circle" style="margin-right: 6px;"></i>
       Ketika tombol <strong>"Proses Check-Out"</strong> ditekan, status reservasi berubah menjadi <strong>Checked-Out</strong>, unit kamar otomatis kembali berstatus <strong>Tersedia (Available)</strong>, dan tamu kini dapat memberikan ulasan serta rating di aplikasinya.
     </div>
@@ -88,7 +88,8 @@
     </div>
   </main>
 
-  <script src="/js/pages.js"></script>
+  <script src="/js/i18n.js?v=8"></script>
+  <script src="/js/pages.js?v=8"></script>
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
       await initNavbar();

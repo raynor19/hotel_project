@@ -23,7 +23,7 @@
           <span class="topbar-item"><i class="fas fa-sign-in-alt"></i> Front Desk Check-In</span>
         </div>
         <div class="topbar-right">
-          <div class="topbar-clock-badge">
+          <div class="topbar-clock-badge notranslate">
             <span class="live-pulse-dot"></span>
             <i class="far fa-calendar-alt"></i>
             <span class="realtime-date">Memuat tanggal...</span>
@@ -74,7 +74,7 @@
 
   <!-- Page Content -->
   <main class="page-content">
-    <div style="background: #eef7ff; border-left: 4px solid #2980b9; padding: 16px 20px; border-radius: 8px; margin-bottom: 24px; font-size: 0.85rem; color: #1c5277;">
+    <div style="background: #eef7ff; border-left: 4px solid #2980b9; padding: 16px 20px; border-radius: 8px; margin-bottom: 24px; font-size: 0.85rem; color: #1c5277;" data-i18n-html="adminCheckinNotice">
       <i class="fas fa-info-circle" style="margin-right: 6px;"></i>
       Ketika tombol <strong>"Proses Check-In"</strong> ditekan, status reservasi berubah menjadi <strong>Checked-In</strong> dan unit kamar akan ditandai sebagai terisi (Occupied).
     </div>
@@ -88,7 +88,8 @@
     </div>
   </main>
 
-  <script src="/js/pages.js"></script>
+  <script src="/js/i18n.js?v=8"></script>
+  <script src="/js/pages.js?v=8"></script>
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
       await initNavbar();
