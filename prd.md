@@ -3,213 +3,217 @@
 
 | Metadata | Keterangan |
 | :--- | :--- |
-| **Versi Dokumen** | 1.3 (Revisi Fokus: 3 Peran Pengguna) |
-| **Tanggal Pembaruan** | 13 September 2026 |
-| **Status** | Final Draft — Penambahan Fitur Pengingat Check-Out Otomatis (*T-2 Jam*) & Notifikasi Kamar Siap Check-In |
+| **Versi Dokumen** | 2.0 (Revisi Komprehensif: Alur Pembayaran, RBAC Front Desk, Multi-Bahasa i18n & Serverless Resilience) |
+| **Tanggal Pembaruan** | 22 September 2026 |
+| **Status** | Approved & Implemented — Versi Rilis Produksi Vercel |
 | **Referensi Produk (Deploy)** | [hotel-project-five-peach.vercel.app](https://hotel-project-five-peach.vercel.app) |
+| **Repositori GitHub** | [github.com/raynor19/hotel_project](https://github.com/raynor19/hotel_project) |
 | **Penyusun** | Tim Pengembang HotelKu Yogyakarta |
 
 ---
 
 ## 1. Latar Belakang
 
-**HotelKu Yogyakarta** adalah aplikasi web prototipe manajemen hotel (tugas akhir pengembangan prototipe aplikasi) yang melayani pemesanan kamar secara daring (*online*) dengan tiga peran pengguna utama: **Tamu**, **Resepsionis**, dan **Admin**. Aplikasi mengusung tema akomodasi mewah bernuansa etnik Jawa klasik dengan 6 kategori kamar (*Standard Room*, *Superior Room*, *Deluxe Room*, *Junior Suite*, *Executive Suite*, dan *Presidential Suite*).
+**HotelKu Yogyakarta** adalah platform aplikasi web manajemen perhotelan modern yang melayani pemesanan kamar secara daring (*online*) dengan arsitektur hak akses terpadu untuk tiga peran pengguna: **Tamu**, **Resepsionis**, dan **Admin**. Aplikasi mengusung estetika mewah bernuansa etnik Jawa klasik (*heritage hospitality*) dengan 6 kategori kamar eksklusif (*Standard Room, Superior Room, Deluxe Room, Junior Suite, Executive Suite*, dan *Presidential Suite*).
 
-Dalam operasional perhotelan, efisiensi pelayanan tamu pada saat kedatangan (*check-in*) dan kepulangan (*check-out*) memegang peranan paling krusial terhadap kepuasan pelanggan. Dua permasalahan utama yang sering terjadi di lapangan adalah:
-1. **Keterlambatan check-out tanpa pemberitahuan (*unnotified late check-out*):** Tamu seringkali lupa batas waktu kepulangan pukul 12:00 WIB, sehingga proses serah terima kamar terhambat.
-2. **Ketidakpastian kesiapan kamar bagi tamu (*uncertain room readiness*):** Tamu yang datang lebih awal atau sedang menunggu di lobi seringkali tidak mengetahui apakah kamar sudah siap huni, sehingga berulang kali mendatangi meja resepsionis dan memicu antrean panjang.
-
-Dokumen ini merumuskan spesifikasi produk yang mencakup fitur-fitur inti pemesanan kamar hotel serta fitur bernilai tambah berupa **Sistem Pengingat Check-Out Otomatis (T-2 Jam)**, **Notifikasi Kamar Siap Check-In (Room Ready Notification)**, serta **Dashboard Okupansi & Pendapatan Real-Time**.
+Dalam operasional perhotelan nyata, tata kelola reservasi memerlukan sinkronisasi ketat antara pemesanan tamu di sisi daring dan otorisasi fisik di meja resepsionis (*front desk*). Dokumen versi 2.0 ini menyempurnakan operasional sistem dengan menghadirkan:
+1. **Alur Pemesanan & Pembayaran 7-Langkah:** Mulai dari pemilihan kamar, pengisian data, pembayaran, peninjauan (ACC) oleh pihak resepsionis, penerbitan e-invoice resmi, hingga penyerahan kamar siap huni.
+2. **Eksklusivitas Tindakan Check-In & Check-Out oleh Resepsionis:** Tamu tidak lagi melakukan self check-in/out mandiri secara sepihak; kewenangan mutlak proses check-in fisik dan check-out kepulangan berada pada staf resepsionis hotel.
+3. **Penyempurnaan Alur Pendaftaran Akun:** Tamu baru tidak langsung login otomatis demi keamanan otentikasi, melainkan dialihkan secara elegan ke halaman Masuk (*Sign In*) dengan email terisi otomatis.
+4. **Mesin Penerjemah Multi-Bahasa Dinamis (i18n):** Mendukung 5 bahasa internasional (Indonesia, Inggris, Jepang, Mandarin, dan Arab RTL) yang terintegrasi di seluruh halaman tamu hingga konsol admin/resepsionis.
+5. **Sistem Ulasan Tamu & Monitoring Kamar Real-Time:** Menampung feedback bintang dan komentar pasca-checkout, serta denah status kebersihan kamar real-time.
+6. **Ketahanan Serverless Cloud Deployment (Vercel Ready):** Penanganan persistensi data hybrid (`/tmp/hotel_data` & client-side state sync) agar aplikasi berjalan stabil dan mulus di lingkungan cloud serverless stateless.
 
 ---
 
 ## 2. Tujuan Produk
 
 - **Bagi Tamu (Guest):** 
-  - Menyediakan platform reservasi kamar hotel *end-to-end* yang praktis, cepat, dan transparan.
-  - Memberikan notifikasi pengingat ramah 2 jam sebelum batas waktu check-out agar tamu tidak lupa, dapat berkemas santai, dan memiliki tombol aksi cepat untuk mengajukan perpanjangan (*late check-out*) atau meminta bantuan barang (*luggage assistance*).
-  - Memberikan notifikasi real-time saat kamar sudah selesai disiapkan dan siap huni (*Room Ready Notification*), sehingga tamu dapat langsung melakukan check-in tanpa perlu mengantre atau bolak-balik bertanya di lobi.
+  - Memberikan pengalaman booking yang intuitif dengan form reservasi 2-tahap (Data Tamu & Pembayaran Cepat).
+  - Menyediakan visibilitas status transparan: saat menunggu persetujuan (*Menunggu Konfirmasi*), saat disetujui (*Pesanan Dikonfirmasi*), dan saat kamar siap (*Kamar Siap Huni*).
+  - Akses E-Invoice resmi yang dapat dicetak atau disimpan ke PDF kapan saja.
+  - Notifikasi otomatis pengingat check-out (T-2 Jam) sebelum pukul 12:00 WIB disertai opsi perpanjangan waktu (*Late Check-out*) dan bantuan bellboy.
+  - Kemudahan beralih bahasa (ID, EN, JA, ZH, AR) untuk wisatawan mancanegara.
 - **Bagi Resepsionis (Front Desk):** 
-  - Mempercepat proses verifikasi check-in dan check-out tamu secara digital tanpa pencatatan kertas manual.
-  - Memberikan visibilitas daftar kamar yang mendekati batas check-out (< 2 jam) guna koordinasi kepulangan tamu yang lebih terencana.
-  - Memantau denah status kamar secara real-time (*Occupied, Available/Ready, Reserved*).
+  - Hak kendali tunggal (eksklusif) untuk menyetujui (*ACC*) atau menolak permohonan reservasi yang masuk beserta alasan penolakan.
+  - Hak kendali tunggal untuk memproses **Check-In Sekarang** (mengubah unit menjadi *Occupied*) dan **Check-Out Sekarang** (mengembalikan unit menjadi *Available*).
+  - Monitoring kamar yang mendekati batas check-out (< 2 jam) guna koordinasi kepulangan tamu yang lebih terencana.
+  - Denah monitoring kebersihan dan status hunian kamar secara real-time (*Siap Huni, Terisi Tamu, Dibersihkan, Perbaikan*).
 - **Bagi Administrator & Manajemen Hotel:** 
-  - Mengelola inventaris katalog kamar, penyesuaian tarif harga, dan manajemen akun pengguna.
-  - Memberikan *Business Intelligence* berupa grafik okupansi kamar, tren pemesanan, dan laporan pendapatan harian secara real-time.
+  - Mengelola inventaris katalog kamar, penyesuaian tarif harga, fasilitas kamar, dan manajemen akun staf hotel.
+  - Mengakses *Executive Dashboard* dengan grafik okupansi kamar, tren reservasi, dan laporan pendapatan finansial terwujud secara real-time.
 
 ---
 
-## 3. Peran Pengguna (Roles)
+## 3. Matriks Peran Pengguna (Role-Based Access Control / RBAC)
 
-| Peran (Role) | Deskripsi & Hak Akses Utama |
-| :--- | :--- |
-| **Tamu (Guest)** | Mencari dan memesan kamar, melihat tiket/voucher pesanan pada menu 'Pesanan Saya', mengelola profil akun, menerima pengingat check-in/out, serta mengajukan permohonan *late check-out*. |
-| **Resepsionis (Front Desk)** | Memverifikasi reservasi masuk, memproses transaksi kedatangan (*Check-In*) dan kepulangan (*Check-Out*), memantau kamar mendekati batas check-out, serta merespons permohonan bantuan tamu. |
-| **Administrator (Admin)** | Mengelola inventaris kamar (harga, tipe, fasilitas, foto), mengelola data pengguna hotel, memantau metrik performa okupansi, dan laporan finansial bisnis. |
-
----
-
-## 4. Rangkuman Fitur Eksisting
-
-1. **Landing Page & Beranda:**
-   - Showcase fasilitas unggulan (Infinity Pool, Javanese Spa, Warung Tradisional, Fitness Center, 24/7 Concierge, Airport Transfer).
-   - Widget jam digital dan penanggalan real-time (hari, tanggal, bulan, tahun, jam WIB).
-   - Bar pencarian cepat ketersediaan kamar (*check-in/check-out date*, jumlah tamu, jumlah unit).
-2. **Katalog Kamar Interaktif (`/rooms`):**
-   - Daftar kamar lengkap dengan filter tipe, harga per malam, fasilitas spesifik, galeri foto, dan tombol reservasi instan.
-3. **Autentikasi & Akun Demo Multi-Role:**
-   - Sistem registrasi mandiri untuk tamu baru dengan validasi email *case-insensitive*.
-   - Tombol login akun demo 1-klik untuk Admin, Resepsionis, dan Tamu.
-4. **Portal Tamu (`/my-reservations` & `/profile`):**
-   - Riwayat pesanan aktif dan lampau beserta status pemesanan (*Pending*, *Approved*, *Checked-In*, *Checked-Out*, *Rejected*).
-   - Cetak e-voucher reservasi kamar.
-5. **Admin Console (`/admin/dashboard`):**
-   - KPI metrik finansial, tingkat okupansi hunian, manajemen kamar (`/admin/rooms`), dan manajemen pengguna (`/admin/users`).
-6. **Konsol Resepsionis (`/receptionist/dashboard`):**
-   - Dashboard operasional harian front office, konfirmasi reservasi masuk, dan alur cepat transaksi *Check-In* dan *Check-Out*.
+| Fitur / Modul | Tamu (Guest) | Resepsionis (Staff) | Administrator (Admin) |
+| :--- | :---: | :---: | :---: |
+| Jelajah Katalog Kamar & Cari Ketersediaan | ✅ | ✅ | ✅ |
+| Buat Reservasi & Lakukan Pembayaran | ✅ | ✅ | ✅ |
+| Batalkan Reservasi Sendiri (Sebelum Check-In) | ✅ | ✅ | ✅ |
+| Lihat Riwayat Pesanan Pribadi & E-Invoice | ✅ | ❌ | ❌ |
+| Setujui (ACC) / Tolak Permohonan Reservasi | ❌ | ✅ | ✅ |
+| Eksekusi Check-In Fisik Tamu | ❌ | ✅ | ✅ |
+| Eksekusi Check-Out Kepulangan Tamu | ❌ | ✅ | ✅ |
+| Denah Status Kamar & Housekeeping Real-Time | ❌ | ✅ | ✅ |
+| Manajemen Data Kamar (CRUD Tipe & Harga) | ❌ | ❌ | ✅ |
+| Manajemen Akun Pengguna & Staf Hotel | ❌ | ❌ | ✅ |
+| Dashboard Laporan Finansial & Omzet Bisnis | ❌ | ❌ | ✅ |
 
 ---
 
-## 5. Fitur Bernilai Tambah 1: Pengingat Check-Out Otomatis (T-2 Jam)
+## 4. Alur Kerja Utama Sistem (Core Business Workflows)
 
-### 5.1 Latar Belakang & Masalah
-Tamu seringkali terlambat melakukan check-out (melebihi standar pukul 12:00 WIB) karena lupa waktu, tertidur, atau terburu-buru berkemas. Hal ini memicu penumpukan antrean di front office dan mengacaukan kesiapan kamar untuk tamu yang akan datang pada pukul 14:00 WIB.
-
-### 5.2 Mekanisme & Logika Pemicu (*Trigger Logic*)
-- **Waktu Pemicu:** Tepat **2 jam (120 menit)** sebelum batas waktu check-out resmi:
-  $$T_{\text{trigger}} = T_{\text{checkout}} - 120\text{ menit}$$
-  *(Contoh: Pada jadwal checkout pukul 12:00 WIB, notifikasi otomatis aktif pukul 10:00 WIB pada hari kepulangan).*
-- **Kondisi Validasi:**
-  - Status reservasi saat ini = `checked-in`.
-  - Tanggal hari ini = Tanggal `check_out` pada data reservasi.
-  - Tamu belum memproses kepulangan di meja resepsionis.
-
+### 4.1 Alur Registrasi Tamu Baru
 ```mermaid
-flowchart TD
-    A[Sistem Timer Interval Tiap Menit] --> B{Status = Checked-In DAN Hari = Tanggal Check-Out?}
-    B -- Tidak --> C[Abaikan / Standby]
-    B -- Ya --> D{Waktu Saat Ini >= Jam Checkout - 2 Jam?}
-    D -- Belum --> C
-    D -- Ya --> E[Munculkan Banner & Modal Notifikasi T-2 Jam pada Portal Tamu]
-    E --> F[Kirim Simulasi Notifikasi WhatsApp / SMS]
-    E --> G[Tampilkan Indikator 'Mendekati Check-Out' pada Konsol Resepsionis]
-    E --> H{Respon Aksi Tamu}
-    H -->|Konfirmasi Siap| I[Resepsionis Mendapat Sinyal Siaga Check-Out]
-    H -->|Ajukan Late Checkout| J[Permohonan Masuk ke Verifikasi Resepsionis]
-    H -->|Bantuan Bellboy| K[Notifikasi Penjemputan Koper ke Concierge]
+sequenceDiagram
+    autonumber
+    actor Guest as Tamu Baru
+    participant RegPage as /register
+    participant Server as Backend API (/api/register)
+    participant LoginPage as /login?registered=1
+
+    Guest->>RegPage: Isi Nama, Email, Telepon, Password
+    Guest->>RegPage: Klik "Daftar Akun Baru"
+    RegPage->>Server: POST /api/register
+    Server-->>RegPage: 200 OK (Akun Terdaftar & Payload User)
+    RegPage->>RegPage: Simpan State Akun Lokal (Serverless Resilience)
+    RegPage->>LoginPage: Redirect otomatis ke /login?registered=1&email=...
+    Note over LoginPage: Email terisi otomatis, input password fokus aktif
+    Guest->>LoginPage: Masukkan Password & Klik "Sign In"
+    LoginPage->>Server: POST /api/login
+    Server-->>LoginPage: 200 OK & Buat Sesi Login Tamu
 ```
 
-### 5.3 Kanal Penyampaian & Tampilan Antarmuka
-
-#### A. Banner & Dialog Interaktif pada Portal Tamu (`/my-reservations` & Akun Tamu)
-Saat tamu membuka aplikasi web, muncul banner notifikasi elegan bernuansa emas-oranye:
-> **✦ PENGINGAT WAKTU CHECK-OUT ✦**  
-> *"Selamat pagi Bpk/Ibu [Nama Tamu], waktu check-out untuk Kamar [Nomor/Tipe Kamar] adalah hari ini pukul **12:00 WIB** (tersisa 2 jam lagi). Mohon persiapkan barang bawaan Anda agar kepulangan berjalan lancar."*
-
-#### B. Menu Aksi Cepat (*Quick Actions*) untuk Tamu:
-1. `[Konfirmasi Siap Check-Out Pukul 12:00]`:
-   - Mengabari sistem front desk bahwa tamu siap checkout tepat waktu.
-2. `[Ajukan Late Check-Out (Perpanjangan Waktu)]`:
-   - Membuka form permohonan (+1 Jam s.d. 13:00 WIB atau +2 Jam s.d. 14:00 WIB) yang diteruskan ke resepsionis untuk disetujui/ditolak berdasarkan ketersediaan kamar.
-3. `[Panggil Bantuan Bellboy / Angkut Koper]`:
-   - Meminta staf concierge menjemput koper di kamar tamu.
-
-#### C. Visibilitas pada Konsol Resepsionis (`/receptionist/dashboard`):
-- Tab khusus: **"Mendekati Batas Check-Out (< 2 Jam)"**.
-- Kamar yang berada dalam periode T-2 jam ditandai dengan badge kuning: `[Segera Check-Out - 10:00 s.d. 12:00]`.
-- Resepsionis dapat memantau apakah tamu sudah mengonfirmasi kepulangan atau meminta perpanjangan waktu.
-
----
-
-## 6. Fitur Bernilai Tambah 2: Notifikasi Kamar Siap Check-In (Room Ready Notification)
-
-### 6.1 Latar Belakang & Masalah
-Tamu yang tiba lebih awal (*early arrival*) sebelum jam standar check-in (14:00 WIB), atau tamu yang sedang bersantai di kafe/lobi hotel, seringkali tidak mengetahui apakah kamar yang mereka pesan sudah selesai disiapkan atau belum. Hal ini menyebabkan tamu harus berulang kali mendatangi meja resepsionis untuk bertanya (*"Apakah kamar saya sudah siap?"*), menimbulkan penumpukan antrean di lobi dan memecah konsentrasi petugas resepsionis.
-
-### 6.2 Cara Kerja & Fitur:
-1. **Pemicu Kesiapan Kamar (*Room Ready Trigger*):**
-   - Saat status kamar telah diverifikasi siap huni (*Ready/Available*) oleh sistem atau resepsionis pada hari kedatangan tamu:
-   - Sistem secara otomatis memicu notifikasi instan ke portal tamu (`/my-reservations`) dengan pesan: *"Kamar [Nomor/Tipe Kamar] Anda Sudah Siap! Anda dapat langsung menuju meja resepsionis untuk mengambil kunci kamar tanpa perlu mengantre."*
-   - Dilengkapi simulasi pengiriman notifikasi pesan instan (WhatsApp / SMS push).
-2. **Hak Akses Masuk Lebih Awal (*Early Check-In Privilege*):**
-   - Jika kamar siap lebih awal dari pukul 14:00 WIB (misalnya pukul 12:30 atau 13:15 WIB), tamu langsung memperoleh notifikasi hak masuk lebih awal tanpa biaya tambahan, menciptakan impresi pertama (*first impression*) yang sangat menyenangkan bagi tamu.
-3. **Papan Monitoring Kesiapan pada Konsol Resepsionis:**
-   - Resepsionis dapat melihat daftar kamar yang berstatus *Ready for Check-In* dan status bahwa tamu telah diberi tahu (*Guest Notified*).
-   - Saat tamu tiba di meja resepsionis, proses verifikasi identitas dan serah terima kunci kamar dapat diselesaikan dalam waktu kurang dari 1 menit.
+### 4.2 Alur Pemesanan, Pembayaran, Persetujuan Resepsionis & Check-In
+```mermaid
+flowchart TD
+    A[1. Tamu Pilih Kamar di /rooms] --> B[2. Klik Tombol 'Pesan Kamar Ini']
+    B --> C[3. Isi Data Pemesan & Permintaan Khusus]
+    C --> D[4. Pilih Metode Pembayaran & Konfirmasi Bayar]
+    D --> E[Status Reservasi: PENDING - Menunggu Konfirmasi Resepsionis]
+    E --> F[5. Notifikasi Booking Masuk ke Konsol Resepsionis]
+    F --> G{Resepsionis Tinjau Reservasi}
+    G -- Tolak --> H[Status: Rejected / Ditolak dengan Alasan]
+    G -- Setujui / ACC --> I[Status: Approved - Pesanan Dikonfirmasi]
+    I --> J[E-Invoice Resmi Terbit & Dapat Diakses Tamu]
+    I --> K[6. Tamu Tiba di Hotel / Kamar Ready]
+    K --> L[7. Resepsionis Klik 'Check-In Sekarang']
+    L --> M[Status: Checked-In / Unit Kamar Menjadi Occupied]
+    M --> N[Tamu Menginap & Sistem Aktifkan Pengingat Check-out T-2 Jam]
+    N --> O[8. Resepsionis Klik 'Check-Out Sekarang' Saat Kepulangan]
+    O --> P[Status: Checked-Out / Unit Kamar Otomatis Kembali Available]
+    P --> Q[Tamu Dapat Memberikan Ulasan & Rating Bintang di Aplikasi]
+```
 
 ---
 
-## 7. Fitur Bernilai Tambah 3: Dashboard Okupansi & Pendapatan Real-Time
+## 5. Spesifikasi Detail Fitur Utama
 
-### 7.1 Latar Belakang & Masalah
-Manajemen hotel dan resepsionis membutuhkan visibilitas instan atas tingkat keterisian kamar dan perolehan pendapatan harian tanpa harus menghitung rekapitulasi buku kas secara manual.
+### 5.1 Formulir Reservasi 2-Tahap & Pembayaran Instan (`/rooms/:id/book`)
+1. **Tahap 1 — Data Pemesan:**
+   - Input tanggal check-in dan check-out dengan validasi durasi malam otomatis.
+   - Identitas nama lengkap, nomor WhatsApp/telepon, email, dan catatan permohonan khusus.
+   - Ringkasan kalkulasi biaya menginap (harga per malam $\times$ jumlah malam).
+2. **Tahap 2 — Konfirmasi & Pilihan Pembayaran:**
+   - Pilihan metode pembayaran:
+     - **QRIS:** Pembayaran instan via scan kode QR statis terintegrasi.
+     - **Virtual Account (BCA / Mandiri):** Salin nomor rekening VA 16 digit.
+     - **Kartu Kredit / Debit:** Form nomor kartu dan masa berlaku.
+     - **Bayar di Resepsionis:** Pembayaran tunai/EDC saat tiba di hotel.
+   - Tombol *"Konfirmasi & Bayar Sekarang"* diposisikan simetris di tengah (*centered*) untuk estetika visual yang konsisten.
+   - Menampilkan modal selebrasi konfirmasi pembayaran dan ID transaksi unik.
 
-### 7.2 Cara Kerja & Fitur:
-1. **Kalkulasi Otomatis KPI Tingkat Okupansi:**
-   $$\text{Tingkat Okupansi (\%)} = \left( \frac{\text{Jumlah Kamar Dihuni (Occupied)}}{\text{Total Unit Kamar Tersedia}} \right) \times 100\%$$
-2. **Rekapitulasi Finansial Terwujud vs Potensial:**
-   - Menghitung pendapatan terwujud dari tamu yang sudah *Checked-In* dan *Checked-Out*.
-   - Menghitung estimasi potensi omzet dari reservasi yang berstatus *Approved/Pending*.
-3. **Denah Warna Status Kamar Real-Time:**
-   - *Biru:* Dihuni Tamu (*Occupied*).
-   - *Kuning:* Mendekati Batas Check-Out (*Approaching Check-Out*).
-   - *Hijau:* Siap Dipesan / Kosong (*Available*).
-4. **Sinkronisasi Jam Digital Operasional WIB:**
-   - Mengintegrasikan penanggalan lengkap (Hari, Tanggal, Bulan, Tahun, dan Jam berdetik real-time) sebagai acuan baku jam check-in/out.
+### 5.2 Pengingat Check-Out Otomatis (T-2 Jam)
+- **Waktu Pemicu:** Tepat 2 jam (120 menit) sebelum batas check-out pukul 12:00 WIB (yakni pukul 10:00 WIB pada tanggal check-out).
+  $$T_{\text{trigger}} = T_{\text{checkout}} - 120\text{ menit}$$
+- **Kanal Notifikasi:**
+  - Banner emas elegan pada menu *"Pesanan Saya"* tamu.
+  - Tombol aksi cepat tamu: *Konfirmasi Siap Check-Out*, *Ajukan Late Check-Out*, dan *Panggil Bantuan Bellboy*.
+  - Indikator badge kuning pada konsol resepsionis untuk koordinasi operasional kepulangan.
+
+### 5.3 Sistem Multi-Bahasa Dinamis (Internationalization / i18n)
+- **Dukungan Bahasa:**
+  - 🇮🇩 **Bahasa Indonesia (`id`)**: Bahasa default sistem.
+  - 🇬🇧 **English (`en`)**: Standar internasional wisatawan asing.
+  - 🇯🇵 **日本語 / Japanese (`ja`)**: Standar turis Jepang dengan penanggalan format tahun-bulan-hari.
+  - 🇨🇳 **中文 / Simplified Chinese (`zh`)**: Standar turis Tiongkok.
+  - 🇸🇦 **العربية / Arabic (`ar`)**: Standar wisatawan Timur Tengah dengan layout **Right-to-Left (RTL)** otomatis.
+- **Cakupan Penerjemahan:**
+  - Menu navigasi, tombol aksi, form reservasi, modal pembayaran, e-invoice resmi, status badge, hingga seluruh konsol admin & resepsionis (*Check-In Tamu, Check-Out Tamu, Status Kamar, Manajemen Reservasi*).
+  - Jam dan tanggal digital otomatis menyesuaikan zona waktu bahasa terpilih (WIB, BST, JST, CST, AST).
+
+### 5.4 Sistem Ulasan & Rating Tamu (Guest Reviews)
+- Tamu yang telah menyelesaikan masa menginap (*Checked-Out*) berhak memberikan ulasan:
+  - Rating bintang 1 s.d. 5.
+  - Ulasan komentar pengalaman menginap.
+- Ulasan secara otomatis diverifikasi berdasarkan ID reservasi yang sah, mencegah *fake reviews*.
+- Rata-rata skor rating dan jumlah ulasan langsung diperbarui di kartu katalog kamar dan halaman detail kamar.
+
+### 5.5 Ketahanan Kompatibilitas Serverless (Vercel Resilient Architecture)
+- **Penyimpanan Runtime:** Mendeteksi lingkungan cloud Vercel (`process.env.VERCEL`) dan mengalihkan file runtime ke `/tmp/hotel_data` guna mencegah galat sistem berkas *Read-Only (EROFS)*.
+- **Sinkronisasi Akun Otomatis:** Akun tamu yang baru didaftarkan disimpan secara aman pada browser (`localStorage`) dan disinkronkan secara transparan saat login, menjamin tamu tetap dapat masuk meskipun container serverless Vercel baru saja menyala (*cold-start*).
+- **Session Recovery:** Mengirimkan identitas sesi pada interceptor fetch global sehingga status login tamu tidak terputus saat bernavigasi antar-halaman.
 
 ---
 
-## 8. Matriks User Stories
+## 6. Matriks User Stories
 
-| ID | Sebagai | Saya ingin | Agar |
+| ID | Peran | Cerita Pengguna (*User Story*) | Kriteria Penerimaan (*Acceptance Criteria*) |
 | :---: | :--- | :--- | :--- |
-| **US-01** | Tamu Hotel | Melihat ketersediaan tipe kamar, foto, fasilitas, dan harga per malam secara transparan | Dapat memilih kamar yang paling sesuai dengan kebutuhan menginap. |
-| **US-02** | Tamu Hotel | Melakukan reservasi dan mendapatkan e-voucher booking secara instan | Memiliki kepastian hak kamar sebelum tiba di hotel. |
-| **US-03** | **Tamu Hotel** | **Menerima notifikasi pengingat ramah 2 jam sebelum batas check-out (pukul 10:00 WIB)** | **Memiliki cukup waktu untuk mengemas barang bawaan dan terhindar dari denda keterlambatan.** |
-| **US-04** | **Tamu Hotel** | **Dapat mengajukan permohonan Late Check-Out atau memanggil bellboy langsung dari ponsel** | **Proses kepulangan menjadi lebih fleksibel, nyaman, dan bebas ribet.** |
-| **US-05** | Resepsionis | Memproses verifikasi check-in dan check-out tamu secara cepat berbasis pencarian nama/ID | Mengurangi waktu tunggu tamu di meja lobi. |
-| **US-06** | **Resepsionis** | **Melihat daftar kamar yang mendekati batas check-out (< 2 jam) beserta status konfirmasi tamu** | **Dapat mengantisipasi kepulangan tamu dan memantau perputaran kamar secara proaktif.** |
-| **US-07** | **Tamu Hotel** | **Menerima notifikasi instan saat kamar sudah selesai disiapkan dan siap huni** | **Dapat langsung mengambil kunci kamar di lobi tanpa harus menunggu atau bolak-balik bertanya ke resepsionis.** |
-| **US-08** | Administrator | Menambah, mengedit tarif harga, dan memperbarui foto kamar | Mengelola inventaris hotel secara mandiri. |
-| **US-09** | Administrator | Memantau grafik okupansi kamar dan rekapitulasi pendapatan harian secara real-time | Dapat mengevaluasi performa bisnis hotel dan menentukan strategi promosi. |
+| **US-01** | Tamu | Memilih kamar dan melakukan pembayaran instan dalam satu alur terpadu. | Form 2-tahap memproses data tamu, menampilkan pilihan pembayaran, dan menerbitkan status *Pending*. |
+| **US-02** | Tamu | Melihat status reservasi saya setelah pembayaran. | Menampilkan badge *"Menunggu Konfirmasi"* sebelum di-ACC, dan *"Pesanan Dikonfirmasi"* setelah di-ACC. |
+| **US-03** | Tamu | Mengakses E-Invoice resmi reservasi hotel. | Tersedia tombol *"Lihat E-Invoice Resmi"* lengkap dengan rincian biaya dan tombol cetak/simpan PDF. |
+| **US-04** | Tamu | Menerima pengingat check-out T-2 jam dan mengajukan bantuan. | Banner muncul pukul 10:00 WIB pada hari checkout dengan tombol aksi cepat bellboy & late checkout. |
+| **US-05** | Tamu | Mengganti bahasa website ke bahasa asing pilihan saya. | Seluruh teks halaman, judul, deskripsi, dan badge langsung berganti bahasa tanpa perlu reload halaman. |
+| **US-06** | Resepsionis | Meninjau, menyetujui (ACC), atau menolak reservasi masuk. | Tombol ACC mengubah status menjadi *Approved*; tombol Tolak meminta alasan dan mengubah status ke *Rejected*. |
+| **US-07** | Resepsionis | Memproses kedatangan tamu (*Check-In*) dan kepulangan (*Check-Out*). | Hanya resepsionis yang dapat menekan tombol Check-In dan Check-Out; status unit kamar ter-update secara real-time. |
+| **US-08** | Resepsionis | Memantau denah status kebersihan dan okupansi kamar hotel. | Menampilkan counter dan grid kamar: *Siap Huni, Terisi Tamu, Dibersihkan, Perbaikan*. |
+| **US-09** | Admin | Mengelola inventaris kamar dan hak akses staf pengguna. | CRUD data kamar dan akun pengguna berfungsi melalui konsol admin. |
+| **US-10** | Admin | Memantau metrik performa okupansi dan omzet finansial hotel. | KPI total pendapatan terwujud dan persentase okupansi dihitung otomatis dari data reservasi. |
 
 ---
 
-## 9. Aturan Bisnis & Penanganan Skenario Khusus (*Edge Cases*)
+## 7. Aturan Bisnis & Penanganan Kasus Khusus (*Business Rules & Edge Cases*)
 
-| Skenario | Logika & Perilaku Sistem |
+| Kasus Khusus | Perilaku & Solusi Sistem |
 | :--- | :--- |
-| **Tamu telah check-out lebih awal (misal pukul 09:30 WIB)** | Status reservasi langsung beralih ke `checked-out`. Notifikasi pengingat T-2 jam otomatis dibatalkan/tidak dikirimkan (*suppressed*). |
-| **Tamu mengajukan Late Check-Out dan disetujui resepsionis** | Jam batas check-out pada reservasi diperbarui (misal menjadi 13:30 WIB). Sistem menghitung ulang waktu pengingat dan memperbarui catatan operasional front desk. |
-| **Tamu melewati batas check-out tanpa konfirmasi (pukul 12:15 WIB)** | Sistem menandai reservasi dengan status `Overdue Check-Out` berwarna merah di konsol resepsionis, memberi tanda bagi front desk untuk mengonfirmasi via telepon internal kamar. |
-| **Tamu membatalkan reservasi** | Status reservasi berubah menjadi `rejected` / `cancelled`, unit kamar otomatis kembali ke status *Available*. |
-| **Perubahan harga kamar oleh Admin** | Perubahan tarif hanya berlaku untuk pemesanan baru; reservasi yang telah dibuat sebelumnya tetap menggunakan tarif saat pemesanan disepakati. |
+| **Tamu mencoba melakukan self check-in sendiri** | Dilarang oleh sistem. Tombol aksi check-in tidak tersedia di portal tamu dan endpoint API backend diproteksi khusus staf resepsionis (`apiStaff`). |
+| **Registrasi akun baru di platform Vercel** | Data pendaftaran disimpan pada state browser dan backend. Jika container serverless cold-start, sistem melakukan auto-sync saat login sehingga akun tetap dapat masuk 100%. |
+| **Tamu mendaftar akun baru** | Sistem tidak langsung me-login-kan akun secara otomatis, melainkan mengalihkan tamu ke `/login?registered=1` dengan email terisi agar tamu memverifikasi password mereka. |
+| **Pemesanan kamar saat unit habis (0 unit tersisa)** | Sistem menampilkan badge *"Penuh"* pada katalog kamar dan menonaktifkan tombol pemesanan kamar tersebut. |
+| **Tamu telah check-out sebelum pukul 10:00 WIB** | Notifikasi pengingat T-2 jam otomatis dinonaktifkan (*suppressed*) karena status reservasi telah menjadi `checked-out`. |
+| **Tamu memberikan ulasan kamar** | Form ulasan hanya aktif jika reservasi berstatus `checked-out` dan hanya dapat diulas 1 kali per nomor reservasi. |
 
 ---
 
-## 10. Metrik Keberhasilan (*Success Metrics*)
+## 8. Metrik Keberhasilan (*Success Metrics*)
 
-1. **Penurunan Keterlambatan Check-Out:** Penurunan insiden *late check-out* tanpa konfirmasi sebesar $\ge 40\%$.
-2. **Efisiensi Waktu Pelayanan Front Desk:** Waktu pemrosesan check-in dan check-out per tamu turun dari rata-rata 6 menit menjadi $< 2$ menit.
-3. **Pengurangan Antrean di Lobi:** Penurunan antrean dan waktu tunggu tamu yang menanyakan kesiapan kamar sebesar $\ge 35\%$.
-4. **Kepuasan Pengalaman Tamu (*Guest Rating*):** Ulasan positif tamu terhadap kemudahan reservasi dan kepastian kesiapan kamar mencapai $\ge 4.8 / 5.0$.
+1. **Efisiensi Transaksi Front Office:** Waktu verifikasi check-in fisik di meja resepsionis terpangkas menjadi $< 1$ menit per tamu karena reservasi & pembayaran telah tervalidasi sebelumnya.
+2. **Kepatuhan Waktu Kepulangan:** Penurunan insiden *late check-out* tanpa konfirmasi sebesar $\ge 45\%$ berkat pengingat otomatis T-2 jam.
+3. **Penyelesaian Alur Booking Daring:** Tingkat keberhasilan pendaftaran akun baru dan konfirmasi pembayaran mencapai $100\%$ tanpa hambatan di lingkungan cloud Vercel.
+4. **Adopsi Wisatawan Asing:** Penggunaan fitur multi-bahasa oleh turis internasional meningkatkan kenyamanan pemesanan kamar tanpa hambatan bahasa.
+5. **Kepuasan Pelanggan:** Skor kepuasan tamu (*guest satisfaction score*) mencapai $\ge 4.8 / 5.0$.
 
 ---
 
-## 11. Batasan Ruang Lingkup (Scope)
+## 9. Batasan Ruang Lingkup (Scope)
 
 ### In Scope:
-- Sistem reservasi daring berbasis web dengan tema etnik Jawa mewah (*Standard, Superior, Deluxe, Suite, Presidential*).
-- 3 Peran Pengguna: Tamu, Resepsionis, dan Administrator.
-- Alur Check-In dan Check-Out digital pada konsol resepsionis.
-- **Sistem Pengingat Check-Out Otomatis (T-2 Jam)** pada portal tamu dan indikator di konsol resepsionis.
-- **Notifikasi Kamar Siap Check-In (*Room Ready Notification*)** pada portal tamu.
-- Menu aksi cepat tamu (*Konfirmasi Siap Check-Out*, *Ajukan Late Check-Out*, *Panggil Bellboy*).
-- Dashboard okupansi, status ketersediaan kamar, dan metrik pendapatan real-time.
-- Jam digital dan penanggalan terpadu (Hari, Tanggal, Bulan, Tahun, Jam WIB).
+- Sistem reservasi daring berbasis web bernuansa etnik Jawa mewah HotelKu Yogyakarta.
+- 3 Peran Pengguna (Tamu, Resepsionis, Administrator) dengan RBAC ketat.
+- Alur pemesanan kamar 7-langkah dengan simulasi multi-metode pembayaran (QRIS, VA, Kartu, Tunai).
+- Hak eksklusif Resepsionis untuk verifikasi reservasi (ACC/Reject), Check-In, dan Check-Out.
+- Sistem Pengingat Check-Out Otomatis (T-2 Jam) dan tombol aksi cepat tamu.
+- E-Invoice resmi yang dapat dicetak atau disimpan ke format PDF.
+- Modul Multi-Bahasa Dinamis (ID, EN, JA, ZH, AR RTL).
+- Sistem Ulasan dan Rating Kamar pasca-checkout.
+- Dashboard operasional resepsionis, denah status kebersihan kamar, dan executive analytics admin.
+- Jam operasional dan penanggalan terpadu dengan zona waktu dinamis.
+- Kompatibilitas arsitektur serverless deployment pada Vercel.
 
-### Out of Scope (Sengaja Dibatasi):
-- Modul manajemen tugas kebersihan internal housekeeping (dikecualikan dari fokus skripsi).
-- Integrasi sensor hardware IoT kamar (saklar kartu pintar / sensor pintu).
-- Integrasi payment gateway perbankan komersial nyata yang membutuhkan perizinan merchant (menggunakan virtual billing).
-- Integrasi channel manager ke platform OTA pihak ketiga (Traveloka/Agoda/Booking.com).
+### Out of Scope:
+- Integrasi payment gateway perbankan nyata dengan izin OJK/BI (menggunakan simulasi virtual billing).
+- Integrasi hardware smart door-lock atau kartu RFID kamar berbasis IoT fisik.
+- Sinkronisasi channel manager ke platform OTA eksternal (Traveloka, Tiket.com, Agoda).
