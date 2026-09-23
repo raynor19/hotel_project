@@ -426,32 +426,41 @@
       if (!container) return;
 
       try {
+        // Identifikasi pengguna yang sedang login saat ini
+        const savedUserStr = localStorage.getItem('hotelku_user');
+        let currentUser = null;
+        try { currentUser = JSON.parse(savedUserStr); } catch(e) {}
+
+        const authHeaders = { 'Content-Type': 'application/json' };
+        if (currentUser) {
+          if (currentUser.id) authHeaders['x-user-id'] = String(currentUser.id);
+          if (currentUser.email) authHeaders['x-user-email'] = currentUser.email;
+          if (currentUser.name) authHeaders['x-user-name'] = encodeURIComponent(currentUser.name);
+          if (currentUser.role) authHeaders['x-user-role'] = currentUser.role;
+        }
+
         let [rsvRes, revRes] = await Promise.all([
-          fetch('/api/reservations').then(r => r.json()),
-          fetch('/api/reviews/my').then(r => r.json())
+          fetch('/api/reservations', { headers: authHeaders }).then(r => r.json()),
+          fetch('/api/reviews/my', { headers: authHeaders }).then(r => r.json())
         ]);
 
         if (!rsvRes.success && (rsvRes.message || '').toLowerCase().includes('login')) {
-          const savedUserStr = localStorage.getItem('hotelku_user');
-          if (savedUserStr) {
+          if (currentUser && (currentUser.id || currentUser.email)) {
             try {
-              const savedUser = JSON.parse(savedUserStr);
-              if (savedUser && (savedUser.id || savedUser.email)) {
-                await fetch('/api/auth/restore-session', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ userId: savedUser.id, email: savedUser.email })
-                });
-                [rsvRes, revRes] = await Promise.all([
-                  fetch('/api/reservations').then(r => r.json()),
-                  fetch('/api/reviews/my').then(r => r.json())
-                ]);
-              }
+              await fetch('/api/auth/restore-session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: currentUser.id, email: currentUser.email })
+              });
+              [rsvRes, revRes] = await Promise.all([
+                fetch('/api/reservations', { headers: authHeaders }).then(r => r.json()),
+                fetch('/api/reviews/my', { headers: authHeaders }).then(r => r.json())
+              ]);
             } catch(e) {}
           }
         }
 
-        if (!rsvRes.success) {
+        if (!currentUser && (!rsvRes.success || (rsvRes.message || '').toLowerCase().includes('login'))) {
           container.innerHTML = `
             <div class="empty-state">
               <i class="fas fa-user-lock" style="font-size: 2.5rem; color: #C4A265; margin-bottom: 12px;"></i>
@@ -463,51 +472,58 @@
           return;
         }
 
-        // Identifikasi pengguna yang sedang login saat ini
-        const savedUserStr = localStorage.getItem('hotelku_user');
-        let currentUser = null;
-        try { currentUser = JSON.parse(savedUserStr); } catch(e) {}
-
         const currentUserId = currentUser ? parseInt(currentUser.id) : null;
         const currentEmail = currentUser ? (currentUser.email || '').trim().toLowerCase() : '';
         const currentName = currentUser ? (currentUser.name || '').trim().toLowerCase() : '';
 
+        // Helper validasi kepemilikan reservasi yang ketat dan akurat
+        const belongsToUser = (r) => {
+          if (!r) return false;
+          const rEmail = (r.guestEmail || '').trim().toLowerCase();
+          const rName = (r.guestName || '').trim().toLowerCase();
+          const rId = r.userId ? parseInt(r.userId) : null;
+
+          // 1. Jika email akun terdaftar, email reservasi HARUS sama persis
+          if (currentEmail) {
+            if (rEmail) return rEmail === currentEmail;
+            // Jika reservasi tidak mencantumkan email, verifikasi via ID dan nama
+            if (currentUserId && rId && currentUserId === rId) {
+              return !currentName || !rName || currentName === rName;
+            }
+            return false;
+          }
+
+          if (currentUserId && rId && currentUserId === rId) return true;
+          if (currentName && rName && currentName === rName) return true;
+          return false;
+        };
+
         // 2-Way Smart Merge: menggabungkan reservasi dari server dan cache browser KHUSUS akun ini
-        let serverList = Array.isArray(rsvRes.reservations) ? rsvRes.reservations : [];
+        let serverList = (Array.isArray(rsvRes.reservations) ? rsvRes.reservations : []).filter(belongsToUser);
         let localList = [];
         try {
           const rawLocal = JSON.parse(localStorage.getItem('hotelku_my_rsv') || '[]');
           if (Array.isArray(rawLocal)) {
-            // Filter ketat: Jangan tampilkan sisa reservasi milik akun user lain yang pernah login di browser ini!
-            localList = rawLocal.filter(r => {
-              if (!r) return false;
-              const rId = r.userId ? parseInt(r.userId) : null;
-              const rEmail = (r.guestEmail || '').trim().toLowerCase();
-              const rName = (r.guestName || '').trim().toLowerCase();
-
-              const idMatch = Boolean(currentUserId && rId && rId === currentUserId);
-              const emailMatch = Boolean(currentEmail && rEmail && rEmail === currentEmail);
-              const nameMatch = Boolean(currentName && rName && rName === currentName);
-
-              return idMatch || emailMatch || nameMatch;
-            });
+            // Filter ketat dan buang seluruh reservasi milik akun lain dari storage browser!
+            localList = rawLocal.filter(belongsToUser);
+            localStorage.setItem('hotelku_my_rsv', JSON.stringify(localList));
           }
         } catch(e) {}
 
         const map = new Map();
         // 1. Masukkan data lokal milik akun ini
         for (const r of localList) {
-          if (r && r.id) map.set(r.id, r);
+          if (r && r.id && belongsToUser(r)) map.set(r.id, r);
         }
-        // 2. Timpa/sinkronkan dengan data server terkini
+        // 2. Timpa/sinkronkan dengan data server terkini yang telah diverifikasi
         for (const r of serverList) {
-          if (r && r.id) {
+          if (r && r.id && belongsToUser(r)) {
             const existing = map.get(r.id) || {};
             map.set(r.id, { ...existing, ...r });
           }
         }
 
-        const combinedReservations = Array.from(map.values());
+        const combinedReservations = Array.from(map.values()).filter(belongsToUser);
         combinedReservations.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
         if (combinedReservations.length === 0) {

@@ -973,6 +973,12 @@ app.post('/api/register', async (req, res) => {
     console.error('[Supabase] Register upsert error:', e.message);
   }
 
+  // Pastikan sesi akun lama dibersihkan agar tidak terbawa ke akun baru
+  if (req.session) {
+    req.session.user = null;
+  }
+  res.clearCookie('hotelku_auth', { path: '/' });
+
   // Tamu tidak langsung login otomatis, melainkan dialihkan ke menu Masuk (login)
   res.json({
     success: true,
@@ -1445,12 +1451,24 @@ app.get('/api/reservations', apiAuth, async (req, res) => {
     const sName = (req.session.user.name || '').trim().toLowerCase();
 
     result = reservations.filter(r => {
-      // Hanya tampilkan reservasi yang benar-benar milik pengguna yang sedang login
-      const matchesId = Boolean(r.userId && sId && parseInt(r.userId) === sId);
-      const matchesEmail = Boolean(sEmail && r.guestEmail && r.guestEmail.trim().toLowerCase() === sEmail);
-      const matchesName = Boolean(sName && r.guestName && r.guestName.trim().toLowerCase() === sName);
+      if (!r) return false;
+      const rEmail = (r.guestEmail || '').trim().toLowerCase();
+      const rName = (r.guestName || '').trim().toLowerCase();
+      const rId = r.userId ? parseInt(r.userId) : null;
 
-      return matchesId || matchesEmail || matchesName;
+      // 1. Email adalah identitas unik utama akun tamu
+      if (sEmail && rEmail) {
+        return rEmail === sEmail;
+      }
+      // 2. Jika email tidak tercatat pada reservasi, cocokkan id dan nama
+      if (sId && rId && sId === rId) {
+        if (sName && rName && sName !== rName) return false;
+        return true;
+      }
+      if (sName && rName && sName === rName) {
+        return true;
+      }
+      return false;
     });
   }
 

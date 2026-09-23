@@ -510,7 +510,17 @@
             localStorage.setItem('hotelku_registered_accounts', JSON.stringify(accounts));
           } catch (e) {}
 
+          // Purge session and user storage to ensure complete account isolation
           localStorage.removeItem('hotelku_user');
+          localStorage.removeItem('hotelku_my_rsv');
+          localStorage.removeItem('hotelku_guest_rsv');
+          try {
+            document.cookie = 'hotelku_auth=; path=/; max-age=0; SameSite=Lax';
+          } catch(e) {}
+          try {
+            await fetch('/api/logout', { method: 'POST' }).catch(() => {});
+          } catch(e) {}
+
           const params = new URLSearchParams(window.location.search);
           const redirectParam = params.get('redirect');
           let dest = '/login?registered=1';

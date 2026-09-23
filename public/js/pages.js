@@ -1501,12 +1501,13 @@ async function initReservationForm() {
             };
             let myStored = JSON.parse(localStorage.getItem('hotelku_my_rsv') || '[]');
             // Filter to only retain items belonging to the current user
-            const activeUid = rsvObj.userId;
+            const activeUid = rsvObj.userId ? parseInt(rsvObj.userId) : null;
             const activeEmail = (rsvObj.guestEmail || '').trim().toLowerCase();
             myStored = myStored.filter(r => {
               if (!r) return false;
-              if (activeUid && r.userId && r.userId === activeUid) return true;
-              if (activeEmail && r.guestEmail && r.guestEmail.trim().toLowerCase() === activeEmail) return true;
+              const rEmail = (r.guestEmail || '').trim().toLowerCase();
+              if (activeEmail && rEmail) return rEmail === activeEmail;
+              if (activeUid && r.userId && parseInt(r.userId) === activeUid) return true;
               return false;
             });
             const exists = myStored.some(r => r.id === rsvObj.id);
