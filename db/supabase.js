@@ -7,28 +7,37 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABA
 let supabase = null;
 let isConnected = false;
 
-if (SUPABASE_URL && SUPABASE_KEY) {
-  try {
-    supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
-      auth: { persistSession: false }
-    });
-  } catch (err) {
-    console.error('[Supabase] Init error:', err.message);
+function getClient() {
+  if (supabase) return supabase;
+  const SUPABASE_URL = process.env.SUPABASE_URL || '';
+  const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || '';
+  if (SUPABASE_URL && SUPABASE_KEY) {
+    try {
+      supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+        auth: { persistSession: false }
+      });
+    } catch (err) {
+      console.error('[Supabase] Init error:', err.message);
+    }
   }
+  return supabase;
 }
 
 // Check database connection and table availability
 async function checkConnection() {
-  if (!supabase) return false;
+  const client = getClient();
+  if (!client) return false;
   try {
-    const { data, error } = await supabase.from('rooms').select('id').limit(1);
+    const { data, error } = await client.from('rooms').select('id').limit(1);
     if (!error) {
       isConnected = true;
       return true;
     }
+    console.error('[Supabase] checkConnection query error:', error.message);
     isConnected = false;
     return false;
   } catch (e) {
+    console.error('[Supabase] checkConnection exception:', e.message);
     isConnected = false;
     return false;
   }
@@ -186,21 +195,26 @@ function mapReviewFromDb(row) {
 
 // ----------------- CRUD API -----------------
 const db = {
-  supabase,
+  getClient,
   checkConnection,
 
   // USERS
   async getUsers() {
-    if (!supabase) return null;
-    const { data, error } = await supabase.from('users').select('*').order('id', { ascending: true });
-    if (error) return null;
+    const client = getClient();
+    if (!client) return null;
+    const { data, error } = await client.from('users').select('*').order('id', { ascending: true });
+    if (error) {
+      console.error('[Supabase] getUsers error:', error.message);
+      return null;
+    }
     return data.map(mapUserFromDb);
   },
 
   async upsertUser(user) {
-    if (!supabase) return null;
+    const client = getClient();
+    if (!client) return null;
     const payload = mapUserToDb(user);
-    const { data, error } = await supabase.from('users').upsert(payload, { onConflict: 'email' }).select().single();
+    const { data, error } = await client.from('users').upsert(payload, { onConflict: 'email' }).select().single();
     if (error) {
       console.error('[Supabase] upsertUser error:', error.message);
       return null;
@@ -210,16 +224,21 @@ const db = {
 
   // ROOMS
   async getRooms() {
-    if (!supabase) return null;
-    const { data, error } = await supabase.from('rooms').select('*').order('id', { ascending: true });
-    if (error) return null;
+    const client = getClient();
+    if (!client) return null;
+    const { data, error } = await client.from('rooms').select('*').order('id', { ascending: true });
+    if (error) {
+      console.error('[Supabase] getRooms error:', error.message);
+      return null;
+    }
     return data.map(mapRoomFromDb);
   },
 
   async upsertRoom(room) {
-    if (!supabase) return null;
+    const client = getClient();
+    if (!client) return null;
     const payload = mapRoomToDb(room);
-    const { data, error } = await supabase.from('rooms').upsert(payload, { onConflict: 'id' }).select().single();
+    const { data, error } = await client.from('rooms').upsert(payload, { onConflict: 'id' }).select().single();
     if (error) {
       console.error('[Supabase] upsertRoom error:', error.message);
       return null;
@@ -229,16 +248,21 @@ const db = {
 
   // RESERVATIONS
   async getReservations() {
-    if (!supabase) return null;
-    const { data, error } = await supabase.from('reservations').select('*').order('created_at', { ascending: false });
-    if (error) return null;
+    const client = getClient();
+    if (!client) return null;
+    const { data, error } = await client.from('reservations').select('*').order('created_at', { ascending: false });
+    if (error) {
+      console.error('[Supabase] getReservations error:', error.message);
+      return null;
+    }
     return data.map(mapReservationFromDb);
   },
 
   async upsertReservation(rsv) {
-    if (!supabase) return null;
+    const client = getClient();
+    if (!client) return null;
     const payload = mapReservationToDb(rsv);
-    const { data, error } = await supabase.from('reservations').upsert(payload, { onConflict: 'id' }).select().single();
+    const { data, error } = await client.from('reservations').upsert(payload, { onConflict: 'id' }).select().single();
     if (error) {
       console.error('[Supabase] upsertReservation error:', error.message);
       return null;
@@ -248,16 +272,21 @@ const db = {
 
   // REVIEWS
   async getReviews() {
-    if (!supabase) return null;
-    const { data, error } = await supabase.from('reviews').select('*').order('created_at', { ascending: false });
-    if (error) return null;
+    const client = getClient();
+    if (!client) return null;
+    const { data, error } = await client.from('reviews').select('*').order('created_at', { ascending: false });
+    if (error) {
+      console.error('[Supabase] getReviews error:', error.message);
+      return null;
+    }
     return data.map(mapReviewFromDb);
   },
 
   async insertReview(rev) {
-    if (!supabase) return null;
+    const client = getClient();
+    if (!client) return null;
     const payload = mapReviewToDb(rev);
-    const { data, error } = await supabase.from('reviews').insert(payload).select().single();
+    const { data, error } = await client.from('reviews').insert(payload).select().single();
     if (error) {
       console.error('[Supabase] insertReview error:', error.message);
       return null;

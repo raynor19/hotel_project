@@ -118,5 +118,13 @@
     "password": "passcold123",
     "role": "guest",
     "phone": "0899999999"
+  },
+  {
+    "id": 10000,
+    "name": "Tamu Sync Test",
+    "email": "real_sync_1790140481419@gmail.com",
+    "password": "password123",
+    "role": "guest",
+    "phone": "08123456789"
   }
 ]

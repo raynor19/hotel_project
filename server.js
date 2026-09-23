@@ -117,8 +117,9 @@ function saveUsers(userToSync) {
   } catch (err) {
     console.error('Error saving users.json:', err.message);
   }
-  if (userToSync) {
-    db.upsertUser(userToSync).catch(e => console.error('[Supabase] Sync user error:', e.message));
+  const toSync = userToSync || (users.length > 0 ? users[users.length - 1] : null);
+  if (toSync) {
+    db.upsertUser(toSync).catch(e => console.error('[Supabase] Sync user error:', e.message));
   }
 }
 
@@ -185,8 +186,9 @@ function saveReviews(revToSync) {
   } catch (err) {
     console.error('Error saving reviews.json:', err.message);
   }
-  if (revToSync) {
-    db.insertReview(revToSync).catch(e => console.error('[Supabase] Sync review error:', e.message));
+  const toSync = revToSync || (reviews.length > 0 ? reviews[reviews.length - 1] : null);
+  if (toSync) {
+    db.insertReview(toSync).catch(e => console.error('[Supabase] Sync review error:', e.message));
   }
 }
 
@@ -497,8 +499,9 @@ function saveReservations(rsvToSync) {
   } catch (err) {
     console.error('Error saving reservations.json:', err.message);
   }
-  if (rsvToSync) {
-    db.upsertReservation(rsvToSync).catch(e => console.error('[Supabase] Sync reservation error:', e.message));
+  const toSync = rsvToSync || (reservations.length > 0 ? reservations[reservations.length - 1] : null);
+  if (toSync) {
+    db.upsertReservation(toSync).catch(e => console.error('[Supabase] Sync reservation error:', e.message));
   }
 }
 
@@ -520,6 +523,74 @@ function loadReservations() {
 }
 
 loadReservations();
+
+// ================================================================
+//  DATABASE SYNC (Supabase PostgreSQL + In-Memory Caching)
+// ================================================================
+let isDbInitialized = false;
+let dbInitPromise = null;
+
+async function initDatabase() {
+  try {
+    const isConn = await db.checkConnection();
+    if (isConn) {
+      console.log('  ⚡ Supabase: Terhubung & Aktif!');
+      const suUsers = await db.getUsers();
+      if (suUsers && suUsers.length > 0) {
+        users = suUsers;
+        userCounter = Math.max(...users.map(u => u.id || 0), 4);
+      }
+      const suRooms = await db.getRooms();
+      if (suRooms && suRooms.length > 0) {
+        rooms = suRooms;
+      }
+      const suRsv = await db.getReservations();
+      if (suRsv && suRsv.length > 0) {
+        reservations = suRsv;
+        const ids = reservations.map(r => parseInt(String(r.id).replace('RSV-', '')) || 0);
+        reservationCounter = Math.max(...ids, 4);
+      }
+      const suRev = await db.getReviews();
+      if (suRev && suRev.length > 0) {
+        reviews = suRev;
+      }
+      isDbInitialized = true;
+      return true;
+    } else {
+      console.log('  📁 Database: Menggunakan penyimpanan lokal');
+      return false;
+    }
+  } catch (err) {
+    console.log('  📁 Database fallback lokal:', err.message);
+    return false;
+  }
+}
+
+function ensureDatabase() {
+  if (isDbInitialized) return Promise.resolve(true);
+  if (!dbInitPromise) {
+    dbInitPromise = initDatabase().then(res => {
+      isDbInitialized = true;
+      return res;
+    }).catch(err => {
+      console.error('[Supabase Init Error]:', err.message);
+      dbInitPromise = null;
+      return false;
+    });
+  }
+  return dbInitPromise;
+}
+
+// Auto-trigger initialization on startup
+ensureDatabase();
+
+// Middleware to ensure database data is loaded before handling any API or page request
+app.use(async (req, res, next) => {
+  try {
+    await ensureDatabase();
+  } catch (e) {}
+  next();
+});
 
 // ================================================================
 //  DEPARTURE & ROOM READINESS ASSISTANT HELPERS
@@ -707,7 +778,7 @@ app.get('/admin/checkout', requireStaff, (req, res) => res.sendFile(path.join(__
 // ================================================================
 
 // Register API (Tamu Baru)
-app.post('/api/register', (req, res) => {
+app.post('/api/register', async (req, res) => {
   const { name, email, phone, password, confirmPassword } = req.body;
 
   if (!name || !email || !password) {
@@ -731,7 +802,16 @@ app.post('/api/register', (req, res) => {
     return res.status(400).json({ success: false, message: 'Konfirmasi password tidak cocok' });
   }
 
-  const existing = users.find(u => u.email.toLowerCase() === cleanEmail);
+  let existing = users.find(u => u.email.toLowerCase() === cleanEmail);
+  if (!existing) {
+    try {
+      const suUsers = await db.getUsers();
+      if (suUsers && suUsers.length > 0) {
+        users = suUsers;
+        existing = users.find(u => u.email.toLowerCase() === cleanEmail);
+      }
+    } catch (e) {}
+  }
   if (existing) {
     return res.status(400).json({ success: false, message: 'Alamat email sudah terdaftar. Silakan gunakan email lain atau masuk di halaman Sign In.' });
   }
@@ -746,7 +826,17 @@ app.post('/api/register', (req, res) => {
   };
 
   users.push(newUser);
-  saveUsers(); // Simpan permanen ke data/users.json!
+  saveUsers(newUser);
+
+  // Directly await saving to Supabase Cloud so the record is guaranteed to exist immediately
+  try {
+    const saved = await db.upsertUser(newUser);
+    if (saved && saved.id) {
+      newUser.id = saved.id;
+    }
+  } catch (e) {
+    console.error('[Supabase] Register upsert error:', e.message);
+  }
 
   // Tamu tidak langsung login otomatis, melainkan dialihkan ke menu Masuk (login)
   res.json({
@@ -764,7 +854,7 @@ app.post('/api/register', (req, res) => {
   });
 });
 
-app.post('/api/login', (req, res) => {
+app.post('/api/login', async (req, res) => {
   const { email, password, localAccount } = req.body;
   if (!email || !password) return res.status(400).json({ success: false, message: 'Email dan password harus diisi' });
 
@@ -772,6 +862,19 @@ app.post('/api/login', (req, res) => {
   const cleanPassword = password.trim();
 
   let user = users.find(u => u.email.toLowerCase() === cleanEmail && u.password === cleanPassword);
+
+  // Directly lookup in Supabase Cloud if not found in current memory instance
+  if (!user) {
+    try {
+      const suUsers = await db.getUsers();
+      if (suUsers && suUsers.length > 0) {
+        users = suUsers;
+        user = users.find(u => u.email.toLowerCase() === cleanEmail && u.password === cleanPassword);
+      }
+    } catch (e) {
+      console.error('[Supabase] Login check error:', e.message);
+    }
+  }
 
   // Fallback for Vercel Serverless: If serverless instance cold-started without the newly registered user
   if (!user && localAccount && localAccount.email && localAccount.password) {
@@ -785,7 +888,8 @@ app.post('/api/login', (req, res) => {
         phone: (localAccount.phone || '').trim()
       };
       users.push(user);
-      saveUsers();
+      saveUsers(user);
+      db.upsertUser(user).catch(() => {});
     }
   }
 
@@ -1771,40 +1875,6 @@ app.get('/api/receptionist/dashboard', apiStaff, (req, res) => {
     }
   });
 });
-
-// Check and synchronize with Supabase PostgreSQL if available
-async function initDatabase() {
-  try {
-    const isConn = await db.checkConnection();
-    if (isConn) {
-      console.log('  ⚡ Supabase: Terhubung & Aktif!');
-      const suUsers = await db.getUsers();
-      if (suUsers && suUsers.length > 0) {
-        users = suUsers;
-        userCounter = Math.max(...users.map(u => u.id || 0), 4);
-      }
-      const suRooms = await db.getRooms();
-      if (suRooms && suRooms.length > 0) {
-        rooms = suRooms;
-      }
-      const suRsv = await db.getReservations();
-      if (suRsv && suRsv.length > 0) {
-        reservations = suRsv;
-        const ids = reservations.map(r => parseInt(String(r.id).replace('RSV-', '')) || 0);
-        reservationCounter = Math.max(...ids, 4);
-      }
-      const suRev = await db.getReviews();
-      if (suRev && suRev.length > 0) {
-        reviews = suRev;
-      }
-    } else {
-      console.log('  📁 Database: Menggunakan penyimpanan lokal (Menunggu tabel Supabase dibuat)');
-    }
-  } catch (err) {
-    console.log('  📁 Database fallback lokal:', err.message);
-  }
-}
-initDatabase();
 
 app.listen(PORT, () => {
   console.log(`\n========================================`);
