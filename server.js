@@ -1,7 +1,9 @@
+require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
 const path = require('path');
 const fs = require('fs');
+const db = require('./db/supabase');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -109,11 +111,14 @@ let users = [
 
 let userCounter = 4;
 
-function saveUsers() {
+function saveUsers(userToSync) {
   try {
     fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf-8');
   } catch (err) {
     console.error('Error saving users.json:', err.message);
+  }
+  if (userToSync) {
+    db.upsertUser(userToSync).catch(e => console.error('[Supabase] Sync user error:', e.message));
   }
 }
 
@@ -174,11 +179,14 @@ let reviews = [
   }
 ];
 
-function saveReviews() {
+function saveReviews(revToSync) {
   try {
     fs.writeFileSync(REVIEWS_FILE, JSON.stringify(reviews, null, 2), 'utf-8');
   } catch (err) {
     console.error('Error saving reviews.json:', err.message);
+  }
+  if (revToSync) {
+    db.insertReview(revToSync).catch(e => console.error('[Supabase] Sync review error:', e.message));
   }
 }
 
@@ -483,11 +491,14 @@ let reservations = [
   }
 ];
 
-function saveReservations() {
+function saveReservations(rsvToSync) {
   try {
     fs.writeFileSync(RESERVATIONS_FILE, JSON.stringify(reservations, null, 2), 'utf-8');
   } catch (err) {
     console.error('Error saving reservations.json:', err.message);
+  }
+  if (rsvToSync) {
+    db.upsertReservation(rsvToSync).catch(e => console.error('[Supabase] Sync reservation error:', e.message));
   }
 }
 
@@ -1761,9 +1772,39 @@ app.get('/api/receptionist/dashboard', apiStaff, (req, res) => {
   });
 });
 
-// ================================================================
-//  START SERVER
-// ================================================================
+// Check and synchronize with Supabase PostgreSQL if available
+async function initDatabase() {
+  try {
+    const isConn = await db.checkConnection();
+    if (isConn) {
+      console.log('  ⚡ Supabase: Terhubung & Aktif!');
+      const suUsers = await db.getUsers();
+      if (suUsers && suUsers.length > 0) {
+        users = suUsers;
+        userCounter = Math.max(...users.map(u => u.id || 0), 4);
+      }
+      const suRooms = await db.getRooms();
+      if (suRooms && suRooms.length > 0) {
+        rooms = suRooms;
+      }
+      const suRsv = await db.getReservations();
+      if (suRsv && suRsv.length > 0) {
+        reservations = suRsv;
+        const ids = reservations.map(r => parseInt(String(r.id).replace('RSV-', '')) || 0);
+        reservationCounter = Math.max(...ids, 4);
+      }
+      const suRev = await db.getReviews();
+      if (suRev && suRev.length > 0) {
+        reviews = suRev;
+      }
+    } else {
+      console.log('  📁 Database: Menggunakan penyimpanan lokal (Menunggu tabel Supabase dibuat)');
+    }
+  } catch (err) {
+    console.log('  📁 Database fallback lokal:', err.message);
+  }
+}
+initDatabase();
 
 app.listen(PORT, () => {
   console.log(`\n========================================`);

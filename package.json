@@ -9,10 +9,17 @@
     "dev": "nodemon server.js",
     "kill": "npx --yes kill-port 3000"
   },
-  "keywords": ["hotel", "reservasi", "check-in", "check-out"],
+  "keywords": [
+    "hotel",
+    "reservasi",
+    "check-in",
+    "check-out"
+  ],
   "author": "Raynor Athaillah",
   "license": "ISC",
   "dependencies": {
+    "@supabase/supabase-js": "^2.117.0",
+    "dotenv": "^18.0.3",
     "express": "^4.18.2",
     "express-session": "^1.17.3"
   },
