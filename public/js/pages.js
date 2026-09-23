@@ -346,6 +346,9 @@ async function initNavbar() {
       if (logoutBtn) {
         logoutBtn.onclick = async () => {
           localStorage.removeItem('hotelku_user');
+          try {
+            document.cookie = 'hotelku_auth=; path=/; max-age=0; SameSite=Lax';
+          } catch(e) {}
           await fetch('/api/logout', { method: 'POST' });
           window.location.href = '/login';
         };
@@ -1461,6 +1464,9 @@ async function initReservationForm() {
       if (data.success) {
         if (data.user) {
           localStorage.setItem('hotelku_user', JSON.stringify(data.user));
+          try {
+            document.cookie = `hotelku_auth=${encodeURIComponent(JSON.stringify(data.user))}; path=/; max-age=${30*24*60*60}; SameSite=Lax`;
+          } catch(e) {}
         }
 
         // Show celebratory success modal dialog

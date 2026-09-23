@@ -101,6 +101,47 @@ app.use(session({
   }
 }));
 
+function parseCookies(req) {
+  const list = {};
+  const rc = req.headers.cookie;
+  if (rc) {
+    rc.split(';').forEach(cookie => {
+      const parts = cookie.split('=');
+      const key = parts.shift().trim();
+      const val = parts.join('=');
+      try {
+        list[key] = decodeURIComponent(val);
+      } catch (e) {
+        list[key] = val;
+      }
+    });
+  }
+  return list;
+}
+
+// Cookie Auth Middleware: Keeps user logged in across Vercel serverless cold starts & direct page navigations
+app.use((req, res, next) => {
+  if (!req.session) req.session = {};
+  if (!req.session.user) {
+    const cookies = parseCookies(req);
+    if (cookies.hotelku_auth) {
+      try {
+        const u = JSON.parse(cookies.hotelku_auth);
+        if (u && (u.id || u.email)) {
+          req.session.user = {
+            id: u.id,
+            name: u.name || 'Tamu',
+            email: u.email,
+            role: u.role || 'guest',
+            phone: u.phone || ''
+          };
+        }
+      } catch (e) {}
+    }
+  }
+  next();
+});
+
 // Default initial users
 let users = [
   { id: 1, name: 'Hendra Wijaya (GM)', email: 'admin@hotelku.com', password: 'admin123', role: 'admin', phone: '081122334455' },
@@ -623,12 +664,31 @@ function isApproachingCheckout(rsv) {
 // ================================================================
 
 function requireLogin(req, res, next) {
-  if (!req.session.user) return res.redirect('/login');
-  next();
+  if (req.session && req.session.user) return next();
+  const cookies = parseCookies(req);
+  if (cookies.hotelku_auth) {
+    try {
+      const u = JSON.parse(cookies.hotelku_auth);
+      if (u && (u.id || u.email)) {
+        req.session.user = u;
+        return next();
+      }
+    } catch (e) {}
+  }
+  return res.redirect('/login');
 }
 
 function requireAdmin(req, res, next) {
-  if (!req.session.user) return res.redirect('/login');
+  if (!req.session?.user) {
+    const cookies = parseCookies(req);
+    if (cookies.hotelku_auth) {
+      try {
+        const u = JSON.parse(cookies.hotelku_auth);
+        if (u && (u.id || u.email)) req.session.user = u;
+      } catch (e) {}
+    }
+  }
+  if (!req.session?.user) return res.redirect('/login');
   if (req.session.user.role !== 'admin') {
     if (req.session.user.role === 'receptionist') return res.redirect('/receptionist/dashboard');
     return res.redirect('/rooms');
@@ -637,7 +697,16 @@ function requireAdmin(req, res, next) {
 }
 
 function requireStaff(req, res, next) {
-  if (!req.session.user) return res.redirect('/login');
+  if (!req.session?.user) {
+    const cookies = parseCookies(req);
+    if (cookies.hotelku_auth) {
+      try {
+        const u = JSON.parse(cookies.hotelku_auth);
+        if (u && (u.id || u.email)) req.session.user = u;
+      } catch (e) {}
+    }
+  }
+  if (!req.session?.user) return res.redirect('/login');
   if (req.session.user.role !== 'admin' && req.session.user.role !== 'receptionist') {
     return res.redirect('/rooms');
   }
@@ -646,6 +715,18 @@ function requireStaff(req, res, next) {
 
 function apiAuth(req, res, next) {
   if (req.session && req.session.user) return next();
+
+  // 0. Fallback dari cookie hotelku_auth
+  const cookies = parseCookies(req);
+  if (cookies.hotelku_auth) {
+    try {
+      const u = JSON.parse(cookies.hotelku_auth);
+      if (u && (u.id || u.email)) {
+        req.session.user = u;
+        return next();
+      }
+    } catch (e) {}
+  }
 
   // 1. Fallback dari custom headers (dikirim otomatis oleh browser melalui localStorage)
   const fallbackUserId = req.headers['x-user-id'] || req.query.userId;
@@ -749,9 +830,9 @@ app.get('/dashboard', requireLogin, (req, res) => {
 // Guest Pages
 app.get('/rooms', (req, res) => res.sendFile(path.join(__dirname, 'views', 'rooms.html')));
 app.get('/rooms/:id', (req, res) => res.sendFile(path.join(__dirname, 'views', 'room-detail.html')));
-app.get('/reservation/:roomId', requireLogin, (req, res) => res.sendFile(path.join(__dirname, 'views', 'reservation-form.html')));
-app.get('/my-reservations', requireLogin, (req, res) => res.sendFile(path.join(__dirname, 'views', 'my-reservations.html')));
-app.get('/profile', requireLogin, (req, res) => res.sendFile(path.join(__dirname, 'views', 'profile.html')));
+app.get('/reservation/:roomId', (req, res) => res.sendFile(path.join(__dirname, 'views', 'reservation-form.html')));
+app.get('/my-reservations', (req, res) => res.sendFile(path.join(__dirname, 'views', 'my-reservations.html')));
+app.get('/profile', (req, res) => res.sendFile(path.join(__dirname, 'views', 'profile.html')));
 
 // Admin Pages (Full Control)
 app.get('/admin', requireAdmin, (req, res) => res.redirect('/admin/dashboard'));
@@ -896,23 +977,39 @@ app.post('/api/login', async (req, res) => {
   if (!user) return res.status(401).json({ success: false, message: 'Email atau password salah' });
 
   req.session.user = { id: user.id, name: user.name, email: user.email, role: user.role, phone: user.phone || '' };
+  res.cookie('hotelku_auth', JSON.stringify(req.session.user), {
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+    httpOnly: false,
+    sameSite: 'lax',
+    path: '/'
+  });
   res.json({ success: true, message: 'Login berhasil! Selamat datang, ' + user.name, user: req.session.user });
 });
 
 app.post('/api/logout', (req, res) => {
+  res.clearCookie('hotelku_auth', { path: '/' });
   req.session.destroy(() => res.json({ success: true, message: 'Logout berhasil' }));
 });
 
 app.get('/api/me', (req, res) => {
   if (!req.session.user) {
+    const cookies = parseCookies(req);
+    if (cookies.hotelku_auth) {
+      try {
+        const u = JSON.parse(cookies.hotelku_auth);
+        if (u && (u.id || u.email)) req.session.user = u;
+      } catch (e) {}
+    }
     const fallbackUserId = req.headers['x-user-id'] || req.query.userId;
     const fallbackEmail = req.headers['x-user-email'];
-    if (fallbackUserId) {
-      const u = users.find(x => x.id === parseInt(fallbackUserId));
-      if (u) req.session.user = { id: u.id, name: u.name, email: u.email, role: u.role, phone: u.phone || '' };
-    } else if (fallbackEmail) {
-      const u = users.find(x => x.email.toLowerCase() === String(fallbackEmail).trim().toLowerCase());
-      if (u) req.session.user = { id: u.id, name: u.name, email: u.email, role: u.role, phone: u.phone || '' };
+    if (!req.session.user) {
+      if (fallbackUserId) {
+        const u = users.find(x => x.id === parseInt(fallbackUserId));
+        if (u) req.session.user = { id: u.id, name: u.name, email: u.email, role: u.role, phone: u.phone || '' };
+      } else if (fallbackEmail) {
+        const u = users.find(x => x.email.toLowerCase() === String(fallbackEmail).trim().toLowerCase());
+        if (u) req.session.user = { id: u.id, name: u.name, email: u.email, role: u.role, phone: u.phone || '' };
+      }
     }
   }
 
@@ -931,6 +1028,12 @@ app.post('/api/auth/restore-session', (req, res) => {
   }
   if (user) {
     req.session.user = { id: user.id, name: user.name, email: user.email, role: user.role, phone: user.phone || '' };
+    res.cookie('hotelku_auth', JSON.stringify(req.session.user), {
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+      httpOnly: false,
+      sameSite: 'lax',
+      path: '/'
+    });
     return res.json({ success: true, message: 'Sesi dipulihkan', user: req.session.user });
   }
   return res.status(401).json({ success: false, message: 'User tidak ditemukan' });
@@ -1134,7 +1237,7 @@ app.put('/api/receptionist/rooms-status/:unitNumber', apiStaff, (req, res) => {
 // ================================================================
 
 // Create reservation (guest)
-app.post('/api/reservations', apiAuth, (req, res) => {
+app.post('/api/reservations', apiAuth, async (req, res) => {
   const { roomId, checkIn, checkOut, guestName, guestPhone, guestEmail, notes } = req.body;
 
   if (!roomId || !checkIn || !checkOut || !guestName || !guestPhone) {
@@ -1159,6 +1262,15 @@ app.post('/api/reservations', apiAuth, (req, res) => {
   if (!rsvUserId) {
     const cleanEmail = (guestEmail || '').trim().toLowerCase();
     let existingUser = cleanEmail ? users.find(u => u.email.toLowerCase() === cleanEmail) : null;
+    if (!existingUser && cleanEmail) {
+      try {
+        const suUsers = await db.getUsers();
+        if (suUsers && suUsers.length > 0) {
+          users = suUsers;
+          existingUser = users.find(u => u.email.toLowerCase() === cleanEmail);
+        }
+      } catch (e) {}
+    }
     if (!existingUser) {
       existingUser = {
         id: ++userCounter,
@@ -1169,7 +1281,11 @@ app.post('/api/reservations', apiAuth, (req, res) => {
         phone: (guestPhone || '').trim()
       };
       users.push(existingUser);
-      saveUsers();
+      saveUsers(existingUser);
+      try {
+        const saved = await db.upsertUser(existingUser);
+        if (saved && saved.id) existingUser.id = saved.id;
+      } catch (e) {}
     }
     rsvUserId = existingUser.id;
     req.session.user = {
@@ -1205,7 +1321,25 @@ app.post('/api/reservations', apiAuth, (req, res) => {
   };
 
   reservations.push(reservation);
-  saveReservations();
+  saveReservations(reservation);
+
+  // Directly await saving to Supabase Cloud
+  try {
+    await db.upsertReservation(reservation);
+  } catch (e) {
+    console.error('[Supabase] Reservation direct upsert error:', e.message);
+  }
+
+  // Set auth cookie so browser maintains session seamlessly on page redirect
+  if (req.session.user) {
+    res.cookie('hotelku_auth', JSON.stringify(req.session.user), {
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+      httpOnly: false,
+      sameSite: 'lax',
+      path: '/'
+    });
+  }
+
   res.json({
     success: true,
     message: 'Pembayaran berhasil dikonfirmasi! Permohonan reservasi Anda telah diteruskan ke Resepsionis untuk disetujui (ACC).',
@@ -1222,7 +1356,7 @@ app.get('/api/reservations', apiAuth, (req, res) => {
   if (req.session.user.role === 'admin' || req.session.user.role === 'receptionist') {
     result = [...reservations];
   } else {
-    result = reservations.filter(r => r.userId === req.session.user.id);
+    result = reservations.filter(r => r.userId === req.session.user.id || (req.session.user.email && r.guestEmail && r.guestEmail.toLowerCase() === req.session.user.email.toLowerCase()));
   }
 
   if (status && status !== 'all') {

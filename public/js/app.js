@@ -420,6 +420,9 @@ document.addEventListener('DOMContentLoaded', () => {
           showAlert('success', data.message);
           if (data.user) {
             localStorage.setItem('hotelku_user', JSON.stringify(data.user));
+            try {
+              document.cookie = `hotelku_auth=${encodeURIComponent(JSON.stringify(data.user))}; path=/; max-age=${30*24*60*60}; SameSite=Lax`;
+            } catch(e) {}
           }
           
           const params = new URLSearchParams(window.location.search);

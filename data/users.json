@@ -126,5 +126,37 @@
     "password": "password123",
     "role": "guest",
     "phone": "08123456789"
+  },
+  {
+    "id": 10001,
+    "name": "Vercel Supabase Live Test",
+    "email": "vercel_live_test_1790140603373@gmail.com",
+    "password": "password123",
+    "role": "guest",
+    "phone": "08123456789"
+  },
+  {
+    "id": 10002,
+    "name": "rafi",
+    "email": "rafi@gmail.com",
+    "password": "rafi123",
+    "role": "guest",
+    "phone": "0812345678"
+  },
+  {
+    "id": 10003,
+    "name": "rafi",
+    "email": "rawr@gmail.com",
+    "password": "rafi123",
+    "role": "guest",
+    "phone": "0812345678"
+  },
+  {
+    "id": 10004,
+    "name": "Flow Test Tamu",
+    "email": "flow_test_1790153605684@gmail.com",
+    "password": "tamu8467",
+    "role": "guest",
+    "phone": "08123456789"
   }
 ]
