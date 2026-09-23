@@ -1469,6 +1469,17 @@ async function initReservationForm() {
           } catch(e) {}
         }
 
+        if (data.reservation) {
+          try {
+            const myStored = JSON.parse(localStorage.getItem('hotelku_my_rsv') || '[]');
+            const exists = myStored.some(r => r.id === data.reservation.id);
+            if (!exists) {
+              myStored.unshift(data.reservation);
+              localStorage.setItem('hotelku_my_rsv', JSON.stringify(myStored.slice(0, 30)));
+            }
+          } catch(e) {}
+        }
+
         // Show celebratory success modal dialog
         showPaymentSuccessModal({
           reservationId: data.reservation ? data.reservation.id : 'RSV-NEW',

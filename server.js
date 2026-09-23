@@ -733,31 +733,23 @@ function apiAuth(req, res, next) {
   const fallbackEmail = req.headers['x-user-email'] || req.body?.guestEmail;
   const rsvId = req.body?.reservationId || req.params?.id;
 
-  if (fallbackUserId) {
-    let u = users.find(x => x.id === parseInt(fallbackUserId));
-    if (!u && req.headers['x-user-name'] && fallbackEmail) {
+  if (fallbackUserId || fallbackEmail) {
+    const cleanMail = fallbackEmail ? String(fallbackEmail).trim().toLowerCase() : '';
+    const cleanId = fallbackUserId ? parseInt(fallbackUserId) : null;
+
+    let u = users.find(x => (cleanId && x.id === cleanId) || (cleanMail && x.email.toLowerCase() === cleanMail));
+    if (!u) {
       u = {
-        id: parseInt(fallbackUserId),
-        name: decodeURIComponent(req.headers['x-user-name']),
-        email: String(fallbackEmail).trim().toLowerCase(),
+        id: cleanId || ++userCounter,
+        name: req.headers['x-user-name'] ? decodeURIComponent(req.headers['x-user-name']) : 'Tamu',
+        email: cleanMail || `tamu_${cleanId || Date.now()}@hotelku.com`,
         role: req.headers['x-user-role'] || 'guest',
         phone: req.headers['x-user-phone'] ? decodeURIComponent(req.headers['x-user-phone']) : ''
       };
       users.push(u);
     }
-    if (u) {
-      req.session.user = { id: u.id, name: u.name, email: u.email, role: u.role, phone: u.phone || '' };
-      return next();
-    }
-  }
-
-  if (fallbackEmail) {
-    const cleanMail = String(fallbackEmail).trim().toLowerCase();
-    const u = users.find(x => x.email.toLowerCase() === cleanMail);
-    if (u) {
-      req.session.user = { id: u.id, name: u.name, email: u.email, role: u.role, phone: u.phone || '' };
-      return next();
-    }
+    req.session.user = { id: u.id, name: u.name, email: u.email, role: u.role, phone: u.phone || '' };
+    return next();
   }
 
   // 2. Fallback jika aksi berkaitan dengan Reservasi (Check-in, Check-out, Beri Ulasan)
@@ -1349,14 +1341,33 @@ app.post('/api/reservations', apiAuth, async (req, res) => {
 });
 
 // List reservations (Staff sees all, Guest sees own)
-app.get('/api/reservations', apiAuth, (req, res) => {
+app.get('/api/reservations', apiAuth, async (req, res) => {
   const { status } = req.query;
-  let result;
 
+  // Always refresh latest reservations from Supabase Cloud
+  try {
+    const suRsv = await db.getReservations();
+    if (suRsv && suRsv.length > 0) {
+      reservations = suRsv;
+    }
+  } catch (e) {
+    console.error('[Supabase] GET /api/reservations refresh error:', e.message);
+  }
+
+  let result;
   if (req.session.user.role === 'admin' || req.session.user.role === 'receptionist') {
     result = [...reservations];
   } else {
-    result = reservations.filter(r => r.userId === req.session.user.id || (req.session.user.email && r.guestEmail && r.guestEmail.toLowerCase() === req.session.user.email.toLowerCase()));
+    const sId = parseInt(req.session.user.id);
+    const sEmail = (req.session.user.email || '').trim().toLowerCase();
+    const sName = (req.session.user.name || '').trim().toLowerCase();
+
+    result = reservations.filter(r => {
+      if (r.userId && parseInt(r.userId) === sId) return true;
+      if (sEmail && r.guestEmail && r.guestEmail.trim().toLowerCase() === sEmail) return true;
+      if (sName && r.guestName && r.guestName.trim().toLowerCase() === sName) return true;
+      return false;
+    });
   }
 
   if (status && status !== 'all') {
