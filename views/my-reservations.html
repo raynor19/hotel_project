@@ -463,20 +463,43 @@
           return;
         }
 
-        // 2-Way Smart Merge: menggabungkan reservasi dari server dan cache browser (local storage)
+        // Identifikasi pengguna yang sedang login saat ini
+        const savedUserStr = localStorage.getItem('hotelku_user');
+        let currentUser = null;
+        try { currentUser = JSON.parse(savedUserStr); } catch(e) {}
+
+        const currentUserId = currentUser ? parseInt(currentUser.id) : null;
+        const currentEmail = currentUser ? (currentUser.email || '').trim().toLowerCase() : '';
+        const currentName = currentUser ? (currentUser.name || '').trim().toLowerCase() : '';
+
+        // 2-Way Smart Merge: menggabungkan reservasi dari server dan cache browser KHUSUS akun ini
         let serverList = Array.isArray(rsvRes.reservations) ? rsvRes.reservations : [];
         let localList = [];
         try {
-          localList = JSON.parse(localStorage.getItem('hotelku_my_rsv') || '[]');
-          if (!Array.isArray(localList)) localList = [];
+          const rawLocal = JSON.parse(localStorage.getItem('hotelku_my_rsv') || '[]');
+          if (Array.isArray(rawLocal)) {
+            // Filter ketat: Jangan tampilkan sisa reservasi milik akun user lain yang pernah login di browser ini!
+            localList = rawLocal.filter(r => {
+              if (!r) return false;
+              const rId = r.userId ? parseInt(r.userId) : null;
+              const rEmail = (r.guestEmail || '').trim().toLowerCase();
+              const rName = (r.guestName || '').trim().toLowerCase();
+
+              const idMatch = Boolean(currentUserId && rId && rId === currentUserId);
+              const emailMatch = Boolean(currentEmail && rEmail && rEmail === currentEmail);
+              const nameMatch = Boolean(currentName && rName && rName === currentName);
+
+              return idMatch || emailMatch || nameMatch;
+            });
+          }
         } catch(e) {}
 
         const map = new Map();
-        // 1. Masukkan data lokal terlebih dahulu
+        // 1. Masukkan data lokal milik akun ini
         for (const r of localList) {
           if (r && r.id) map.set(r.id, r);
         }
-        // 2. Timpa/sinkronkan dengan data server terkini (status approved, check-in, dll)
+        // 2. Timpa/sinkronkan dengan data server terkini
         for (const r of serverList) {
           if (r && r.id) {
             const existing = map.get(r.id) || {};
@@ -496,6 +519,10 @@
               <a href="/rooms" class="btn btn-primary" style="margin-top: 16px;">Jelajahi Pilihan Kamar</a>
             </div>
           `;
+          // Bersihkan cache jika akun ini belum punya reservasi
+          try {
+            localStorage.setItem('hotelku_my_rsv', JSON.stringify([]));
+          } catch(e) {}
           return;
         }
 

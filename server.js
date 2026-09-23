@@ -1443,28 +1443,14 @@ app.get('/api/reservations', apiAuth, async (req, res) => {
     const sId = parseInt(req.session.user.id);
     const sEmail = (req.session.user.email || '').trim().toLowerCase();
     const sName = (req.session.user.name || '').trim().toLowerCase();
-    const headerRsvIds = (req.headers['x-reservation-ids'] || req.query.rsvIds || '')
-      .split(',')
-      .map(x => x.trim())
-      .filter(Boolean);
 
     result = reservations.filter(r => {
-      // 1. Direct match if the reservation ID is in the user's browser localStorage cache
-      if (headerRsvIds.includes(r.id)) return true;
+      // Hanya tampilkan reservasi yang benar-benar milik pengguna yang sedang login
+      const matchesId = Boolean(r.userId && sId && parseInt(r.userId) === sId);
+      const matchesEmail = Boolean(sEmail && r.guestEmail && r.guestEmail.trim().toLowerCase() === sEmail);
+      const matchesName = Boolean(sName && r.guestName && r.guestName.trim().toLowerCase() === sName);
 
-      // 2. Match by user ID
-      if (r.userId && sId && parseInt(r.userId) === sId) return true;
-
-      // 3. Match by guest email
-      if (sEmail && r.guestEmail && r.guestEmail.trim().toLowerCase() === sEmail) return true;
-
-      // 4. Match by guest name (exact or substring)
-      if (sName && r.guestName) {
-        const gn = r.guestName.trim().toLowerCase();
-        if (gn === sName || gn.includes(sName) || sName.includes(gn)) return true;
-      }
-
-      return false;
+      return matchesId || matchesEmail || matchesName;
     });
   }
 

@@ -29,20 +29,6 @@
             if (!options.headers['x-user-name']) options.headers['x-user-name'] = encodeURIComponent(savedUser.name || '');
           }
         }
-
-        const localRsv = JSON.parse(localStorage.getItem('hotelku_my_rsv') || '[]');
-        if (Array.isArray(localRsv) && localRsv.length > 0) {
-          const ids = localRsv.map(r => r && r.id).filter(Boolean).slice(0, 30).join(',');
-          if (ids) {
-            options = options || {};
-            options.headers = options.headers || {};
-            if (options.headers instanceof Headers) {
-              if (!options.headers.has('x-reservation-ids')) options.headers.set('x-reservation-ids', ids);
-            } else if (typeof options.headers === 'object') {
-              if (!options.headers['x-reservation-ids']) options.headers['x-reservation-ids'] = ids;
-            }
-          }
-        }
       }
     } catch(e) {}
     return origFetch.apply(this, [url, options]);
@@ -365,6 +351,15 @@ async function initNavbar() {
       if (logoutBtn) {
         logoutBtn.onclick = async () => {
           localStorage.removeItem('hotelku_user');
+          localStorage.removeItem('hotelku_my_rsv');
+          try {
+            for (let i = localStorage.length - 1; i >= 0; i--) {
+              const k = localStorage.key(i);
+              if (k && (k.startsWith('hotelku_my_rsv') || k.startsWith('hotelku_user'))) {
+                localStorage.removeItem(k);
+              }
+            }
+          } catch(e) {}
           try {
             document.cookie = 'hotelku_auth=; path=/; max-age=0; SameSite=Lax';
           } catch(e) {}
@@ -1504,7 +1499,16 @@ async function initReservationForm() {
               roomType: data.reservation.roomType || room.type || 'Standard',
               roomPhoto: data.reservation.roomPhoto || (room.photos && room.photos[0] ? room.photos[0] : 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=1200&q=80')
             };
-            const myStored = JSON.parse(localStorage.getItem('hotelku_my_rsv') || '[]');
+            let myStored = JSON.parse(localStorage.getItem('hotelku_my_rsv') || '[]');
+            // Filter to only retain items belonging to the current user
+            const activeUid = rsvObj.userId;
+            const activeEmail = (rsvObj.guestEmail || '').trim().toLowerCase();
+            myStored = myStored.filter(r => {
+              if (!r) return false;
+              if (activeUid && r.userId && r.userId === activeUid) return true;
+              if (activeEmail && r.guestEmail && r.guestEmail.trim().toLowerCase() === activeEmail) return true;
+              return false;
+            });
             const exists = myStored.some(r => r.id === rsvObj.id);
             if (!exists) {
               myStored.unshift(rsvObj);

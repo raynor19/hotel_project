@@ -456,6 +456,19 @@
           const logoutBtn = document.getElementById('navHomeLogout');
           if (logoutBtn) {
             logoutBtn.addEventListener('click', async () => {
+              localStorage.removeItem('hotelku_user');
+              localStorage.removeItem('hotelku_my_rsv');
+              try {
+                for (let i = localStorage.length - 1; i >= 0; i--) {
+                  const k = localStorage.key(i);
+                  if (k && (k.startsWith('hotelku_my_rsv') || k.startsWith('hotelku_user'))) {
+                    localStorage.removeItem(k);
+                  }
+                }
+              } catch(e) {}
+              try {
+                document.cookie = 'hotelku_auth=; path=/; max-age=0; SameSite=Lax';
+              } catch(e) {}
               await fetch('/api/logout', { method: 'POST' });
               window.location.reload();
             });
