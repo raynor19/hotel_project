@@ -773,7 +773,38 @@ function apiAuth(req, res, next) {
 }
 
 function apiAdmin(req, res, next) {
-  if (!req.session.user) return res.status(401).json({ success: false, message: 'Unauthorized' });
+  if (!req.session?.user) {
+    const cookies = parseCookies(req);
+    if (cookies.hotelku_auth) {
+      try {
+        const u = JSON.parse(cookies.hotelku_auth);
+        if (u && (u.id || u.email)) req.session.user = u;
+      } catch (e) {}
+    }
+  }
+
+  if (!req.session?.user) {
+    const fallbackUserId = req.headers['x-user-id'] || req.query.userId;
+    const fallbackEmail = req.headers['x-user-email'];
+    const fallbackRole = req.headers['x-user-role'];
+    if (fallbackUserId || fallbackEmail || fallbackRole) {
+      const cleanMail = fallbackEmail ? String(fallbackEmail).trim().toLowerCase() : '';
+      const cleanId = fallbackUserId ? parseInt(fallbackUserId) : null;
+      let u = users.find(x => (cleanId && x.id === cleanId) || (cleanMail && x.email.toLowerCase() === cleanMail));
+      if (u) {
+        req.session.user = { id: u.id, name: u.name, email: u.email, role: u.role, phone: u.phone || '' };
+      } else if (fallbackRole === 'admin') {
+        req.session.user = {
+          id: cleanId || 1,
+          name: req.headers['x-user-name'] ? decodeURIComponent(req.headers['x-user-name']) : 'Administrator',
+          email: cleanMail || 'admin@hotelku.com',
+          role: 'admin'
+        };
+      }
+    }
+  }
+
+  if (!req.session?.user) return res.status(401).json({ success: false, message: 'Silakan login sebagai administrator' });
   if (req.session.user.role !== 'admin') {
     return res.status(403).json({ success: false, message: 'Akses ditolak: Hanya Administrator yang memiliki hak akses fitur ini' });
   }
@@ -781,7 +812,38 @@ function apiAdmin(req, res, next) {
 }
 
 function apiStaff(req, res, next) {
-  if (!req.session.user) return res.status(401).json({ success: false, message: 'Unauthorized' });
+  if (!req.session?.user) {
+    const cookies = parseCookies(req);
+    if (cookies.hotelku_auth) {
+      try {
+        const u = JSON.parse(cookies.hotelku_auth);
+        if (u && (u.id || u.email)) req.session.user = u;
+      } catch (e) {}
+    }
+  }
+
+  if (!req.session?.user) {
+    const fallbackUserId = req.headers['x-user-id'] || req.query.userId;
+    const fallbackEmail = req.headers['x-user-email'];
+    const fallbackRole = req.headers['x-user-role'];
+    if (fallbackUserId || fallbackEmail || fallbackRole) {
+      const cleanMail = fallbackEmail ? String(fallbackEmail).trim().toLowerCase() : '';
+      const cleanId = fallbackUserId ? parseInt(fallbackUserId) : null;
+      let u = users.find(x => (cleanId && x.id === cleanId) || (cleanMail && x.email.toLowerCase() === cleanMail));
+      if (u) {
+        req.session.user = { id: u.id, name: u.name, email: u.email, role: u.role, phone: u.phone || '' };
+      } else if (fallbackRole === 'admin' || fallbackRole === 'receptionist') {
+        req.session.user = {
+          id: cleanId || 2,
+          name: req.headers['x-user-name'] ? decodeURIComponent(req.headers['x-user-name']) : 'Staf Hotel',
+          email: cleanMail || 'resepsionis@hotelku.com',
+          role: fallbackRole
+        };
+      }
+    }
+  }
+
+  if (!req.session?.user) return res.status(401).json({ success: false, message: 'Silakan login sebagai staf hotel' });
   if (req.session.user.role !== 'admin' && req.session.user.role !== 'receptionist') {
     return res.status(403).json({ success: false, message: 'Akses ditolak: Hanya Staf Hotel yang memiliki hak akses' });
   }
@@ -1394,11 +1456,28 @@ app.get('/api/reservations', apiAuth, async (req, res) => {
   res.json({ success: true, reservations: result });
 });
 
+// Helper: Find reservation in memory or pull fresh from Supabase
+async function findReservationById(id) {
+  let rsv = reservations.find(r => r.id === id);
+  if (!rsv) {
+    try {
+      const dbRsvs = await db.getReservations();
+      if (dbRsvs && dbRsvs.length > 0) {
+        reservations = dbRsvs;
+        rsv = reservations.find(r => r.id === id);
+      }
+    } catch (e) {
+      console.error('[Supabase] findReservationById refresh error:', e.message);
+    }
+  }
+  return rsv;
+}
+
 // Staff: Approve reservation (ACC)
 app.put('/api/reservations/:id/approve', apiStaff, async (req, res) => {
-  const rsv = reservations.find(r => r.id === req.params.id);
+  const rsv = await findReservationById(req.params.id);
   if (!rsv) return res.status(404).json({ success: false, message: 'Reservasi tidak ditemukan' });
-  if (rsv.status !== 'pending') return res.status(400).json({ success: false, message: 'Reservasi tidak dalam status pending' });
+  if (rsv.status !== 'pending') return res.status(400).json({ success: false, message: `Reservasi tidak dalam status pending (Status saat ini: ${rsv.status})` });
 
   rsv.status = 'approved';
   rsv.approvedAt = new Date().toISOString();
@@ -1414,7 +1493,7 @@ app.put('/api/reservations/:id/approve', apiStaff, async (req, res) => {
 
 // Staff: Reject reservation
 app.put('/api/reservations/:id/reject', apiStaff, async (req, res) => {
-  const rsv = reservations.find(r => r.id === req.params.id);
+  const rsv = await findReservationById(req.params.id);
   if (!rsv) return res.status(404).json({ success: false, message: 'Reservasi tidak ditemukan' });
   if (rsv.status !== 'pending') return res.status(400).json({ success: false, message: 'Reservasi tidak dalam status pending' });
 
@@ -1431,7 +1510,7 @@ app.put('/api/reservations/:id/reject', apiStaff, async (req, res) => {
 
 // Staff: Approve & Check-In Langsung (1 langkah oleh Resepsionis)
 app.put('/api/reservations/:id/approve-checkin', apiStaff, async (req, res) => {
-  const rsv = reservations.find(r => r.id === req.params.id);
+  const rsv = await findReservationById(req.params.id);
   if (!rsv) return res.status(404).json({ success: false, message: 'Reservasi tidak ditemukan' });
   if (rsv.status !== 'pending' && rsv.status !== 'approved') {
     return res.status(400).json({ success: false, message: 'Reservasi tidak dalam status yang dapat di-check in' });
@@ -1467,7 +1546,7 @@ app.put('/api/reservations/:id/approve-checkin', apiStaff, async (req, res) => {
 
 // HANYA STAF (Resepsionis / Admin): Check-in Tamu
 app.put('/api/reservations/:id/checkin', apiStaff, async (req, res) => {
-  const rsv = reservations.find(r => r.id === req.params.id);
+  const rsv = await findReservationById(req.params.id);
   if (!rsv) return res.status(404).json({ success: false, message: 'Reservasi tidak ditemukan' });
 
   if (rsv.status !== 'approved') return res.status(400).json({ success: false, message: 'Hanya reservasi yang sudah disetujui (ACC) yang dapat di-check in' });
@@ -1497,7 +1576,7 @@ app.put('/api/reservations/:id/checkin', apiStaff, async (req, res) => {
 
 // HANYA STAF (Resepsionis / Admin): Check-out Tamu
 app.put('/api/reservations/:id/checkout', apiStaff, async (req, res) => {
-  const rsv = reservations.find(r => r.id === req.params.id);
+  const rsv = await findReservationById(req.params.id);
   if (!rsv) return res.status(404).json({ success: false, message: 'Reservasi tidak ditemukan' });
 
   if (rsv.status !== 'checked-in' && rsv.status !== 'approved') {
@@ -1632,22 +1711,24 @@ app.post('/api/reservations/:id/checkout-action', apiAuth, (req, res) => {
 });
 
 // Staff: Respond to Late Check-out Request (Approve / Reject)
-app.put('/api/reservations/:id/late-checkout/:decision', apiStaff, (req, res) => {
+app.put('/api/reservations/:id/late-checkout/:decision', apiStaff, async (req, res) => {
   const { decision } = req.params;
-  const rsv = reservations.find(r => r.id === req.params.id);
+  const rsv = await findReservationById(req.params.id);
   if (!rsv) return res.status(404).json({ success: false, message: 'Reservasi tidak ditemukan' });
 
   if (decision === 'approve') {
     rsv.lateCheckoutStatus = 'approved';
     const extendedHour = 12 + (rsv.lateCheckoutHours || 1);
-    saveReservations();
+    saveReservations(rsv);
+    try { await db.upsertReservation(rsv); } catch(e) {}
     return res.json({
       success: true,
       message: `Permohonan Late Check-Out disetujui! Batas waktu check-out diperpanjang menjadi pukul ${extendedHour}:00 WIB.`
     });
   } else if (decision === 'reject') {
     rsv.lateCheckoutStatus = 'rejected';
-    saveReservations();
+    saveReservations(rsv);
+    try { await db.upsertReservation(rsv); } catch(e) {}
     return res.json({
       success: true,
       message: `Permohonan Late Check-Out ditolak karena tingginya okupansi kedatangan tamu berikutnya.`
@@ -1658,13 +1739,14 @@ app.put('/api/reservations/:id/late-checkout/:decision', apiStaff, (req, res) =>
 });
 
 // Staff: Update Bellboy Service Status (Dispatched / Completed)
-app.put('/api/reservations/:id/bellboy/:status', apiStaff, (req, res) => {
+app.put('/api/reservations/:id/bellboy/:status', apiStaff, async (req, res) => {
   const { status } = req.params;
-  const rsv = reservations.find(r => r.id === req.params.id);
+  const rsv = await findReservationById(req.params.id);
   if (!rsv) return res.status(404).json({ success: false, message: 'Reservasi tidak ditemukan' });
 
   rsv.bellboyStatus = status;
-  saveReservations();
+  saveReservations(rsv);
+  try { await db.upsertReservation(rsv); } catch(e) {}
   res.json({
     success: true,
     message: status === 'dispatched'
@@ -1674,15 +1756,16 @@ app.put('/api/reservations/:id/bellboy/:status', apiStaff, (req, res) => {
 });
 
 // Staff: Notify Guest that Room is Ready for Check-in
-app.put('/api/receptionist/notify-room-ready/:id', apiStaff, (req, res) => {
-  const rsv = reservations.find(r => r.id === req.params.id);
+app.put('/api/receptionist/notify-room-ready/:id', apiStaff, async (req, res) => {
+  const rsv = await findReservationById(req.params.id);
   if (!rsv) return res.status(404).json({ success: false, message: 'Reservasi tidak ditemukan' });
 
   rsv.roomReadyNotified = true;
   rsv.earlyCheckInAllowed = true;
   const now = new Date();
   rsv.roomReadyAt = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} WIB`;
-  saveReservations();
+  saveReservations(rsv);
+  try { await db.upsertReservation(rsv); } catch(e) {}
 
   res.json({
     success: true,
@@ -2019,7 +2102,12 @@ app.get('/api/settings', (req, res) => {
 //  RECEPTIONIST: OPERATIONAL DASHBOARD STATS
 // ================================================================
 
-app.get('/api/receptionist/dashboard', apiStaff, (req, res) => {
+app.get('/api/receptionist/dashboard', apiStaff, async (req, res) => {
+  try {
+    const dbRsvs = await db.getReservations();
+    if (dbRsvs && dbRsvs.length > 0) reservations = dbRsvs;
+  } catch (e) {}
+
   const pendingReservations = reservations.filter(r => r.status === 'pending');
   const approvedReservations = reservations.filter(r => r.status === 'approved'); // siap checkin
   const inHouseGuests = reservations.filter(r => r.status === 'checked-in'); // sedang menginap

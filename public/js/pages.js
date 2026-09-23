@@ -13,15 +13,20 @@
       const savedUserStr = localStorage.getItem('hotelku_user');
       if (savedUserStr && typeof url === 'string' && url.startsWith('/api')) {
         const savedUser = JSON.parse(savedUserStr);
-        if (savedUser && savedUser.id) {
+        if (savedUser && (savedUser.id || savedUser.role)) {
           options = options || {};
+          options.credentials = options.credentials || 'same-origin';
           options.headers = options.headers || {};
           if (options.headers instanceof Headers) {
-            if (!options.headers.has('x-user-id')) options.headers.set('x-user-id', String(savedUser.id));
-            if (!options.headers.has('x-user-email')) options.headers.set('x-user-email', String(savedUser.email));
+            if (!options.headers.has('x-user-id')) options.headers.set('x-user-id', String(savedUser.id || ''));
+            if (!options.headers.has('x-user-email')) options.headers.set('x-user-email', String(savedUser.email || ''));
+            if (!options.headers.has('x-user-role')) options.headers.set('x-user-role', String(savedUser.role || ''));
+            if (!options.headers.has('x-user-name')) options.headers.set('x-user-name', encodeURIComponent(savedUser.name || ''));
           } else if (typeof options.headers === 'object') {
-            if (!options.headers['x-user-id']) options.headers['x-user-id'] = String(savedUser.id);
-            if (!options.headers['x-user-email']) options.headers['x-user-email'] = String(savedUser.email);
+            if (!options.headers['x-user-id']) options.headers['x-user-id'] = String(savedUser.id || '');
+            if (!options.headers['x-user-email']) options.headers['x-user-email'] = String(savedUser.email || '');
+            if (!options.headers['x-user-role']) options.headers['x-user-role'] = String(savedUser.role || '');
+            if (!options.headers['x-user-name']) options.headers['x-user-name'] = encodeURIComponent(savedUser.name || '');
           }
         }
       }
@@ -1760,49 +1765,131 @@ async function initAdminCheckout() {
 
 async function approveRsv(id) {
   if (!confirm('Setujui reservasi ' + id + '?')) return;
-  const res = await fetch(`/api/reservations/${id}/approve`, { method: 'PUT' });
-  const data = await res.json();
-  showToast(data.message, data.success ? 'success' : 'error');
-  if (data.success) setTimeout(() => location.reload(), 800);
+  try {
+    const res = await fetch(`/api/reservations/${id}/approve`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await res.json();
+    showToast(data.message, data.success ? 'success' : 'error');
+    if (data.success) {
+      if (typeof loadReceptionistDashboard === 'function') {
+        await loadReceptionistDashboard();
+      }
+      if (typeof initAdminReservations === 'function') {
+        const activeTab = document.querySelector('.filter-tab.active');
+        const status = activeTab ? activeTab.dataset.status : 'all';
+        await initAdminReservations(status);
+      }
+      setTimeout(() => location.reload(), 600);
+    }
+  } catch (err) {
+    showToast('Gagal memproses persetujuan reservasi: ' + err.message, 'error');
+  }
 }
 
 async function approveAndCheckin(id) {
   if (!confirm('Setujui dan langsung proses Check-In Sekarang untuk reservasi ' + id + '?')) return;
-  const res = await fetch(`/api/reservations/${id}/approve-checkin`, { method: 'PUT' });
-  const data = await res.json();
-  showToast(data.message, data.success ? 'success' : 'error');
-  if (data.success) setTimeout(() => location.reload(), 800);
+  try {
+    const res = await fetch(`/api/reservations/${id}/approve-checkin`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await res.json();
+    showToast(data.message, data.success ? 'success' : 'error');
+    if (data.success) {
+      if (typeof loadReceptionistDashboard === 'function') {
+        await loadReceptionistDashboard();
+      }
+      if (typeof initAdminReservations === 'function') {
+        const activeTab = document.querySelector('.filter-tab.active');
+        const status = activeTab ? activeTab.dataset.status : 'all';
+        await initAdminReservations(status);
+      }
+      setTimeout(() => location.reload(), 600);
+    }
+  } catch (err) {
+    showToast('Gagal memproses persetujuan & check-in: ' + err.message, 'error');
+  }
 }
 window.approveAndCheckin = approveAndCheckin;
 
 async function rejectRsv(id) {
   showModal('Tolak Reservasi', '<p style="margin-bottom:12px;color:#888;">Berikan alasan penolakan:</p><textarea id="rejectReason" placeholder="Alasan penolakan..."></textarea>', async (overlay) => {
-    const reason = document.getElementById('rejectReason')?.value || '';
-    const res = await fetch(`/api/reservations/${id}/reject`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reason })
-    });
-    const data = await res.json();
-    showToast(data.message, data.success ? 'success' : 'error');
-    if (data.success) setTimeout(() => location.reload(), 800);
+    try {
+      const reason = document.getElementById('rejectReason')?.value || '';
+      const res = await fetch(`/api/reservations/${id}/reject`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason })
+      });
+      const data = await res.json();
+      showToast(data.message, data.success ? 'success' : 'error');
+      if (data.success) {
+        if (typeof loadReceptionistDashboard === 'function') {
+          await loadReceptionistDashboard();
+        }
+        if (typeof initAdminReservations === 'function') {
+          const activeTab = document.querySelector('.filter-tab.active');
+          const status = activeTab ? activeTab.dataset.status : 'all';
+          await initAdminReservations(status);
+        }
+        setTimeout(() => location.reload(), 600);
+      }
+    } catch (err) {
+      showToast('Gagal menolak reservasi: ' + err.message, 'error');
+    }
   });
 }
 
 async function processCheckin(id) {
   if (!confirm('Proses Check-In Sekarang untuk reservasi ' + id + '?')) return;
-  const res = await fetch(`/api/reservations/${id}/checkin`, { method: 'PUT' });
-  const data = await res.json();
-  showToast(data.message, data.success ? 'success' : 'error');
-  if (data.success) setTimeout(() => location.reload(), 800);
+  try {
+    const res = await fetch(`/api/reservations/${id}/checkin`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await res.json();
+    showToast(data.message, data.success ? 'success' : 'error');
+    if (data.success) {
+      if (typeof loadReceptionistDashboard === 'function') {
+        await loadReceptionistDashboard();
+      }
+      if (typeof initAdminReservations === 'function') {
+        const activeTab = document.querySelector('.filter-tab.active');
+        const status = activeTab ? activeTab.dataset.status : 'all';
+        await initAdminReservations(status);
+      }
+      setTimeout(() => location.reload(), 600);
+    }
+  } catch (err) {
+    showToast('Gagal memproses check-in: ' + err.message, 'error');
+  }
 }
 
 async function processCheckout(id) {
   if (!confirm('Proses Check-Out Sekarang untuk reservasi ' + id + '?')) return;
-  const res = await fetch(`/api/reservations/${id}/checkout`, { method: 'PUT' });
-  const data = await res.json();
-  showToast(data.message, data.success ? 'success' : 'error');
-  if (data.success) setTimeout(() => location.reload(), 800);
+  try {
+    const res = await fetch(`/api/reservations/${id}/checkout`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    const data = await res.json();
+    showToast(data.message, data.success ? 'success' : 'error');
+    if (data.success) {
+      if (typeof loadReceptionistDashboard === 'function') {
+        await loadReceptionistDashboard();
+      }
+      if (typeof initAdminReservations === 'function') {
+        const activeTab = document.querySelector('.filter-tab.active');
+        const status = activeTab ? activeTab.dataset.status : 'all';
+        await initAdminReservations(status);
+      }
+      setTimeout(() => location.reload(), 600);
+    }
+  } catch (err) {
+    showToast('Gagal memproses check-out: ' + err.message, 'error');
+  }
 }
 
 // ==================== PRD VALUE-ADDED FEATURES ====================
