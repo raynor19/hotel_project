@@ -29,6 +29,20 @@
             if (!options.headers['x-user-name']) options.headers['x-user-name'] = encodeURIComponent(savedUser.name || '');
           }
         }
+
+        const localRsv = JSON.parse(localStorage.getItem('hotelku_my_rsv') || '[]');
+        if (Array.isArray(localRsv) && localRsv.length > 0) {
+          const ids = localRsv.map(r => r && r.id).filter(Boolean).slice(0, 30).join(',');
+          if (ids) {
+            options = options || {};
+            options.headers = options.headers || {};
+            if (options.headers instanceof Headers) {
+              if (!options.headers.has('x-reservation-ids')) options.headers.set('x-reservation-ids', ids);
+            } else if (typeof options.headers === 'object') {
+              if (!options.headers['x-reservation-ids']) options.headers['x-reservation-ids'] = ids;
+            }
+          }
+        }
       }
     } catch(e) {}
     return origFetch.apply(this, [url, options]);
@@ -1448,11 +1462,19 @@ async function initReservationForm() {
     const paymentStatus = selectedMethod === 'Bayar di Hotel' ? 'pay_at_hotel' : 'paid';
 
     try {
+      const savedUserStr = localStorage.getItem('hotelku_user');
+      let currentUserId = null;
+      try {
+        const u = JSON.parse(savedUserStr);
+        if (u && u.id) currentUserId = u.id;
+      } catch(e) {}
+
       const res = await fetch('/api/reservations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           roomId: parseInt(roomId),
+          userId: currentUserId || undefined,
           checkIn: ciInput.value,
           checkOut: coInput.value,
           guestName: document.getElementById('rsvName').value.trim(),

@@ -1292,7 +1292,7 @@ app.put('/api/receptionist/rooms-status/:unitNumber', apiStaff, (req, res) => {
 
 // Create reservation (guest)
 app.post('/api/reservations', apiAuth, async (req, res) => {
-  const { roomId, checkIn, checkOut, guestName, guestPhone, guestEmail, notes } = req.body;
+  const { roomId, checkIn, checkOut, guestName, guestPhone, guestEmail, notes, userId } = req.body;
 
   if (!roomId || !checkIn || !checkOut || !guestName || !guestPhone) {
     return res.status(400).json({ success: false, message: 'Semua field wajib harus diisi' });
@@ -1311,8 +1311,25 @@ app.post('/api/reservations', apiAuth, async (req, res) => {
     return res.status(400).json({ success: false, message: 'Maaf, seluruh unit kamar tipe ini sedang penuh' });
   }
 
-  // Jika belum login, otomatis buat atau tautkan akun tamu berdasarkan email
-  let rsvUserId = req.session.user ? req.session.user.id : null;
+  // Prioritaskan user ID dari sesi login atau body/header
+  let rsvUserId = (req.session && req.session.user && req.session.user.id)
+    ? req.session.user.id
+    : (userId || req.headers['x-user-id']);
+
+  if (rsvUserId) {
+    rsvUserId = parseInt(rsvUserId);
+    if (!req.session.user) {
+      req.session.user = {
+        id: rsvUserId,
+        name: guestName.trim(),
+        email: (guestEmail || '').trim().toLowerCase(),
+        role: 'guest',
+        phone: (guestPhone || '').trim()
+      };
+    }
+  }
+
+  // Jika belum ada ID pengguna terdaftar, cari atau buat akun tamu baru
   if (!rsvUserId) {
     const cleanEmail = (guestEmail || '').trim().toLowerCase();
     let existingUser = cleanEmail ? users.find(u => u.email.toLowerCase() === cleanEmail) : null;
@@ -1426,11 +1443,27 @@ app.get('/api/reservations', apiAuth, async (req, res) => {
     const sId = parseInt(req.session.user.id);
     const sEmail = (req.session.user.email || '').trim().toLowerCase();
     const sName = (req.session.user.name || '').trim().toLowerCase();
+    const headerRsvIds = (req.headers['x-reservation-ids'] || req.query.rsvIds || '')
+      .split(',')
+      .map(x => x.trim())
+      .filter(Boolean);
 
     result = reservations.filter(r => {
-      if (r.userId && parseInt(r.userId) === sId) return true;
+      // 1. Direct match if the reservation ID is in the user's browser localStorage cache
+      if (headerRsvIds.includes(r.id)) return true;
+
+      // 2. Match by user ID
+      if (r.userId && sId && parseInt(r.userId) === sId) return true;
+
+      // 3. Match by guest email
       if (sEmail && r.guestEmail && r.guestEmail.trim().toLowerCase() === sEmail) return true;
-      if (sName && r.guestName && r.guestName.trim().toLowerCase() === sName) return true;
+
+      // 4. Match by guest name (exact or substring)
+      if (sName && r.guestName) {
+        const gn = r.guestName.trim().toLowerCase();
+        if (gn === sName || gn.includes(sName) || sName.includes(gn)) return true;
+      }
+
       return false;
     });
   }

@@ -463,19 +463,31 @@
           return;
         }
 
-        if (!rsvRes.reservations || rsvRes.reservations.length === 0) {
-          const localRsvStr = localStorage.getItem('hotelku_my_rsv');
-          if (localRsvStr) {
-            try {
-              const localRsv = JSON.parse(localRsvStr);
-              if (Array.isArray(localRsv) && localRsv.length > 0) {
-                rsvRes.reservations = localRsv;
-              }
-            } catch(e) {}
+        // 2-Way Smart Merge: menggabungkan reservasi dari server dan cache browser (local storage)
+        let serverList = Array.isArray(rsvRes.reservations) ? rsvRes.reservations : [];
+        let localList = [];
+        try {
+          localList = JSON.parse(localStorage.getItem('hotelku_my_rsv') || '[]');
+          if (!Array.isArray(localList)) localList = [];
+        } catch(e) {}
+
+        const map = new Map();
+        // 1. Masukkan data lokal terlebih dahulu
+        for (const r of localList) {
+          if (r && r.id) map.set(r.id, r);
+        }
+        // 2. Timpa/sinkronkan dengan data server terkini (status approved, check-in, dll)
+        for (const r of serverList) {
+          if (r && r.id) {
+            const existing = map.get(r.id) || {};
+            map.set(r.id, { ...existing, ...r });
           }
         }
 
-        if (!rsvRes.reservations || rsvRes.reservations.length === 0) {
+        const combinedReservations = Array.from(map.values());
+        combinedReservations.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+
+        if (combinedReservations.length === 0) {
           container.innerHTML = `
             <div class="empty-state">
               <i class="fas fa-inbox"></i>
@@ -485,13 +497,14 @@
             </div>
           `;
           return;
-        } else {
-          try {
-            localStorage.setItem('hotelku_my_rsv', JSON.stringify(rsvRes.reservations));
-          } catch(e) {}
         }
 
-        myReservationsCache = rsvRes.reservations;
+        try {
+          localStorage.setItem('hotelku_my_rsv', JSON.stringify(combinedReservations.slice(0, 30)));
+        } catch(e) {}
+
+        rsvRes.reservations = combinedReservations;
+        myReservationsCache = combinedReservations;
 
         const myReviewedReservationIds = new Set(
           (revRes.success && revRes.reviews) ? revRes.reviews.map(rv => rv.reservationId) : []
