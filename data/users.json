@@ -158,5 +158,13 @@
     "password": "tamu8467",
     "role": "guest",
     "phone": "08123456789"
+  },
+  {
+    "id": 10006,
+    "name": "Ani",
+    "email": "ani@gmail.com",
+    "password": "123",
+    "role": "guest",
+    "phone": "081234567891"
   }
 ]
