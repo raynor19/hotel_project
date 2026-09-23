@@ -1430,6 +1430,9 @@ app.post('/api/reservations', apiAuth, async (req, res) => {
 
 // List reservations (Staff sees all, Guest sees own)
 app.get('/api/reservations', apiAuth, async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   const { status } = req.query;
 
   // Always refresh latest reservations from Supabase Cloud
@@ -1512,9 +1515,15 @@ async function findReservationById(id) {
 
 // Staff: Approve reservation (ACC)
 app.put('/api/reservations/:id/approve', apiStaff, async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   const rsv = await findReservationById(req.params.id);
   if (!rsv) return res.status(404).json({ success: false, message: 'Reservasi tidak ditemukan' });
-  if (rsv.status !== 'pending') return res.status(400).json({ success: false, message: `Reservasi tidak dalam status pending (Status saat ini: ${rsv.status})` });
+  if (rsv.status !== 'pending') {
+    if (rsv.status === 'approved') {
+      return res.json({ success: true, message: `Reservasi ${rsv.id} sudah disetujui (ACC)`, reservation: rsv });
+    }
+    return res.status(400).json({ success: false, message: `Reservasi tidak dalam status pending (Status saat ini: ${rsv.status})` });
+  }
 
   rsv.status = 'approved';
   rsv.approvedAt = new Date().toISOString();
@@ -1530,9 +1539,15 @@ app.put('/api/reservations/:id/approve', apiStaff, async (req, res) => {
 
 // Staff: Reject reservation
 app.put('/api/reservations/:id/reject', apiStaff, async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   const rsv = await findReservationById(req.params.id);
   if (!rsv) return res.status(404).json({ success: false, message: 'Reservasi tidak ditemukan' });
-  if (rsv.status !== 'pending') return res.status(400).json({ success: false, message: 'Reservasi tidak dalam status pending' });
+  if (rsv.status !== 'pending') {
+    if (rsv.status === 'rejected') {
+      return res.json({ success: true, message: `Reservasi ${rsv.id} sudah ditolak`, reservation: rsv });
+    }
+    return res.status(400).json({ success: false, message: 'Reservasi tidak dalam status pending' });
+  }
 
   rsv.status = 'rejected';
   rsv.rejectionReason = req.body.reason || 'Kamar tidak tersedia pada jadwal yang diminta';
@@ -1547,8 +1562,12 @@ app.put('/api/reservations/:id/reject', apiStaff, async (req, res) => {
 
 // Staff: Approve & Check-In Langsung (1 langkah oleh Resepsionis)
 app.put('/api/reservations/:id/approve-checkin', apiStaff, async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   const rsv = await findReservationById(req.params.id);
   if (!rsv) return res.status(404).json({ success: false, message: 'Reservasi tidak ditemukan' });
+  if (rsv.status === 'checked-in') {
+    return res.json({ success: true, message: `Reservasi ${rsv.id} sudah di-check-in`, reservation: rsv });
+  }
   if (rsv.status !== 'pending' && rsv.status !== 'approved') {
     return res.status(400).json({ success: false, message: 'Reservasi tidak dalam status yang dapat di-check in' });
   }

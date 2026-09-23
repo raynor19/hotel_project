@@ -198,10 +198,20 @@
 
     async function loadReceptionistDashboard() {
       try {
+        const savedUserStr = localStorage.getItem('hotelku_user');
+        let u = null;
+        try { u = JSON.parse(savedUserStr); } catch(e) {}
+        const authHeaders = { 'Content-Type': 'application/json' };
+        if (u) {
+          if (u.id) authHeaders['x-user-id'] = String(u.id);
+          if (u.email) authHeaders['x-user-email'] = u.email;
+          if (u.role) authHeaders['x-user-role'] = u.role;
+        }
+
         const [dashRes, rsvRes, appRsvRes] = await Promise.all([
-          fetch('/api/receptionist/dashboard').then(r => r.json()),
-          fetch('/api/reservations?status=pending').then(r => r.json()),
-          fetch('/api/reservations?status=approved').then(r => r.json())
+          fetch(`/api/receptionist/dashboard?_t=${Date.now()}`, { headers: authHeaders }).then(r => r.json()),
+          fetch(`/api/reservations?status=pending&_t=${Date.now()}`, { headers: authHeaders }).then(r => r.json()),
+          fetch(`/api/reservations?status=approved&_t=${Date.now()}`, { headers: authHeaders }).then(r => r.json())
         ]);
 
         if (dashRes.success) {
@@ -299,7 +309,7 @@
         if (pendingContainer) {
           if (rsvRes.success && rsvRes.reservations.length > 0) {
             pendingContainer.innerHTML = rsvRes.reservations.map(rsv => `
-              <div class="admin-rsv-card">
+              <div class="admin-rsv-card" id="rsvCard_${rsv.id}">
                 <div class="rsv-photo"><img src="${rsv.roomPhoto}" alt="${rsv.roomName}"></div>
                 <div class="rsv-info">
                   <h4>${rsv.roomName} — ${rsv.id}</h4>
@@ -308,12 +318,12 @@
                   <div style="margin-top:6px;">${typeof getPaymentBadge === 'function' ? getPaymentBadge(rsv) : ''}</div>
                   ${rsv.notes ? `<div style="font-size:0.8rem;color:#888;margin-top:4px;"><i class="fas fa-comment-dots"></i> ${rsv.notes}</div>` : ''}
                 </div>
-                <div class="rsv-right">
+                <div class="rsv-right" id="rsvRight_${rsv.id}">
                   <span class="rsv-amount">${formatCurrency(rsv.totalPrice)}</span>
-                  ${getStatusBadge(rsv.status)}
-                  <button class="btn-approve" onclick="approveRsv('${rsv.id}')"><i class="fas fa-check"></i> Setujui (ACC)</button>
-                  <button class="btn-checkin" style="background:#10b981;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;margin-top:4px;" onclick="approveAndCheckin('${rsv.id}')"><i class="fas fa-sign-in-alt"></i> Setujui & Check In</button>
-                  <button class="btn-reject" onclick="rejectRsv('${rsv.id}')"><i class="fas fa-times"></i> Tolak</button>
+                  <span id="rsvBadge_${rsv.id}">${getStatusBadge(rsv.status)}</span>
+                  <button class="btn-approve" onclick="approveRsv('${rsv.id}', this)"><i class="fas fa-check"></i> Setujui (ACC)</button>
+                  <button class="btn-checkin" style="background:#10b981;color:#fff;border:none;padding:8px 12px;border-radius:6px;font-size:0.75rem;font-weight:700;cursor:pointer;margin-top:4px;" onclick="approveAndCheckin('${rsv.id}', this)"><i class="fas fa-sign-in-alt"></i> Setujui & Check In</button>
+                  <button class="btn-reject" onclick="rejectRsv('${rsv.id}', this)"><i class="fas fa-times"></i> Tolak</button>
                 </div>
               </div>
             `).join('');

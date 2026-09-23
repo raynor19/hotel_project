@@ -1682,7 +1682,18 @@ async function initAdminReservations(statusFilter = 'all') {
   const container = document.getElementById('adminRsvList');
   if (!container) return;
 
-  const res = await fetch(`/api/reservations${statusFilter !== 'all' ? '?status=' + statusFilter : ''}`);
+  const savedUserStr = localStorage.getItem('hotelku_user');
+  let u = null;
+  try { u = JSON.parse(savedUserStr); } catch(e) {}
+  const headers = { 'Content-Type': 'application/json' };
+  if (u) {
+    if (u.id) headers['x-user-id'] = String(u.id);
+    if (u.email) headers['x-user-email'] = u.email;
+    if (u.role) headers['x-user-role'] = u.role;
+  }
+
+  const querySep = statusFilter !== 'all' ? `?status=${statusFilter}&` : '?';
+  const res = await fetch(`/api/reservations${querySep}_t=${Date.now()}`, { headers });
   const data = await res.json();
 
   if (!data.success || data.reservations.length === 0) {
@@ -1691,7 +1702,7 @@ async function initAdminReservations(statusFilter = 'all') {
   }
 
   container.innerHTML = data.reservations.map(rsv => `
-    <div class="admin-rsv-card">
+    <div class="admin-rsv-card" id="rsvCard_${rsv.id}">
       <div class="rsv-photo"><img src="${rsv.roomPhoto}" alt="${rsv.roomName}"></div>
       <div class="rsv-info">
         <h4>${rsv.roomName} — ${rsv.id}</h4>
@@ -1700,13 +1711,15 @@ async function initAdminReservations(statusFilter = 'all') {
         <div style="margin-top: 5px;">${getPaymentBadge(rsv)}</div>
         ${rsv.notes ? `<div style="font-size:0.8rem;color:#888;margin-top:4px;"><i class="fas fa-sticky-note"></i> ${rsv.notes}</div>` : ''}
       </div>
-      <div class="rsv-right">
+      <div class="rsv-right" id="rsvRight_${rsv.id}">
         <span class="rsv-amount">${formatCurrency(rsv.totalPrice)}</span>
-        ${getStatusBadge(rsv.status)}
+        <span id="rsvBadge_${rsv.id}">${getStatusBadge(rsv.status)}</span>
         ${rsv.status === 'pending' ? `
-          <button class="btn-approve" onclick="approveRsv('${rsv.id}')"><i class="fas fa-check"></i> ACC (Setujui)</button>
-          <button class="btn-reject" onclick="rejectRsv('${rsv.id}')"><i class="fas fa-times"></i> Tolak</button>
-        ` : ''}
+          <button class="btn-approve" onclick="approveRsv('${rsv.id}', this)"><i class="fas fa-check"></i> ACC (Setujui)</button>
+          <button class="btn-reject" onclick="rejectRsv('${rsv.id}', this)"><i class="fas fa-times"></i> Tolak</button>
+        ` : (rsv.status === 'approved' ? `
+          <span style="font-size:0.8rem; color:#059669; font-weight:700; margin-top:6px; display:inline-flex; align-items:center; gap:4px;"><i class="fas fa-check-double"></i> Telah Disetujui</span>
+        ` : '')}
       </div>
     </div>
   `).join('');
@@ -1718,7 +1731,17 @@ async function initAdminCheckin() {
   const container = document.getElementById('checkinList');
   if (!container) return;
 
-  const res = await fetch('/api/reservations?status=approved');
+  const savedUserStr = localStorage.getItem('hotelku_user');
+  let u = null;
+  try { u = JSON.parse(savedUserStr); } catch(e) {}
+  const headers = { 'Content-Type': 'application/json' };
+  if (u) {
+    if (u.id) headers['x-user-id'] = String(u.id);
+    if (u.email) headers['x-user-email'] = u.email;
+    if (u.role) headers['x-user-role'] = u.role;
+  }
+
+  const res = await fetch(`/api/reservations?status=approved&_t=${Date.now()}`, { headers });
   const data = await res.json();
 
   if (!data.success || data.reservations.length === 0) {
@@ -1758,7 +1781,17 @@ async function initAdminCheckout() {
   const container = document.getElementById('checkoutList');
   if (!container) return;
 
-  const res = await fetch('/api/reservations?status=checked-in');
+  const savedUserStr = localStorage.getItem('hotelku_user');
+  let u = null;
+  try { u = JSON.parse(savedUserStr); } catch(e) {}
+  const headers = { 'Content-Type': 'application/json' };
+  if (u) {
+    if (u.id) headers['x-user-id'] = String(u.id);
+    if (u.email) headers['x-user-email'] = u.email;
+    if (u.role) headers['x-user-role'] = u.role;
+  }
+
+  const res = await fetch(`/api/reservations?status=checked-in&_t=${Date.now()}`, { headers });
   const data = await res.json();
 
   if (!data.success || data.reservations.length === 0) {
@@ -1790,78 +1823,214 @@ async function initAdminCheckout() {
 
 // ==================== ADMIN ACTIONS ====================
 
-async function approveRsv(id) {
+async function approveRsv(id, btn) {
   if (!confirm('Setujui reservasi ' + id + '?')) return;
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+  }
   try {
+    const savedUserStr = localStorage.getItem('hotelku_user');
+    let u = null;
+    try { u = JSON.parse(savedUserStr); } catch(e) {}
+    const headers = { 'Content-Type': 'application/json' };
+    if (u) {
+      if (u.id) headers['x-user-id'] = String(u.id);
+      if (u.email) headers['x-user-email'] = u.email;
+      if (u.role) headers['x-user-role'] = u.role;
+    }
+
     const res = await fetch(`/api/reservations/${id}/approve`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' }
+      headers
     });
     const data = await res.json();
     showToast(data.message, data.success ? 'success' : 'error');
-    if (data.success) {
+    if (data.success || (data.message && data.message.includes('sudah disetujui'))) {
+      // 1. Langsung ubah badge dan hilangkan tombol ACC & Tolak di DOM secara instan!
+      const badgeEl = document.getElementById(`rsvBadge_${id}`);
+      if (badgeEl) {
+        badgeEl.innerHTML = `<span class="status-badge status-approved"><i class="fas fa-check-circle"></i> Pesanan Dikonfirmasi</span>`;
+      }
+      const rightEl = document.getElementById(`rsvRight_${id}`);
+      if (rightEl) {
+        rightEl.querySelectorAll('.btn-approve, .btn-reject, .btn-checkin').forEach(b => b.remove());
+        const approvedTag = document.createElement('div');
+        approvedTag.style.cssText = 'margin-top:6px; font-size:0.8rem; color:#059669; font-weight:700; display:inline-flex; align-items:center; gap:4px;';
+        approvedTag.innerHTML = '<i class="fas fa-check-double"></i> Telah Disetujui';
+        rightEl.appendChild(approvedTag);
+      }
+
+      // Jika di halaman dashboard resepsionis, hilangkan kartu dari daftar pending
+      const card = btn ? btn.closest('.admin-rsv-card') : document.getElementById(`rsvCard_${id}`);
+      const pendingList = document.getElementById('receptionistPendingList');
+      if (pendingList && card && pendingList.contains(card)) {
+        card.style.transition = 'all 0.3s ease';
+        card.style.opacity = '0';
+        card.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+          card.remove();
+          if (pendingList.children.length === 0) {
+            pendingList.innerHTML = '<p style="color: #888; text-align: center; padding: 30px;"><i class="fas fa-check-circle" style="color:#059669;margin-right:6px;"></i>Tidak ada permohonan reservasi baru yang menunggu konfirmasi saat ini.</p>';
+          }
+        }, 300);
+      }
+
       if (typeof loadReceptionistDashboard === 'function') {
-        await loadReceptionistDashboard();
+        loadReceptionistDashboard().catch(() => {});
       }
       if (typeof initAdminReservations === 'function') {
         const activeTab = document.querySelector('.filter-tab.active');
         const status = activeTab ? activeTab.dataset.status : 'all';
-        await initAdminReservations(status);
+        setTimeout(() => initAdminReservations(status), 500);
       }
-      setTimeout(() => location.reload(), 600);
+    } else {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-check"></i> ACC (Setujui)';
+      }
     }
   } catch (err) {
     showToast('Gagal memproses persetujuan reservasi: ' + err.message, 'error');
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-check"></i> ACC (Setujui)';
+    }
   }
 }
 
-async function approveAndCheckin(id) {
+async function approveAndCheckin(id, btn) {
   if (!confirm('Setujui dan langsung proses Check-In Sekarang untuk reservasi ' + id + '?')) return;
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+  }
   try {
+    const savedUserStr = localStorage.getItem('hotelku_user');
+    let u = null;
+    try { u = JSON.parse(savedUserStr); } catch(e) {}
+    const headers = { 'Content-Type': 'application/json' };
+    if (u) {
+      if (u.id) headers['x-user-id'] = String(u.id);
+      if (u.email) headers['x-user-email'] = u.email;
+      if (u.role) headers['x-user-role'] = u.role;
+    }
+
     const res = await fetch(`/api/reservations/${id}/approve-checkin`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' }
+      headers
     });
     const data = await res.json();
     showToast(data.message, data.success ? 'success' : 'error');
-    if (data.success) {
+    if (data.success || (data.message && data.message.includes('sudah di-check-in'))) {
+      const badgeEl = document.getElementById(`rsvBadge_${id}`);
+      if (badgeEl) {
+        badgeEl.innerHTML = `<span class="status-badge status-checked-in"><i class="fas fa-door-open"></i> Sedang Menginap</span>`;
+      }
+      const rightEl = document.getElementById(`rsvRight_${id}`);
+      if (rightEl) {
+        rightEl.querySelectorAll('.btn-approve, .btn-reject, .btn-checkin').forEach(b => b.remove());
+        const checkedTag = document.createElement('div');
+        checkedTag.style.cssText = 'margin-top:6px; font-size:0.8rem; color:#10b981; font-weight:700; display:inline-flex; align-items:center; gap:4px;';
+        checkedTag.innerHTML = '<i class="fas fa-check-circle"></i> Check-In Aktif';
+        rightEl.appendChild(checkedTag);
+      }
+
+      const card = btn ? btn.closest('.admin-rsv-card') : document.getElementById(`rsvCard_${id}`);
+      const pendingList = document.getElementById('receptionistPendingList');
+      if (pendingList && card && pendingList.contains(card)) {
+        card.style.transition = 'all 0.3s ease';
+        card.style.opacity = '0';
+        card.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+          card.remove();
+          if (pendingList.children.length === 0) {
+            pendingList.innerHTML = '<p style="color: #888; text-align: center; padding: 30px;"><i class="fas fa-check-circle" style="color:#059669;margin-right:6px;"></i>Tidak ada permohonan reservasi baru yang menunggu konfirmasi saat ini.</p>';
+          }
+        }, 300);
+      }
+
       if (typeof loadReceptionistDashboard === 'function') {
-        await loadReceptionistDashboard();
+        loadReceptionistDashboard().catch(() => {});
       }
       if (typeof initAdminReservations === 'function') {
         const activeTab = document.querySelector('.filter-tab.active');
         const status = activeTab ? activeTab.dataset.status : 'all';
-        await initAdminReservations(status);
+        setTimeout(() => initAdminReservations(status), 500);
       }
-      setTimeout(() => location.reload(), 600);
+    } else {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Setujui & Check In';
+      }
     }
   } catch (err) {
     showToast('Gagal memproses persetujuan & check-in: ' + err.message, 'error');
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Setujui & Check In';
+    }
   }
 }
 window.approveAndCheckin = approveAndCheckin;
 
-async function rejectRsv(id) {
+async function rejectRsv(id, btn) {
   showModal('Tolak Reservasi', '<p style="margin-bottom:12px;color:#888;">Berikan alasan penolakan:</p><textarea id="rejectReason" placeholder="Alasan penolakan..."></textarea>', async (overlay) => {
     try {
       const reason = document.getElementById('rejectReason')?.value || '';
+      const savedUserStr = localStorage.getItem('hotelku_user');
+      let u = null;
+      try { u = JSON.parse(savedUserStr); } catch(e) {}
+      const headers = { 'Content-Type': 'application/json' };
+      if (u) {
+        if (u.id) headers['x-user-id'] = String(u.id);
+        if (u.email) headers['x-user-email'] = u.email;
+        if (u.role) headers['x-user-role'] = u.role;
+      }
+
       const res = await fetch(`/api/reservations/${id}/reject`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ reason })
       });
       const data = await res.json();
       showToast(data.message, data.success ? 'success' : 'error');
-      if (data.success) {
+      if (data.success || (data.message && data.message.includes('sudah ditolak'))) {
+        const badgeEl = document.getElementById(`rsvBadge_${id}`);
+        if (badgeEl) {
+          badgeEl.innerHTML = `<span class="status-badge status-rejected"><i class="fas fa-times-circle"></i> Ditolak</span>`;
+        }
+        const rightEl = document.getElementById(`rsvRight_${id}`);
+        if (rightEl) {
+          rightEl.querySelectorAll('.btn-approve, .btn-reject, .btn-checkin').forEach(b => b.remove());
+          const rejectedTag = document.createElement('div');
+          rejectedTag.style.cssText = 'margin-top:6px; font-size:0.8rem; color:#dc2626; font-weight:700; display:inline-flex; align-items:center; gap:4px;';
+          rejectedTag.innerHTML = '<i class="fas fa-ban"></i> Telah Ditolak';
+          rightEl.appendChild(rejectedTag);
+        }
+
+        const card = btn ? btn.closest('.admin-rsv-card') : document.getElementById(`rsvCard_${id}`);
+        const pendingList = document.getElementById('receptionistPendingList');
+        if (pendingList && card && pendingList.contains(card)) {
+          card.style.transition = 'all 0.3s ease';
+          card.style.opacity = '0';
+          card.style.transform = 'scale(0.95)';
+          setTimeout(() => {
+            card.remove();
+            if (pendingList.children.length === 0) {
+              pendingList.innerHTML = '<p style="color: #888; text-align: center; padding: 30px;"><i class="fas fa-check-circle" style="color:#059669;margin-right:6px;"></i>Tidak ada permohonan reservasi baru yang menunggu konfirmasi saat ini.</p>';
+            }
+          }, 300);
+        }
+
         if (typeof loadReceptionistDashboard === 'function') {
-          await loadReceptionistDashboard();
+          loadReceptionistDashboard().catch(() => {});
         }
         if (typeof initAdminReservations === 'function') {
           const activeTab = document.querySelector('.filter-tab.active');
           const status = activeTab ? activeTab.dataset.status : 'all';
-          await initAdminReservations(status);
+          setTimeout(() => initAdminReservations(status), 500);
         }
-        setTimeout(() => location.reload(), 600);
       }
     } catch (err) {
       showToast('Gagal menolak reservasi: ' + err.message, 'error');
