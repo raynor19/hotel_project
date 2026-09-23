@@ -166,5 +166,44 @@
     "password": "123",
     "role": "guest",
     "phone": "081234567891"
+  },
+  {
+    "id": 10007,
+    "name": "renor r nya 3",
+    "email": "renor@gmail.com",
+    "password": "renorr",
+    "role": "guest",
+    "phone": "08621351253"
+  },
+  {
+    "id": 10008,
+    "name": "renor r nya 3",
+    "email": "renorr@gmail.com",
+    "password": "renorr",
+    "role": "guest",
+    "phone": "08621351253"
+  },
+  {
+    "id": 10009,
+    "name": "User Test Baru",
+    "email": "test_user_hotelku_1@gmail.com",
+    "password": "password123",
+    "role": "guest",
+    "phone": "08123456789"
+  },
+  {
+    "id": 10010,
+    "name": "Tamu",
+    "email": "test_payment@gmail.com",
+    "role": "guest",
+    "phone": ""
+  },
+  {
+    "id": 10011,
+    "name": "Budi Sukses",
+    "email": "budisukses@gmail.com",
+    "password": "password123",
+    "role": "guest",
+    "phone": "081234567890"
   }
 ]

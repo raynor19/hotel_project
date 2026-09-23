@@ -1,16 +1,21 @@
 require('dotenv').config();
+if (typeof globalThis.WebSocket === 'undefined') {
+  try {
+    globalThis.WebSocket = require('ws');
+  } catch (e) {}
+}
 const { createClient } = require('@supabase/supabase-js');
 
-const SUPABASE_URL = process.env.SUPABASE_URL || '';
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || '';
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
 let supabase = null;
 let isConnected = false;
 
 function getClient() {
   if (supabase) return supabase;
-  const SUPABASE_URL = process.env.SUPABASE_URL || '';
-  const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || '';
+  const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
   if (SUPABASE_URL && SUPABASE_KEY) {
     try {
       supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
@@ -286,7 +291,10 @@ const db = {
     const client = getClient();
     if (!client) return null;
     const payload = mapReviewToDb(rev);
-    const { data, error } = await client.from('reviews').insert(payload).select().single();
+    const query = payload.id 
+      ? client.from('reviews').upsert(payload, { onConflict: 'id' }) 
+      : client.from('reviews').insert(payload);
+    const { data, error } = await query.select().single();
     if (error) {
       console.error('[Supabase] insertReview error:', error.message);
       return null;

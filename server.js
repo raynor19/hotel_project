@@ -875,6 +875,143 @@ app.get('/register', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'register.html'));
 });
 
+// Google OAuth Flow (Supabase)
+app.get(['/auth/google', '/api/auth/google'], async (req, res) => {
+  try {
+    const client = db.getClient();
+    if (!client) {
+      return res.redirect('/login?error=supabase_not_configured');
+    }
+    const host = req.get('host');
+    const protocol = req.protocol === 'https' || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+    const redirectTo = `${protocol}://${host}/auth/callback`;
+
+    const { data, error } = await client.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo
+      }
+    });
+
+    if (error || !data || !data.url) {
+      console.error('[Google OAuth Error]:', error ? error.message : 'No URL generated');
+      return res.redirect('/login?error=oauth_init_failed');
+    }
+
+    res.redirect(data.url);
+  } catch (err) {
+    console.error('[Google OAuth Error]:', err.message);
+    res.redirect('/login?error=oauth_exception');
+  }
+});
+
+app.get('/auth/callback', async (req, res) => {
+  const code = req.query.code;
+  const client = db.getClient();
+
+  if (code && client) {
+    try {
+      const { data, error } = await client.auth.exchangeCodeForSession(code);
+      if (!error && data?.session?.user) {
+        const authUser = data.session.user;
+        const email = authUser.email ? authUser.email.toLowerCase().trim() : '';
+        const name = authUser.user_metadata?.full_name || authUser.user_metadata?.name || email.split('@')[0] || 'Tamu Google';
+        const phone = authUser.phone || authUser.user_metadata?.phone || '';
+
+        if (email) {
+          let user = users.find(u => u.email.toLowerCase() === email);
+          if (!user) {
+            user = {
+              id: ++userCounter,
+              name,
+              email,
+              password: 'google_oauth_' + Math.random().toString(36).slice(2),
+              role: 'guest',
+              phone
+            };
+            users.push(user);
+            saveUsers(user);
+          }
+
+          req.session.user = { id: user.id, name: user.name, email: user.email, role: user.role, phone: user.phone || '' };
+          res.cookie('hotelku_auth', JSON.stringify(req.session.user), {
+            maxAge: 30 * 24 * 60 * 60 * 1000,
+            httpOnly: false,
+            sameSite: 'lax',
+            path: '/'
+          });
+
+          return res.send(`<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login Berhasil — HotelKu</title>
+  <style>
+    body { font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: linear-gradient(135deg, #1A1A1A 0%, #2A241E 100%); color: #fff; }
+    .card { background: rgba(35, 30, 26, 0.95); border: 1px solid rgba(196, 162, 101, 0.3); padding: 40px; border-radius: 16px; text-align: center; max-width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+    .spinner { width: 44px; height: 44px; border: 4px solid rgba(196, 162, 101, 0.2); border-top-color: #C4A265; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    h2 { color: #E8D7B5; margin: 0 0 8px; font-size: 1.3rem; }
+    p { color: #A99E91; font-size: 0.9rem; margin: 0; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="spinner"></div>
+    <h2>Login Berhasil!</h2>
+    <p>Selamat datang, ${user.name}. Mengalihkan...</p>
+  </div>
+  <script>
+    localStorage.setItem('hotelku_user', JSON.stringify(${JSON.stringify(req.session.user)}));
+    localStorage.removeItem('hotelku_my_rsv');
+    setTimeout(() => {
+      window.location.href = '/rooms';
+    }, 600);
+  </script>
+</body>
+</html>`);
+        }
+      }
+    } catch (e) {
+      console.error('[OAuth exchangeCode error]:', e.message);
+    }
+  }
+
+  // Fallback for Implicit Grant (#access_token=... in URL fragment, handled on client)
+  res.sendFile(path.join(__dirname, 'views', 'auth-callback.html'));
+});
+
+app.post('/api/auth/google/callback', (req, res) => {
+  const { email, name, phone } = req.body;
+  if (!email) return res.status(400).json({ success: false, message: 'Email tidak ditemukan' });
+
+  const cleanEmail = email.toLowerCase().trim();
+  let user = users.find(u => u.email.toLowerCase() === cleanEmail);
+  if (!user) {
+    user = {
+      id: ++userCounter,
+      name: name || cleanEmail.split('@')[0],
+      email: cleanEmail,
+      password: 'google_oauth_' + Math.random().toString(36).slice(2),
+      role: 'guest',
+      phone: phone || ''
+    };
+    users.push(user);
+    saveUsers(user);
+  }
+
+  req.session.user = { id: user.id, name: user.name, email: user.email, role: user.role, phone: user.phone || '' };
+  res.cookie('hotelku_auth', JSON.stringify(req.session.user), {
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+    httpOnly: false,
+    sameSite: 'lax',
+    path: '/'
+  });
+
+  res.json({ success: true, user: req.session.user });
+});
+
 app.get('/dashboard', requireLogin, (req, res) => {
   if (req.session.user.role === 'admin') return res.redirect('/admin/dashboard');
   if (req.session.user.role === 'receptionist') return res.redirect('/receptionist/dashboard');
