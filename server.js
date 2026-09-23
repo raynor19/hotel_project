@@ -1297,6 +1297,9 @@ app.post('/api/reservations', apiAuth, async (req, res) => {
   const reservation = {
     id: 'RSV-' + String(++reservationCounter).padStart(3, '0'),
     roomId: parseInt(roomId),
+    roomName: room.name,
+    roomType: room.type,
+    roomPhoto: (room.photos && room.photos[0]) ? room.photos[0] : 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=1200&q=80',
     userId: rsvUserId,
     guestName, guestPhone,
     guestEmail: guestEmail || (req.session.user ? req.session.user.email : ''),
@@ -1375,8 +1378,16 @@ app.get('/api/reservations', apiAuth, async (req, res) => {
   }
 
   result = result.map(r => {
-    const room = rooms.find(rm => rm.id === r.roomId);
-    return { ...r, roomName: room ? room.name : 'Unknown', roomType: room ? room.type : '', roomPhoto: room ? room.photos[0] : '' };
+    const room = rooms.find(rm => rm.id === parseInt(r.roomId));
+    const finalRoomName = (r.roomName && r.roomName !== 'undefined') ? r.roomName : (room ? room.name : 'Standard Room');
+    const finalRoomType = (r.roomType && r.roomType !== 'undefined') ? r.roomType : (room ? room.type : 'Standard');
+    const finalRoomPhoto = (r.roomPhoto && r.roomPhoto !== 'undefined') ? r.roomPhoto : (room && room.photos && room.photos[0] ? room.photos[0] : 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=1200&q=80');
+    return {
+      ...r,
+      roomName: finalRoomName,
+      roomType: finalRoomType,
+      roomPhoto: finalRoomPhoto
+    };
   });
 
   result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -1384,7 +1395,7 @@ app.get('/api/reservations', apiAuth, async (req, res) => {
 });
 
 // Staff: Approve reservation (ACC)
-app.put('/api/reservations/:id/approve', apiStaff, (req, res) => {
+app.put('/api/reservations/:id/approve', apiStaff, async (req, res) => {
   const rsv = reservations.find(r => r.id === req.params.id);
   if (!rsv) return res.status(404).json({ success: false, message: 'Reservasi tidak ditemukan' });
   if (rsv.status !== 'pending') return res.status(400).json({ success: false, message: 'Reservasi tidak dalam status pending' });
@@ -1392,24 +1403,34 @@ app.put('/api/reservations/:id/approve', apiStaff, (req, res) => {
   rsv.status = 'approved';
   rsv.approvedAt = new Date().toISOString();
   rsv.rejectionReason = '';
-  saveReservations();
-  res.json({ success: true, message: `Reservasi ${rsv.id} telah disetujui (ACC) oleh staf` });
+  saveReservations(rsv);
+  try {
+    await db.upsertReservation(rsv);
+  } catch (e) {
+    console.error('[Supabase] Approve direct upsert error:', e.message);
+  }
+  res.json({ success: true, message: `Reservasi ${rsv.id} telah disetujui (ACC) oleh staf`, reservation: rsv });
 });
 
 // Staff: Reject reservation
-app.put('/api/reservations/:id/reject', apiStaff, (req, res) => {
+app.put('/api/reservations/:id/reject', apiStaff, async (req, res) => {
   const rsv = reservations.find(r => r.id === req.params.id);
   if (!rsv) return res.status(404).json({ success: false, message: 'Reservasi tidak ditemukan' });
   if (rsv.status !== 'pending') return res.status(400).json({ success: false, message: 'Reservasi tidak dalam status pending' });
 
   rsv.status = 'rejected';
   rsv.rejectionReason = req.body.reason || 'Kamar tidak tersedia pada jadwal yang diminta';
-  saveReservations();
-  res.json({ success: true, message: `Reservasi ${rsv.id} telah ditolak` });
+  saveReservations(rsv);
+  try {
+    await db.upsertReservation(rsv);
+  } catch (e) {
+    console.error('[Supabase] Reject direct upsert error:', e.message);
+  }
+  res.json({ success: true, message: `Reservasi ${rsv.id} telah ditolak`, reservation: rsv });
 });
 
 // Staff: Approve & Check-In Langsung (1 langkah oleh Resepsionis)
-app.put('/api/reservations/:id/approve-checkin', apiStaff, (req, res) => {
+app.put('/api/reservations/:id/approve-checkin', apiStaff, async (req, res) => {
   const rsv = reservations.find(r => r.id === req.params.id);
   if (!rsv) return res.status(404).json({ success: false, message: 'Reservasi tidak ditemukan' });
   if (rsv.status !== 'pending' && rsv.status !== 'approved') {
@@ -1431,7 +1452,12 @@ app.put('/api/reservations/:id/approve-checkin', apiStaff, (req, res) => {
   const room = rooms.find(r => r.id === rsv.roomId);
   if (room) room.occupiedUnits++;
 
-  saveReservations();
+  saveReservations(rsv);
+  try {
+    await db.upsertReservation(rsv);
+  } catch (e) {
+    console.error('[Supabase] Approve-checkin direct upsert error:', e.message);
+  }
   res.json({
     success: true,
     message: `Reservasi ${rsv.id} berhasil disetujui & langsung di-Check In oleh resepsionis ${availableUnit ? '(Unit ' + availableUnit.unitNumber + ')' : ''}`,
@@ -1440,7 +1466,7 @@ app.put('/api/reservations/:id/approve-checkin', apiStaff, (req, res) => {
 });
 
 // HANYA STAF (Resepsionis / Admin): Check-in Tamu
-app.put('/api/reservations/:id/checkin', apiStaff, (req, res) => {
+app.put('/api/reservations/:id/checkin', apiStaff, async (req, res) => {
   const rsv = reservations.find(r => r.id === req.params.id);
   if (!rsv) return res.status(404).json({ success: false, message: 'Reservasi tidak ditemukan' });
 
@@ -1460,12 +1486,17 @@ app.put('/api/reservations/:id/checkin', apiStaff, (req, res) => {
   const room = rooms.find(r => r.id === rsv.roomId);
   if (room) room.occupiedUnits++;
 
-  saveReservations();
+  saveReservations(rsv);
+  try {
+    await db.upsertReservation(rsv);
+  } catch (e) {
+    console.error('[Supabase] Checkin direct upsert error:', e.message);
+  }
   res.json({ success: true, message: `Check-In berhasil diproses oleh Resepsionis! ${availableUnit ? '(Kamar Unit ' + availableUnit.unitNumber + ')' : ''}`, reservation: rsv });
 });
 
 // HANYA STAF (Resepsionis / Admin): Check-out Tamu
-app.put('/api/reservations/:id/checkout', apiStaff, (req, res) => {
+app.put('/api/reservations/:id/checkout', apiStaff, async (req, res) => {
   const rsv = reservations.find(r => r.id === req.params.id);
   if (!rsv) return res.status(404).json({ success: false, message: 'Reservasi tidak ditemukan' });
 
@@ -1493,7 +1524,12 @@ app.put('/api/reservations/:id/checkout', apiStaff, (req, res) => {
   const room = rooms.find(r => r.id === rsv.roomId);
   if (room && room.occupiedUnits > 0) room.occupiedUnits--;
 
-  saveReservations();
+  saveReservations(rsv);
+  try {
+    await db.upsertReservation(rsv);
+  } catch (e) {
+    console.error('[Supabase] Checkout direct upsert error:', e.message);
+  }
   res.json({ success: true, message: `Check-Out berhasil diproses oleh Resepsionis! Unit kamar dialihkan ke status pembersihan.`, reservation: rsv });
 });
 

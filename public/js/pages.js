@@ -1471,10 +1471,16 @@ async function initReservationForm() {
 
         if (data.reservation) {
           try {
+            const rsvObj = {
+              ...data.reservation,
+              roomName: data.reservation.roomName || room.name || 'Standard Room',
+              roomType: data.reservation.roomType || room.type || 'Standard',
+              roomPhoto: data.reservation.roomPhoto || (room.photos && room.photos[0] ? room.photos[0] : 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=1200&q=80')
+            };
             const myStored = JSON.parse(localStorage.getItem('hotelku_my_rsv') || '[]');
-            const exists = myStored.some(r => r.id === data.reservation.id);
+            const exists = myStored.some(r => r.id === rsvObj.id);
             if (!exists) {
-              myStored.unshift(data.reservation);
+              myStored.unshift(rsvObj);
               localStorage.setItem('hotelku_my_rsv', JSON.stringify(myStored.slice(0, 30)));
             }
           } catch(e) {}
