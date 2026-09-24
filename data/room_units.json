@@ -180,5 +180,12 @@
     "floor": 2,
     "status": "available",
     "guestName": ""
+  },
+  {
+    "unitNumber": "1301",
+    "roomId": 13,
+    "floor": 13,
+    "status": "available",
+    "guestName": ""
   }
 ]

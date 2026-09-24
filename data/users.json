@@ -56,14 +56,6 @@
     "phone": "12345678"
   },
   {
-    "id": 8,
-    "name": "kontol",
-    "email": "kontol@gmail.com",
-    "password": "kontol123",
-    "role": "guest",
-    "phone": "08123456"
-  },
-  {
     "id": 9,
     "name": "pragos",
     "email": "prabu@gmail.com",
@@ -181,7 +173,7 @@
     "email": "raynormuhammad19@gmail.com",
     "password": "google_oauth_u6b0r5e6ne",
     "role": "guest",
-    "phone": "08139216207"
+    "phone": ""
   },
   {
     "id": 10008,
@@ -198,5 +190,13 @@
     "password": "google_oauth_jngi7fafjic",
     "role": "guest",
     "phone": ""
+  },
+  {
+    "id": 10010,
+    "name": "ana",
+    "email": "ana19@gmail.com",
+    "password": "ana123",
+    "role": "guest",
+    "phone": "081288551055"
   }
 ]

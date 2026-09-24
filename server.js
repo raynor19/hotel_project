@@ -1185,7 +1185,11 @@ app.post('/api/login', async (req, res) => {
   const cleanEmail = email.trim().toLowerCase();
   const cleanPassword = password.trim();
 
-  let user = users.find(u => u.email.toLowerCase() === cleanEmail && u.password === cleanPassword);
+  let user = users.find(u => 
+    ((u.email && u.email.toLowerCase() === cleanEmail) || 
+     (u.username && u.username.toLowerCase() === cleanEmail)) && 
+    u.password === cleanPassword
+  );
 
   // Directly lookup in Supabase Cloud if not found in current memory instance
   if (!user) {
@@ -1193,7 +1197,11 @@ app.post('/api/login', async (req, res) => {
       const suUsers = await db.getUsers();
       if (suUsers && suUsers.length > 0) {
         users = suUsers;
-        user = users.find(u => u.email.toLowerCase() === cleanEmail && u.password === cleanPassword);
+        user = users.find(u => 
+          ((u.email && u.email.toLowerCase() === cleanEmail) || 
+           (u.username && u.username.toLowerCase() === cleanEmail)) && 
+          u.password === cleanPassword
+        );
       }
     } catch (e) {
       console.error('[Supabase] Login check error:', e.message);
@@ -2198,52 +2206,70 @@ app.get('/api/admin/users', apiAdmin, (req, res) => {
     id: u.id,
     name: u.name,
     email: u.email,
+    username: u.username || '',
+    gender: u.gender || '',
+    address: u.address || '',
     role: u.role,
     phone: u.phone || ''
   }));
   res.json({ success: true, users: safeUsers });
 });
 
-app.post('/api/admin/users', apiAdmin, (req, res) => {
-  const { name, email, password, role, phone } = req.body;
+app.post('/api/admin/users', apiAdmin, async (req, res) => {
+  const { name, email, password, role, phone, gender, address, username } = req.body;
   if (!name || !email || !password) {
     return res.status(400).json({ success: false, message: 'Nama, email, dan password wajib diisi' });
   }
 
-  const existing = users.find(u => u.email === email);
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanUsername = username ? username.trim().toLowerCase() : '';
+
+  const existing = users.find(u => 
+    (u.email && u.email.toLowerCase() === cleanEmail) || 
+    (cleanUsername && u.username && u.username.toLowerCase() === cleanUsername)
+  );
   if (existing) {
-    return res.status(400).json({ success: false, message: 'Email sudah terdaftar untuk pengguna lain' });
+    return res.status(400).json({ success: false, message: 'Email atau username sudah terdaftar untuk pengguna lain' });
   }
 
   const newUser = {
     id: ++userCounter,
-    name,
-    email,
+    name: name.trim(),
+    email: cleanEmail,
+    username: cleanUsername,
+    gender: gender || '',
+    address: address ? address.trim() : '',
     password,
     role: role || 'receptionist',
-    phone: phone || ''
+    phone: phone ? phone.trim() : ''
   };
 
   users.push(newUser);
-  saveUsers();
+  saveUsers(newUser);
+  try { await db.upsertUser(newUser); } catch(e) {}
+
   res.json({
     success: true,
     message: `Akun baru "${newUser.name}" (${newUser.role}) berhasil dibuat!`,
-    user: { id: newUser.id, name: newUser.name, email: newUser.email, role: newUser.role, phone: newUser.phone }
+    user: newUser
   });
 });
 
-app.put('/api/admin/users/:id', apiAdmin, (req, res) => {
+app.put('/api/admin/users/:id', apiAdmin, async (req, res) => {
   const user = users.find(u => u.id === parseInt(req.params.id));
   if (!user) return res.status(404).json({ success: false, message: 'User tidak ditemukan' });
 
-  const { name, email, role, phone, password } = req.body;
-  if (name) user.name = name;
-  if (email) user.email = email;
+  const { name, email, role, phone, password, gender, address, username } = req.body;
+  if (name) user.name = name.trim();
+  if (email) user.email = email.trim().toLowerCase();
+  if (username !== undefined) user.username = username.trim().toLowerCase();
+  if (gender !== undefined) user.gender = gender;
+  if (address !== undefined) user.address = address.trim();
   if (role) user.role = role;
-  if (phone) user.phone = phone;
+  if (phone !== undefined) user.phone = phone.trim();
   if (password) user.password = password;
-  saveUsers();
+  saveUsers(user);
+  try { await db.upsertUser(user); } catch(e) {}
 
   res.json({ success: true, message: `Data pengguna "${user.name}" berhasil diperbarui!`, user });
 });

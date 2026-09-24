@@ -102,48 +102,156 @@
     </div>
   </main>
 
-  <!-- Modal User Form (Create / Edit) -->
+  <!-- Modal User Form (Create / Edit) matching screenshot -->
   <div id="userModal" class="modal-overlay hide" style="display: none;">
-    <div class="modal-box" style="max-width: 500px;">
-      <h3 id="userModalTitle"><i class="fas fa-user-plus" style="color: #C4A265; margin-right: 8px;"></i>Tambah Akun Pengguna Baru</h3>
-      
+    <div class="user-modal-box">
+      <!-- Top Header with Breadcrumb & Title -->
+      <div class="user-modal-header">
+        <div class="user-modal-breadcrumb">
+          <i class="fas fa-home"></i>
+          <a href="javascript:void(0)" onclick="closeUserModal()">Akun Resepsionis</a>
+          <i class="fas fa-chevron-right crumb-sep"></i>
+          <span class="crumb-current" id="userModalBreadcrumbText">Tambah Akun Resepsionis Baru</span>
+        </div>
+        <div class="user-modal-title-row">
+          <div class="user-modal-icon-badge" id="userModalIconBadge">
+            <i class="fas fa-user-plus"></i>
+          </div>
+          <div>
+            <h3 class="user-modal-title" id="userModalTitle">Tambah Akun Resepsionis Baru</h3>
+            <p class="user-modal-subtitle" id="userModalSubtitle">Isi data berikut untuk menambahkan akun resepsionis baru ke dalam sistem.</p>
+          </div>
+          <button type="button" class="btn-close-corner" onclick="closeUserModal()" title="Tutup">&times;</button>
+        </div>
+      </div>
+
+      <!-- Form Body -->
       <form id="userForm">
         <input type="hidden" id="editUserId" value="">
 
-        <div class="form-group">
-          <label>Nama Lengkap</label>
-          <input type="text" id="mUserName" required placeholder="Contoh: Rina Anggraini">
-        </div>
+        <div class="user-modal-body">
+          <!-- 2 Columns Grid: Informasi Pribadi & Informasi Akun -->
+          <div class="user-top-grid">
+            <!-- Left Card: Informasi Pribadi -->
+            <div class="user-section-card">
+              <div class="user-card-header">
+                <div class="user-card-icon-badge">
+                  <i class="fas fa-user-shield"></i>
+                </div>
+                <div>
+                  <h4 class="user-card-title">Informasi Pribadi</h4>
+                  <p class="user-card-subtitle">Masukkan data diri resepsionis.</p>
+                </div>
+              </div>
 
-        <div class="form-group">
-          <label>Email (Username Login)</label>
-          <input type="email" id="mUserEmail" required placeholder="nama@hotelku.com">
-        </div>
+              <div class="form-row-2">
+                <div class="form-field">
+                  <label>Nama Lengkap <span class="req">*</span></label>
+                  <input type="text" id="mUserName" required placeholder="Contoh: Siti Nurhaliza">
+                </div>
+                <div class="form-field">
+                  <label>Jenis Kelamin <span class="req">*</span></label>
+                  <select id="mUserGender" required>
+                    <option value="" disabled selected>Pilih jenis kelamin</option>
+                    <option value="Laki-laki">Laki-laki</option>
+                    <option value="Perempuan">Perempuan</option>
+                  </select>
+                </div>
+              </div>
 
-        <div class="form-row">
-          <div class="form-group">
-            <label>Peran / Role</label>
-            <select id="mUserRole" style="width: 100%; padding: 12px; border: 1.5px solid #e0e0e0; border-radius: 4px; font-family: inherit;">
-              <option value="receptionist" selected>🛎️ Resepsionis (Operasional)</option>
-              <option value="admin">🔑 Administrator (Akses Penuh)</option>
-              <option value="guest">🧳 Tamu (Pribadi)</option>
-            </select>
+              <div class="form-row-2">
+                <div class="form-field">
+                  <label>Nomor Telepon <span class="req">*</span></label>
+                  <input type="tel" id="mUserPhone" required placeholder="Contoh: 081234567890">
+                </div>
+                <div class="form-field">
+                  <label>Email <span class="req">*</span></label>
+                  <input type="email" id="mUserEmail" required placeholder="Contoh: resepsionis@hotel.com">
+                </div>
+              </div>
+
+              <div class="form-field" style="margin-bottom: 0;">
+                <label>Alamat</label>
+                <textarea id="mUserAddress" rows="3" placeholder="Contoh: Jl. Melati No. 10, Yogyakarta" style="resize: vertical;"></textarea>
+              </div>
+            </div>
+
+            <!-- Right Card: Informasi Akun -->
+            <div class="user-section-card">
+              <div class="user-card-header">
+                <div class="user-card-icon-badge">
+                  <i class="fas fa-lock"></i>
+                </div>
+                <div>
+                  <h4 class="user-card-title">Informasi Akun</h4>
+                  <p class="user-card-subtitle">Buat username dan password untuk akun resepsionis.</p>
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label>Username <span class="req">*</span></label>
+                <div class="input-with-icon">
+                  <i class="fas fa-user input-icon-prefix"></i>
+                  <input type="text" id="mUserUsername" required placeholder="Contoh: siti.resepsionis">
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label id="lblPassword">Password <span class="req" id="reqPasswordStar">*</span></label>
+                <div class="input-with-icon">
+                  <i class="fas fa-lock input-icon-prefix"></i>
+                  <input type="password" id="mUserPassword" placeholder="Minimal 8 karakter">
+                  <button type="button" class="btn-toggle-eye" onclick="togglePasswordVisibility('mUserPassword', this)" aria-label="Toggle password">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                </div>
+                <span style="font-size: 0.75rem; color: #888; margin-top: 4px; display: block;" id="passwordHelpText">Minimal 8 karakter</span>
+              </div>
+
+              <div class="form-field" style="margin-bottom: 0;">
+                <label id="lblPasswordConfirm">Konfirmasi Password <span class="req" id="reqPasswordConfirmStar">*</span></label>
+                <div class="input-with-icon">
+                  <i class="fas fa-lock input-icon-prefix"></i>
+                  <input type="password" id="mUserPasswordConfirm" placeholder="Ulangi password">
+                  <button type="button" class="btn-toggle-eye" onclick="togglePasswordVisibility('mUserPasswordConfirm', this)" aria-label="Toggle password">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="form-group">
-            <label>No. Telepon / WA</label>
-            <input type="tel" id="mUserPhone" placeholder="08xxxxxxxxxx">
+
+          <!-- Bottom Full-Width Card: Akses dan Peran -->
+          <div class="user-section-card">
+            <div class="user-card-header" style="border-bottom: none; margin-bottom: 12px; padding-bottom: 0;">
+              <div class="user-card-icon-badge">
+                <i class="fas fa-shield-alt"></i>
+              </div>
+              <div>
+                <h4 class="user-card-title">Akses dan Peran</h4>
+                <p class="user-card-subtitle">Akun resepsionis akan memiliki akses sesuai dengan level yang ditentukan.</p>
+              </div>
+            </div>
+
+            <div class="form-field" style="margin-bottom: 0; max-width: 480px;">
+              <label>Level Akses <span class="req">*</span></label>
+              <select id="mUserRole" required>
+                <option value="receptionist" selected>Resepsionis</option>
+                <option value="admin">Administrator</option>
+                <option value="guest">Tamu</option>
+              </select>
+            </div>
           </div>
         </div>
 
-        <div class="form-group">
-          <label id="lblPassword">Password Login</label>
-          <input type="password" id="mUserPassword" placeholder="Minimal 5 karakter">
-          <span style="font-size: 0.75rem; color: #888;" id="passwordHelpText"></span>
-        </div>
-
-        <div class="modal-actions" style="margin-top: 24px;">
-          <button type="button" class="btn-cancel" onclick="closeUserModal()">Batal</button>
-          <button type="submit" class="btn-reserve" style="width: auto; padding: 10px 24px;" id="btnSubmitUser">Simpan Pengguna</button>
+        <!-- Footer Actions -->
+        <div class="room-modal-footer">
+          <button type="button" class="btn-modal-cancel" onclick="closeUserModal()">
+            <i class="fas fa-times"></i> Batal
+          </button>
+          <button type="submit" class="btn-modal-submit" id="btnSubmitUser">
+            <i class="fas fa-plus"></i> Simpan Akun
+          </button>
         </div>
       </form>
     </div>
@@ -196,7 +304,10 @@
                 <div style="width: 32px; height: 32px; border-radius: 50%; background: #f0f0ea; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; color: #666;">
                   <i class="fas fa-user"></i>
                 </div>
-                ${u.name}
+                <div>
+                  <div>${u.name}</div>
+                  ${u.username ? `<span style="font-size: 0.78rem; font-weight: 500; color: #888;">@${u.username}</span>` : ''}
+                </div>
               </div>
             </td>
             <td style="padding: 14px 16px; color: #555;">${u.email}</td>
@@ -217,13 +328,33 @@
 
     const userModal = document.getElementById('userModal');
 
+    function togglePasswordVisibility(inputId, btnEl) {
+      const inp = document.getElementById(inputId);
+      if (!inp) return;
+      const icon = btnEl.querySelector('i');
+      if (inp.type === 'password') {
+        inp.type = 'text';
+        if (icon) icon.className = 'fas fa-eye-slash';
+      } else {
+        inp.type = 'password';
+        if (icon) icon.className = 'fas fa-eye';
+      }
+    }
+
     function openCreateUserModal() {
       document.getElementById('editUserId').value = '';
-      document.getElementById('userModalTitle').innerHTML = '<i class="fas fa-user-plus" style="color: #C4A265; margin-right: 8px;"></i>Tambah Akun Resepsionis Baru';
+      document.getElementById('userModalBreadcrumbText').textContent = 'Tambah Akun Resepsionis Baru';
+      document.getElementById('userModalTitle').textContent = 'Tambah Akun Resepsionis Baru';
+      document.getElementById('userModalSubtitle').textContent = 'Isi data berikut untuk menambahkan akun resepsionis baru ke dalam sistem.';
+      document.getElementById('userModalIconBadge').innerHTML = '<i class="fas fa-user-plus"></i>';
+      document.getElementById('btnSubmitUser').innerHTML = '<i class="fas fa-plus"></i> Simpan Akun';
       document.getElementById('userForm').reset();
       document.getElementById('mUserRole').value = 'receptionist';
       document.getElementById('mUserPassword').required = true;
-      document.getElementById('passwordHelpText').textContent = 'Buat password untuk login pertama staf';
+      document.getElementById('mUserPasswordConfirm').required = true;
+      document.getElementById('reqPasswordStar').style.display = 'inline';
+      document.getElementById('reqPasswordConfirmStar').style.display = 'inline';
+      document.getElementById('passwordHelpText').textContent = 'Minimal 8 karakter';
       userModal.style.display = 'flex';
     }
 
@@ -232,13 +363,26 @@
       if (!user) return;
 
       document.getElementById('editUserId').value = user.id;
-      document.getElementById('userModalTitle').innerHTML = '<i class="fas fa-user-edit" style="color: #C4A265; margin-right: 8px;"></i>Edit Akun: ' + user.name;
-      document.getElementById('mUserName').value = user.name;
-      document.getElementById('mUserEmail').value = user.email;
-      document.getElementById('mUserRole').value = user.role;
+      document.getElementById('userModalBreadcrumbText').textContent = 'Edit Akun: ' + user.name;
+      document.getElementById('userModalTitle').textContent = 'Edit Akun: ' + user.name;
+      document.getElementById('userModalSubtitle').textContent = 'Perbarui data dan hak akses akun yang dipilih.';
+      document.getElementById('userModalIconBadge').innerHTML = '<i class="fas fa-user-edit"></i>';
+      document.getElementById('btnSubmitUser').innerHTML = '<i class="fas fa-check"></i> Simpan Perubahan';
+
+      document.getElementById('mUserName').value = user.name || '';
+      document.getElementById('mUserGender').value = user.gender || 'Laki-laki';
       document.getElementById('mUserPhone').value = user.phone || '';
+      document.getElementById('mUserEmail').value = user.email || '';
+      document.getElementById('mUserAddress').value = user.address || '';
+      document.getElementById('mUserUsername').value = user.username || (user.email ? user.email.split('@')[0] : '');
+      document.getElementById('mUserRole').value = user.role || 'receptionist';
+
       document.getElementById('mUserPassword').value = '';
+      document.getElementById('mUserPasswordConfirm').value = '';
       document.getElementById('mUserPassword').required = false;
+      document.getElementById('mUserPasswordConfirm').required = false;
+      document.getElementById('reqPasswordStar').style.display = 'none';
+      document.getElementById('reqPasswordConfirmStar').style.display = 'none';
       document.getElementById('passwordHelpText').textContent = 'Biarkan kosong jika tidak ingin mengubah password';
       userModal.style.display = 'flex';
     }
@@ -256,14 +400,34 @@
       const editId = document.getElementById('editUserId').value;
       const isEdit = Boolean(editId);
 
+      const pass = document.getElementById('mUserPassword').value;
+      const passConfirm = document.getElementById('mUserPasswordConfirm').value;
+
+      if (!isEdit || pass) {
+        if (!isEdit && !pass) {
+          showToast('Password wajib diisi', 'error');
+          return;
+        }
+        if (pass.length < 8) {
+          showToast('Password minimal 8 karakter', 'error');
+          return;
+        }
+        if (pass !== passConfirm) {
+          showToast('Konfirmasi password tidak cocok!', 'error');
+          return;
+        }
+      }
+
       const payload = {
         name: document.getElementById('mUserName').value.trim(),
+        gender: document.getElementById('mUserGender').value,
+        phone: document.getElementById('mUserPhone').value.trim(),
         email: document.getElementById('mUserEmail').value.trim(),
-        role: document.getElementById('mUserRole').value,
-        phone: document.getElementById('mUserPhone').value.trim()
+        address: document.getElementById('mUserAddress').value.trim(),
+        username: document.getElementById('mUserUsername').value.trim(),
+        role: document.getElementById('mUserRole').value
       };
 
-      const pass = document.getElementById('mUserPassword').value;
       if (pass) payload.password = pass;
 
       const btn = document.getElementById('btnSubmitUser');
@@ -292,7 +456,7 @@
         showToast('Gagal menyimpan akun pengguna', 'error');
       } finally {
         btn.disabled = false;
-        btn.textContent = 'Simpan Pengguna';
+        btn.innerHTML = isEdit ? '<i class="fas fa-check"></i> Simpan Perubahan' : '<i class="fas fa-plus"></i> Simpan Akun';
       }
     });
 
