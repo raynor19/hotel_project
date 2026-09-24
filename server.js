@@ -2201,7 +2201,14 @@ app.post('/api/reviews', apiAuth, (req, res) => {
 //  ADMIN: USER MANAGEMENT (Kelola Staf / Resepsionis / User lain)
 // ================================================================
 
-app.get('/api/admin/users', apiAdmin, (req, res) => {
+app.get('/api/admin/users', apiAdmin, async (req, res) => {
+  try {
+    const suUsers = await db.getUsers();
+    if (suUsers && suUsers.length > 0) {
+      users = suUsers;
+    }
+  } catch (e) {}
+
   const safeUsers = users.map(u => ({
     id: u.id,
     name: u.name,
@@ -2246,7 +2253,12 @@ app.post('/api/admin/users', apiAdmin, async (req, res) => {
 
   users.push(newUser);
   saveUsers(newUser);
-  try { await db.upsertUser(newUser); } catch(e) {}
+  try { 
+    const saved = await db.upsertUser(newUser); 
+    if (saved && saved.id) newUser.id = saved.id;
+  } catch(e) {
+    console.error('[Supabase] Create user error:', e.message);
+  }
 
   res.json({
     success: true,
@@ -2269,22 +2281,39 @@ app.put('/api/admin/users/:id', apiAdmin, async (req, res) => {
   if (phone !== undefined) user.phone = phone.trim();
   if (password) user.password = password;
   saveUsers(user);
-  try { await db.upsertUser(user); } catch(e) {}
+  try { 
+    await db.upsertUser(user); 
+  } catch(e) {
+    console.error('[Supabase] Update user error:', e.message);
+  }
 
   res.json({ success: true, message: `Data pengguna "${user.name}" berhasil diperbarui!`, user });
 });
 
-app.delete('/api/admin/users/:id', apiAdmin, (req, res) => {
-  if (parseInt(req.params.id) === req.session.user.id) {
+app.delete('/api/admin/users/:id', apiAdmin, async (req, res) => {
+  const targetId = parseInt(req.params.id);
+  if (targetId === req.session.user.id) {
     return res.status(400).json({ success: false, message: 'Anda tidak dapat menghapus akun Anda sendiri' });
   }
 
-  const idx = users.findIndex(u => u.id === parseInt(req.params.id));
+  if (targetId === 1) {
+    return res.status(400).json({ success: false, message: 'Akun Administrator Utama (GM) tidak dapat dihapus' });
+  }
+
+  const idx = users.findIndex(u => u.id === targetId);
   if (idx === -1) return res.status(404).json({ success: false, message: 'User tidak ditemukan' });
 
   const deleted = users[idx].name;
   users.splice(idx, 1);
   saveUsers();
+
+  // Hapus langsung dari Supabase Cloud (Single Source of Truth)
+  try {
+    await db.deleteUser(targetId);
+  } catch (e) {
+    console.error('[Supabase] Delete user error:', e.message);
+  }
+
   res.json({ success: true, message: `Akun "${deleted}" berhasil dihapus dari sistem` });
 });
 

@@ -227,6 +227,22 @@ const db = {
     return mapUserFromDb(data);
   },
 
+  async deleteUser(id) {
+    const client = getClient();
+    if (!client) return false;
+    try {
+      const { error } = await client.from('users').delete().eq('id', id);
+      if (error) {
+        console.error('[Supabase] deleteUser error:', error.message);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error('[Supabase] deleteUser exception:', err.message);
+      return false;
+    }
+  },
+
   // ROOMS
   async getRooms() {
     const client = getClient();
