@@ -94,7 +94,7 @@ input, select, textarea {
   left: 0;
   width: 100%;
   z-index: 1000;
-  padding: 0 0 14px 0;
+  padding: 14px 0;
   transition: var(--transition);
   background: transparent;
 }
@@ -104,14 +104,14 @@ input, select, textarea {
   background: rgba(10, 10, 10, 0.96);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  padding: 0 0 10px 0;
+  padding: 10px 0;
   box-shadow: 0 2px 30px rgba(0,0,0,0.35);
 }
 
 .nav-container {
   max-width: 1400px;
   margin: 0 auto;
-  padding: 8px 40px 0 40px;
+  padding: 0 40px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1628,17 +1628,9 @@ input, select, textarea {
 }
 
 /* ==================== HOTEL TOPBAR & REALTIME CLOCK ==================== */
-.hotel-topbar {
-  background: rgba(10, 10, 10, 0.92);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(196, 162, 101, 0.22);
-  padding: 6px 0;
-  font-size: 0.78rem;
-  color: #cfcfcf;
-  width: 100%;
-  position: relative;
-  z-index: 1001;
+.hotel-topbar,
+.topbar-actions-floating {
+  display: none !important;
 }
 
 .topbar-container {
