@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link rel="stylesheet" href="/css/style.css?v=12">
-  <link rel="stylesheet" href="/css/pages.css?v=12">
+  <link rel="stylesheet" href="/css/style.css?v=13">
+  <link rel="stylesheet" href="/css/pages.css?v=13">
 </head>
 <body class="page-wrapper">
 
@@ -126,7 +126,7 @@
       </div>
 
       <!-- Form Body -->
-      <form id="userForm">
+      <form id="userForm" style="display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; margin: 0;">
         <input type="hidden" id="editUserId" value="">
 
         <div class="user-modal-body">
@@ -245,7 +245,7 @@
         </div>
 
         <!-- Footer Actions -->
-        <div class="room-modal-footer">
+        <div class="room-modal-footer" style="flex-shrink: 0; padding-bottom: 24px;">
           <button type="button" class="btn-modal-cancel" onclick="closeUserModal()">
             <i class="fas fa-times"></i> Batal
           </button>
@@ -257,8 +257,8 @@
     </div>
   </div>
 
-  <script src="/js/i18n.js?v=12"></script>
-  <script src="/js/pages.js?v=12"></script>
+  <script src="/js/i18n.js?v=13"></script>
+  <script src="/js/pages.js?v=13"></script>
   <script>
     let cachedUsers = [];
 
