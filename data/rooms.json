@@ -124,25 +124,37 @@
   {
     "id": 6,
     "name": "Presidential Suite",
-    "type": "Suite",
+    "type": "Presidential",
     "price": 3500000,
     "capacity": 4,
-    "size": 110,
-    "bed": "2 Super King Beds",
+    "size": 50,
+    "bed": "2 King Beds",
     "description": "Puncak kemewahan HotelKu. Dilengkapi kolam renang mini pribadi (plunge pool), ruang pertemuan VIP, dan interior ukiran kayu jati Jepara pilihan.",
-    "facilities": [
-      "Akses Private Lift",
-      "Private Plunge Pool",
-      "Dining Room 8 Kursi",
-      "Home Theater 65\"",
-      "Master Bathroom Marmer",
-      "Butler & Chef Pribadi 24 Jam",
-      "Airport Transfer Alphard"
-    ],
+    "facilities": [],
     "photos": [
       "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1200&q=80"
     ],
     "totalUnits": 1,
+    "occupiedUnits": 0
+  },
+  {
+    "id": 11,
+    "name": "Presidential Test Sky Suite",
+    "type": "Presidential",
+    "price": 3200000,
+    "capacity": 4,
+    "size": 90,
+    "bed": "2 King Beds",
+    "description": "Testing room creation in automated verification",
+    "facilities": [
+      "WiFi Ultra",
+      "Private Pool"
+    ],
+    "photos": [
+      "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1200&q=80"
+    ],
+    "totalUnits": 2,
     "occupiedUnits": 0
   }
 ]

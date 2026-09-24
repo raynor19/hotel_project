@@ -380,8 +380,8 @@ let rooms = [
   },
   {
     id: 8,
-    name: 'Royal Honeymoon Villa',
-    type: 'Villa',
+    name: 'Royal Honeymoon Suite',
+    type: 'Suite',
     price: 2750000,
     capacity: 2,
     size: 72,

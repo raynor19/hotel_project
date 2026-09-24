@@ -160,6 +160,14 @@
     "phone": "08123456789"
   },
   {
+    "id": 10005,
+    "name": "Riza Debug Test",
+    "email": "riza_debug_1790154062799@gmail.com",
+    "password": "tamu5371",
+    "role": "guest",
+    "phone": "081234567890"
+  },
+  {
     "id": 10006,
     "name": "Ani",
     "email": "ani@gmail.com",
@@ -169,41 +177,26 @@
   },
   {
     "id": 10007,
-    "name": "renor r nya 3",
-    "email": "renor@gmail.com",
-    "password": "renorr",
+    "name": "Muhammad Raynor",
+    "email": "raynormuhammad19@gmail.com",
+    "password": "google_oauth_u6b0r5e6ne",
     "role": "guest",
-    "phone": "08621351253"
+    "phone": "08139216207"
   },
   {
     "id": 10008,
-    "name": "renor r nya 3",
-    "email": "renorr@gmail.com",
-    "password": "renorr",
-    "role": "guest",
-    "phone": "08621351253"
-  },
-  {
-    "id": 10009,
-    "name": "User Test Baru",
-    "email": "test_user_hotelku_1@gmail.com",
-    "password": "password123",
-    "role": "guest",
-    "phone": "08123456789"
-  },
-  {
-    "id": 10010,
-    "name": "Tamu",
-    "email": "test_payment@gmail.com",
+    "name": "Andini Ramadhani",
+    "email": "andin.rmdhni0810@gmail.com",
+    "password": "google_oauth_hunyvjn2vjj",
     "role": "guest",
     "phone": ""
   },
   {
-    "id": 10011,
-    "name": "Budi Sukses",
-    "email": "budisukses@gmail.com",
-    "password": "password123",
+    "id": 10009,
+    "name": "Raynor Athaillah",
+    "email": "raynorathaillah@gmail.com",
+    "password": "google_oauth_jngi7fafjic",
     "role": "guest",
-    "phone": "081234567890"
+    "phone": ""
   }
 ]
