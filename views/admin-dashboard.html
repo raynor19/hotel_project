@@ -197,95 +197,220 @@
     </div>
   </main>
 
-  <!-- Modal Room Form (Create / Edit) -->
-  <div id="roomModal" class="modal-overlay hide" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
-    <div class="modal-box" style="max-width: 650px; max-height: 90vh; overflow-y: auto; background: #fff; border-radius: 12px; padding: 28px; width: 100%; box-shadow: 0 10px 40px rgba(0,0,0,0.25);">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-        <h3 id="roomModalTitle" style="font-family: 'Playfair Display', serif; font-size: 1.3rem; margin: 0; display: flex; align-items: center; gap: 8px;">
-          <i class="fas fa-bed" style="color: #C4A265;"></i> Tambah Kamar Baru
-        </h3>
-        <button type="button" onclick="closeRoomModal()" style="background: none; border: none; font-size: 1.5rem; line-height: 1; cursor: pointer; color: #999;">&times;</button>
+  <!-- Modal Room Form (Screenshot 2-Column Layout) -->
+  <div id="roomModal" class="room-modal-overlay" style="display: none;">
+    <div class="room-modal-container">
+      
+      <!-- Modal Header -->
+      <div class="room-modal-header">
+        <button type="button" class="btn-back-circle" onclick="closeRoomModal()" title="Kembali / Tutup">
+          <i class="fas fa-arrow-left"></i>
+        </button>
+        <div>
+          <h2 id="roomModalTitle" class="room-modal-title">Tambah Kamar</h2>
+          <p id="roomModalSubtitle" class="room-modal-subtitle">Lengkapi informasi kamar baru yang akan ditambahkan ke sistem.</p>
+        </div>
+        <button type="button" class="btn-close-corner" onclick="closeRoomModal()">&times;</button>
       </div>
 
       <form id="roomForm">
         <input type="hidden" id="editRoomId" value="">
+        <input type="hidden" id="mRoomPhotoHidden" value="">
 
-        <div class="form-row" style="display: grid; grid-template-columns: 2fr 1fr; gap: 14px; margin-bottom: 14px;">
-          <div class="form-group">
-            <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Nama Kamar *</label>
-            <input type="text" id="mRoomName" required placeholder="Contoh: Royal Deluxe Suite" style="width: 100%; padding: 10px 12px; border: 1.5px solid #ddd; border-radius: 6px; font-family: inherit;">
+        <!-- Modal Grid Body (2 Columns) -->
+        <div class="room-modal-grid">
+          
+          <!-- LEFT COLUMN: Informasi Kamar -->
+          <div class="room-modal-card">
+            <h3 class="card-section-title">Informasi Kamar</h3>
+
+            <!-- Row 1: Nomor Kamar & Tipe Kamar -->
+            <div class="form-row-2">
+              <div class="form-field">
+                <label>Nomor Kamar <span class="req">*</span></label>
+                <input type="text" id="mRoomName" required placeholder="101" value="101" oninput="updateLivePreview()">
+              </div>
+              <div class="form-field">
+                <label>Tipe Kamar <span class="req">*</span></label>
+                <select id="mRoomType" onchange="updateLivePreview()">
+                  <option value="Superior" selected>Superior</option>
+                  <option value="Deluxe">Deluxe</option>
+                  <option value="Standard">Standard</option>
+                  <option value="Suite">Suite</option>
+                  <option value="Junior Suite">Junior Suite</option>
+                  <option value="Executive Suite">Executive Suite</option>
+                  <option value="Presidential">Presidential</option>
+                  <option value="Family">Family</option>
+                  <option value="Villa">Villa</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Row 2: Harga per Malam & Kapasitas -->
+            <div class="form-row-2">
+              <div class="form-field">
+                <label>Harga per Malam (Rp) <span class="req">*</span></label>
+                <input type="number" id="mRoomPrice" required placeholder="450000" value="450000" min="50000" oninput="updateLivePreview()">
+              </div>
+              <div class="form-field">
+                <label>Kapasitas <span class="req">*</span></label>
+                <select id="mRoomCapacity" onchange="updateLivePreview()">
+                  <option value="1">1 Orang</option>
+                  <option value="2" selected>2 Orang</option>
+                  <option value="3">3 Orang</option>
+                  <option value="4">4 Orang</option>
+                  <option value="5">5+ Orang</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Fasilitas Checkboxes -->
+            <div class="form-field">
+              <label>Fasilitas</label>
+              <div class="facility-checkbox-grid">
+                <label class="custom-checkbox">
+                  <input type="checkbox" name="facilityCheck" value="AC" checked onchange="updateLivePreview()">
+                  <span>AC</span>
+                </label>
+                <label class="custom-checkbox">
+                  <input type="checkbox" name="facilityCheck" value="TV" checked onchange="updateLivePreview()">
+                  <span>TV</span>
+                </label>
+                <label class="custom-checkbox">
+                  <input type="checkbox" name="facilityCheck" value="WiFi" checked onchange="updateLivePreview()">
+                  <span>WiFi</span>
+                </label>
+                <label class="custom-checkbox">
+                  <input type="checkbox" name="facilityCheck" value="Kamar Mandi Dalam" checked onchange="updateLivePreview()">
+                  <span>Kamar Mandi Dalam</span>
+                </label>
+                <label class="custom-checkbox">
+                  <input type="checkbox" name="facilityCheck" value="Sarapan" checked onchange="updateLivePreview()">
+                  <span>Sarapan</span>
+                </label>
+                <label class="custom-checkbox">
+                  <input type="checkbox" name="facilityCheck" value="Mini Bar" onchange="updateLivePreview()">
+                  <span>Mini Bar</span>
+                </label>
+                <label class="custom-checkbox">
+                  <input type="checkbox" name="facilityCheck" value="Bathtub" onchange="updateLivePreview()">
+                  <span>Bathtub</span>
+                </label>
+                <label class="custom-checkbox">
+                  <input type="checkbox" name="facilityCheck" value="Air Panas" checked onchange="updateLivePreview()">
+                  <span>Air Panas</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Row 3: Status Kamar & Foto Kamar -->
+            <div class="form-row-2">
+              <div class="form-field">
+                <label>Status Kamar <span class="req">*</span></label>
+                <select id="mRoomStatus" onchange="updateLivePreview()">
+                  <option value="Tersedia" selected>Tersedia</option>
+                  <option value="Terisi">Terisi</option>
+                  <option value="Dibersihkan">Dibersihkan</option>
+                  <option value="Perawatan">Perawatan</option>
+                </select>
+                <div style="margin-top: 10px;">
+                  <label style="font-size: 0.78rem; color: #888;">Total Unit Kamar</label>
+                  <input type="number" id="mRoomUnits" value="4" min="1" max="50" style="padding: 8px 12px; font-size: 0.85rem;" oninput="updateLivePreview()">
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label>Foto Kamar</label>
+                <div class="photo-upload-dropzone" onclick="document.getElementById('mRoomFileInput').click()">
+                  <i class="fas fa-camera"></i>
+                  <div class="upload-title">Klik untuk mengunggah foto</div>
+                  <div class="upload-sub">(JPG, PNG - Maks. 5MB)</div>
+                </div>
+                <input type="file" id="mRoomFileInput" accept="image/*" style="display: none;" onchange="handleImageUpload(event)">
+                
+                <div style="margin-top: 6px; display: flex; justify-content: space-between; align-items: center;">
+                  <button type="button" class="btn-link-preset" onclick="toggleCustomPhotoUrl()">
+                    <i class="fas fa-sliders-h"></i> Pilih Preset / URL
+                  </button>
+                  <span id="photoStatusBadge" style="font-size: 0.75rem; color: #27ae60; font-weight: 600;">✓ Foto Siap</span>
+                </div>
+                
+                <div id="customPhotoWrap" style="display: none; margin-top: 8px; padding: 10px; background: #fdfbf7; border: 1px solid #ebdcc5; border-radius: 8px;">
+                  <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 6px;">
+                    <button type="button" class="btn-preset-pill" onclick="applyPhotoPreset('standard')">Standard</button>
+                    <button type="button" class="btn-preset-pill" onclick="applyPhotoPreset('superior')">Superior</button>
+                    <button type="button" class="btn-preset-pill" onclick="applyPhotoPreset('deluxe')">Deluxe</button>
+                    <button type="button" class="btn-preset-pill" onclick="applyPhotoPreset('suite')">Suite</button>
+                  </div>
+                  <input type="text" id="mRoomPhotoUrl" placeholder="https://images.unsplash.com/..." style="width: 100%; font-size: 0.75rem; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px;" oninput="handlePhotoUrlInput()">
+                </div>
+              </div>
+            </div>
+
+            <!-- Deskripsi (Opsional) -->
+            <div class="form-field">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <label style="margin: 0;">Deskripsi <span style="font-weight: 400; color: #888;">(Opsional)</span></label>
+                <span id="descCounter" style="font-size: 0.75rem; color: #999;">0/500</span>
+              </div>
+              <textarea id="mRoomDesc" maxlength="500" placeholder="Masukkan deskripsi singkat tentang kamar..." oninput="handleDescInput()"></textarea>
+            </div>
+
           </div>
-          <div class="form-group">
-            <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Kategori Tipe *</label>
-            <select id="mRoomType" style="width: 100%; padding: 10px 12px; border: 1.5px solid #ddd; border-radius: 6px; font-family: inherit;">
-              <option value="Standard">Standard</option>
-              <option value="Deluxe">Deluxe</option>
-              <option value="Superior">Superior</option>
-              <option value="Suite">Suite</option>
-              <option value="Family">Family</option>
-              <option value="Villa">Villa</option>
-              <option value="Presidential">Presidential</option>
-            </select>
+
+          <!-- RIGHT COLUMN: Preview Kamar -->
+          <div class="room-modal-card preview-card">
+            <h3 class="card-section-title">Preview Kamar</h3>
+
+            <div class="preview-img-container">
+              <img id="prevRoomImg" src="https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1000&q=80" alt="Preview Kamar">
+              <div id="prevBadgeType" class="preview-badge-type">Tipe: Superior</div>
+            </div>
+
+            <div class="preview-info-list">
+              <div class="preview-info-row">
+                <span class="info-label"><i class="fas fa-door-open"></i> Nomor Kamar</span>
+                <span class="info-val">: <span id="prevRoomNumber">101</span></span>
+              </div>
+              <div class="preview-info-row">
+                <span class="info-label"><i class="fas fa-bed"></i> Tipe Kamar</span>
+                <span class="info-val">: <span id="prevRoomType">Superior</span></span>
+              </div>
+              <div class="preview-info-row">
+                <span class="info-label"><i class="fas fa-coins"></i> Harga per Malam</span>
+                <span class="info-val">: <span id="prevRoomPrice" class="price-val">Rp 450.000</span></span>
+              </div>
+              <div class="preview-info-row">
+                <span class="info-label"><i class="fas fa-user-friends"></i> Kapasitas</span>
+                <span class="info-val">: <span id="prevRoomCapacity">2 Orang</span></span>
+              </div>
+              <div class="preview-info-row">
+                <span class="info-label"><i class="far fa-clock"></i> Status</span>
+                <span class="info-val">: <span id="prevRoomStatus" class="status-pill green">Tersedia</span></span>
+              </div>
+            </div>
+
+            <hr class="preview-divider">
+
+            <div>
+              <div class="preview-subheading">Fasilitas</div>
+              <div id="prevFacilitiesList" class="preview-facility-grid">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+
           </div>
+
         </div>
 
-        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
-          <div class="form-group">
-            <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Harga per Malam (Rp) *</label>
-            <input type="number" id="mRoomPrice" required placeholder="550000" min="50000" style="width: 100%; padding: 10px 12px; border: 1.5px solid #ddd; border-radius: 6px; font-family: inherit;">
-          </div>
-          <div class="form-group">
-            <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Total Unit Kamar *</label>
-            <input type="number" id="mRoomUnits" required placeholder="4" min="1" max="50" style="width: 100%; padding: 10px 12px; border: 1.5px solid #ddd; border-radius: 6px; font-family: inherit;">
-          </div>
+        <!-- Modal Footer Actions -->
+        <div class="room-modal-footer">
+          <button type="button" class="btn-modal-cancel" onclick="closeRoomModal()">Batal</button>
+          <button type="submit" class="btn-modal-submit" id="btnSubmitRoom">
+            <i class="fas fa-plus"></i> Simpan Kamar
+          </button>
         </div>
 
-        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
-          <div class="form-group">
-            <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Kapasitas Tamu (Orang) *</label>
-            <input type="number" id="mRoomCapacity" required placeholder="2" min="1" max="10" style="width: 100%; padding: 10px 12px; border: 1.5px solid #ddd; border-radius: 6px; font-family: inherit;">
-          </div>
-          <div class="form-group">
-            <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Ukuran Kamar (m²)</label>
-            <input type="number" id="mRoomSize" placeholder="32" min="10" style="width: 100%; padding: 10px 12px; border: 1.5px solid #ddd; border-radius: 6px; font-family: inherit;">
-          </div>
-        </div>
-
-        <div class="form-group" style="margin-bottom: 14px;">
-          <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Tipe Ranjang</label>
-          <input type="text" id="mRoomBed" placeholder="Contoh: 1 King Bed atau 2 Twin Beds" style="width: 100%; padding: 10px 12px; border: 1.5px solid #ddd; border-radius: 6px; font-family: inherit;">
-        </div>
-
-        <div class="form-group" style="margin-bottom: 14px;">
-          <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Deskripsi Singkat</label>
-          <textarea id="mRoomDesc" style="width: 100%; min-height: 65px; padding: 10px 12px; border: 1.5px solid #ddd; border-radius: 6px; font-family: inherit; font-size: 0.85rem;" placeholder="Deskripsikan kenyamanan, nuansa dan fasilitas unggulan kamar..."></textarea>
-        </div>
-
-        <div class="form-group" style="margin-bottom: 14px;">
-          <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Fasilitas (Pisahkan dengan koma)</label>
-          <input type="text" id="mRoomFacilities" placeholder="WiFi Gratis, AC, Smart TV, Bathtub, Air Panas, Mini Bar" style="width: 100%; padding: 10px 12px; border: 1.5px solid #ddd; border-radius: 6px; font-family: inherit;">
-        </div>
-
-        <div class="form-group" style="margin-bottom: 14px;">
-          <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">URL Foto POV Kamar (1 URL per baris atau Upload)</label>
-          <div style="display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;">
-            <button type="button" class="btn btn-outline btn-sm" onclick="applyPhotoPreset('standard')" style="font-size: 0.75rem; padding: 4px 8px;">+ Preset Standard</button>
-            <button type="button" class="btn btn-outline btn-sm" onclick="applyPhotoPreset('deluxe')" style="font-size: 0.75rem; padding: 4px 8px;">+ Preset Deluxe</button>
-            <button type="button" class="btn btn-outline btn-sm" onclick="applyPhotoPreset('suite')" style="font-size: 0.75rem; padding: 4px 8px;">+ Preset Suite</button>
-            <button type="button" class="btn btn-outline btn-sm" onclick="applyPhotoPreset('villa')" style="font-size: 0.75rem; padding: 4px 8px;">+ Preset Villa</button>
-            <label class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 4px 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin: 0;">
-              <i class="fas fa-upload"></i> Upload Foto
-              <input type="file" id="mRoomFileInput" accept="image/*" multiple style="display: none;" onchange="handleImageUpload(event)">
-            </label>
-          </div>
-          <textarea id="mRoomPhotos" style="width: 100%; min-height: 70px; padding: 10px 12px; border: 1.5px solid #ddd; border-radius: 6px; font-family: inherit; font-size: 0.8rem;" placeholder="https://images.unsplash.com/...&#10;https://images.unsplash.com/..."></textarea>
-          <div id="mRoomPhotoPreview" style="display: flex; gap: 8px; margin-top: 8px; overflow-x: auto; padding-bottom: 4px;"></div>
-        </div>
-
-        <div class="modal-actions" style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
-          <button type="button" class="btn btn-outline" onclick="closeRoomModal()" style="padding: 10px 20px;">Batal</button>
-          <button type="submit" class="btn btn-primary" style="padding: 10px 24px;" id="btnSubmitRoom">Simpan Kamar</button>
-        </div>
       </form>
     </div>
   </div>
@@ -295,33 +420,36 @@
   <script>
     let cachedRooms = [];
 
-    const photoPresets = {
-      standard: [
-        'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=1200&q=80',
-        'https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=1200&q=80'
-      ],
-      deluxe: [
-        'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80',
-        'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1200&q=80'
-      ],
-      suite: [
-        'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
-        'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=1200&q=80'
-      ],
-      villa: [
-        'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
-        'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80'
-      ]
+    const defaultRoomPhotos = {
+      'superior': 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1000&q=80',
+      'Superior': 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1000&q=80',
+      'standard': 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=1000&q=80',
+      'Standard': 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=1000&q=80',
+      'deluxe': 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1000&q=80',
+      'Deluxe': 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1000&q=80',
+      'suite': 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1000&q=80',
+      'Suite': 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1000&q=80',
+      'Junior Suite': 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1000&q=80',
+      'Executive Suite': 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1000&q=80',
+      'Presidential': 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?auto=format&fit=crop&w=1000&q=80',
+      'Family': 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=1000&q=80',
+      'Villa': 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1000&q=80'
+    };
+
+    const facilityIconMap = {
+      'AC': 'fas fa-wind',
+      'TV': 'fas fa-tv',
+      'WiFi': 'fas fa-wifi',
+      'Kamar Mandi Dalam': 'fas fa-bath',
+      'Sarapan': 'fas fa-utensils',
+      'Mini Bar': 'fas fa-wine-glass',
+      'Bathtub': 'fas fa-hot-tub',
+      'Air Panas': 'fas fa-shower'
     };
 
     document.addEventListener('DOMContentLoaded', async () => {
       await initNavbar();
       await Promise.all([loadAdminReports(), loadAdminRooms()]);
-
-      const photoArea = document.getElementById('mRoomPhotos');
-      if (photoArea) {
-        photoArea.addEventListener('input', updatePhotoPreview);
-      }
     });
 
     async function loadAdminRooms() {
@@ -348,7 +476,7 @@
       tbody.innerHTML = rooms.map(r => `
         <tr style="border-bottom: 1px solid #f8f8f8;">
           <td style="padding: 12px; width: 90px;">
-            <img src="${(r.photos && r.photos[0]) || 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=600&q=80'}" style="width: 80px; height: 56px; object-fit: cover; border-radius: 6px;" alt="${r.name}">
+            <img src="${(r.photos && r.photos[0]) || defaultRoomPhotos['superior']}" style="width: 80px; height: 56px; object-fit: cover; border-radius: 6px;" alt="${r.name}">
           </td>
           <td style="padding: 12px;">
             <div style="font-weight: 700; color: #1a1a1a;">${r.name}</div>
@@ -380,11 +508,32 @@
 
     function openCreateRoomModal() {
       document.getElementById('editRoomId').value = '';
-      document.getElementById('roomModalTitle').innerHTML = '<i class="fas fa-plus" style="color: #C4A265;"></i> Tambah Kamar Baru';
+      document.getElementById('roomModalTitle').textContent = 'Tambah Kamar';
+      document.getElementById('roomModalSubtitle').textContent = 'Lengkapi informasi kamar baru yang akan ditambahkan ke sistem.';
+      document.getElementById('btnSubmitRoom').innerHTML = '<i class="fas fa-plus"></i> Simpan Kamar';
       document.getElementById('roomForm').reset();
-      applyPhotoPreset('deluxe');
+
+      document.getElementById('mRoomName').value = '101';
+      document.getElementById('mRoomType').value = 'Superior';
+      document.getElementById('mRoomPrice').value = '450000';
+      document.getElementById('mRoomCapacity').value = '2';
+      document.getElementById('mRoomStatus').value = 'Tersedia';
+      document.getElementById('mRoomUnits').value = '4';
+      document.getElementById('mRoomDesc').value = '';
+      document.getElementById('descCounter').textContent = '0/500';
+
+      const defaultChecked = ['AC', 'TV', 'WiFi', 'Kamar Mandi Dalam', 'Sarapan', 'Air Panas'];
+      document.querySelectorAll('input[name="facilityCheck"]').forEach(cb => {
+        cb.checked = defaultChecked.includes(cb.value);
+      });
+
+      document.getElementById('mRoomPhotoHidden').value = defaultRoomPhotos['superior'];
+      document.getElementById('photoStatusBadge').textContent = '✓ Foto Siap';
+      document.getElementById('photoStatusBadge').style.color = '#27ae60';
+      document.getElementById('customPhotoWrap').style.display = 'none';
+
       roomModal.style.display = 'flex';
-      updatePhotoPreview();
+      updateLivePreview();
     }
 
     function openEditRoomModal(id) {
@@ -392,19 +541,31 @@
       if (!room) return;
 
       document.getElementById('editRoomId').value = room.id;
-      document.getElementById('roomModalTitle').innerHTML = '<i class="fas fa-edit" style="color: #C4A265;"></i> Edit Kamar: ' + room.name;
+      document.getElementById('roomModalTitle').textContent = 'Edit Kamar: ' + room.name;
+      document.getElementById('roomModalSubtitle').textContent = 'Perbarui data dan tarif kamar yang dipilih.';
+      document.getElementById('btnSubmitRoom').innerHTML = '<i class="fas fa-check"></i> Simpan Perubahan';
+
       document.getElementById('mRoomName').value = room.name;
       document.getElementById('mRoomType').value = room.type;
       document.getElementById('mRoomPrice').value = room.price;
-      document.getElementById('mRoomUnits').value = room.totalUnits;
-      document.getElementById('mRoomCapacity').value = room.capacity;
-      document.getElementById('mRoomSize').value = room.size || '';
-      document.getElementById('mRoomBed').value = room.bed || '';
+      document.getElementById('mRoomCapacity').value = String(room.capacity || 2);
+      document.getElementById('mRoomUnits').value = room.totalUnits || 4;
+      document.getElementById('mRoomStatus').value = (room.totalUnits - (room.occupiedUnits || 0) > 0) ? 'Tersedia' : 'Terisi';
       document.getElementById('mRoomDesc').value = room.description || '';
-      document.getElementById('mRoomFacilities').value = (room.facilities || []).join(', ');
-      document.getElementById('mRoomPhotos').value = (room.photos || []).join('\n');
+      document.getElementById('descCounter').textContent = `${(room.description || '').length}/500`;
+
+      const roomFacs = room.facilities || [];
+      document.querySelectorAll('input[name="facilityCheck"]').forEach(cb => {
+        cb.checked = roomFacs.some(f => f.toLowerCase() === cb.value.toLowerCase());
+      });
+
+      const photo = (room.photos && room.photos[0]) || defaultRoomPhotos[room.type] || defaultRoomPhotos['superior'];
+      document.getElementById('mRoomPhotoHidden').value = photo;
+      document.getElementById('photoStatusBadge').textContent = '✓ Foto Tersimpan';
+      document.getElementById('customPhotoWrap').style.display = 'none';
+
       roomModal.style.display = 'flex';
-      updatePhotoPreview();
+      updateLivePreview();
     }
 
     function closeRoomModal() {
@@ -415,45 +576,94 @@
       if (e.target === roomModal) closeRoomModal();
     });
 
-    function applyPhotoPreset(presetKey) {
-      const urls = photoPresets[presetKey] || [];
-      const current = document.getElementById('mRoomPhotos').value.trim();
-      if (!current) {
-        document.getElementById('mRoomPhotos').value = urls.join('\n');
+    function updateLivePreview() {
+      // 1. Room Number / Name
+      const nameVal = document.getElementById('mRoomName').value.trim() || '101';
+      document.getElementById('prevRoomNumber').textContent = nameVal;
+
+      // 2. Room Type
+      const typeVal = document.getElementById('mRoomType').value;
+      document.getElementById('prevRoomType').textContent = typeVal;
+      document.getElementById('prevBadgeType').textContent = 'Tipe: ' + typeVal;
+
+      // 3. Price
+      const priceVal = parseInt(document.getElementById('mRoomPrice').value) || 0;
+      document.getElementById('prevRoomPrice').textContent = formatCurrency(priceVal);
+
+      // 4. Capacity
+      const capVal = document.getElementById('mRoomCapacity').value;
+      document.getElementById('prevRoomCapacity').textContent = capVal + ' Orang';
+
+      // 5. Status
+      const statusVal = document.getElementById('mRoomStatus').value;
+      const statusEl = document.getElementById('prevRoomStatus');
+      statusEl.textContent = statusVal;
+      statusEl.className = 'status-pill ' + (statusVal === 'Tersedia' ? 'green' : (statusVal === 'Terisi' ? 'red' : 'yellow'));
+
+      // 6. Facilities
+      const checkedBoxes = Array.from(document.querySelectorAll('input[name="facilityCheck"]:checked')).map(cb => cb.value);
+      const container = document.getElementById('prevFacilitiesList');
+      if (checkedBoxes.length === 0) {
+        container.innerHTML = '<span style="font-size: 0.78rem; color: #888;">Belum ada fasilitas dipilih</span>';
       } else {
-        document.getElementById('mRoomPhotos').value = current + '\n' + urls.join('\n');
+        container.innerHTML = checkedBoxes.map(f => {
+          const icon = facilityIconMap[f] || 'fas fa-check';
+          return `
+            <div class="preview-facility-box">
+              <i class="${icon}"></i>
+              <span>${f}</span>
+            </div>
+          `;
+        }).join('');
       }
-      updatePhotoPreview();
+
+      // 7. Image
+      const photo = document.getElementById('mRoomPhotoHidden').value || defaultRoomPhotos[typeVal] || defaultRoomPhotos['superior'];
+      document.getElementById('prevRoomImg').src = photo;
     }
 
     function handleImageUpload(e) {
-      const files = Array.from(e.target.files);
-      if (!files.length) return;
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
 
-      files.forEach(file => {
-        const reader = new FileReader();
-        reader.onload = (uploadEvent) => {
-          const base64 = uploadEvent.target.result;
-          const current = document.getElementById('mRoomPhotos').value.trim();
-          document.getElementById('mRoomPhotos').value = current ? current + '\n' + base64 : base64;
-          updatePhotoPreview();
-        };
-        reader.readAsDataURL(file);
-      });
-      e.target.value = '';
+      const reader = new FileReader();
+      reader.onload = (uploadEvent) => {
+        const base64 = uploadEvent.target.result;
+        document.getElementById('mRoomPhotoHidden').value = base64;
+        document.getElementById('photoStatusBadge').textContent = '✓ Foto Baru Dipilih';
+        document.getElementById('photoStatusBadge').style.color = '#27ae60';
+        updateLivePreview();
+      };
+      reader.readAsDataURL(file);
     }
 
-    function updatePhotoPreview() {
-      const previewContainer = document.getElementById('mRoomPhotoPreview');
-      if (!previewContainer) return;
-      const raw = document.getElementById('mRoomPhotos').value.split('\n').map(s => s.trim()).filter(Boolean);
-      if (raw.length === 0) {
-        previewContainer.innerHTML = '';
-        return;
+    function toggleCustomPhotoUrl() {
+      const el = document.getElementById('customPhotoWrap');
+      el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function applyPhotoPreset(presetKey) {
+      const url = defaultRoomPhotos[presetKey] || defaultRoomPhotos['superior'];
+      document.getElementById('mRoomPhotoHidden').value = url;
+      document.getElementById('mRoomPhotoUrl').value = url;
+      document.getElementById('photoStatusBadge').textContent = '✓ Preset ' + presetKey;
+      document.getElementById('photoStatusBadge').style.color = '#C4A265';
+      updateLivePreview();
+    }
+
+    function handlePhotoUrlInput() {
+      const url = document.getElementById('mRoomPhotoUrl').value.trim();
+      if (url) {
+        document.getElementById('mRoomPhotoHidden').value = url;
+        document.getElementById('photoStatusBadge').textContent = '✓ URL Dipakai';
+        document.getElementById('photoStatusBadge').style.color = '#C4A265';
+        updateLivePreview();
       }
-      previewContainer.innerHTML = raw.slice(0, 6).map(url => `
-        <img src="${url}" style="width: 50px; height: 38px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;" onerror="this.style.display='none'">
-      `).join('');
+    }
+
+    function handleDescInput() {
+      const val = document.getElementById('mRoomDesc').value;
+      document.getElementById('descCounter').textContent = `${val.length}/500`;
     }
 
     document.getElementById('roomForm').addEventListener('submit', async (e) => {
@@ -461,18 +671,21 @@
       const editId = document.getElementById('editRoomId').value;
       const isEdit = Boolean(editId);
 
-      const photosRaw = document.getElementById('mRoomPhotos').value.split('\n').map(s => s.trim()).filter(Boolean);
+      const checkedFacs = Array.from(document.querySelectorAll('input[name="facilityCheck"]:checked')).map(cb => cb.value);
+      const photo = document.getElementById('mRoomPhotoHidden').value || defaultRoomPhotos[document.getElementById('mRoomType').value] || defaultRoomPhotos['superior'];
+      const capInt = parseInt(document.getElementById('mRoomCapacity').value) || 2;
+
       const payload = {
         name: document.getElementById('mRoomName').value.trim(),
         type: document.getElementById('mRoomType').value,
         price: parseInt(document.getElementById('mRoomPrice').value),
-        totalUnits: parseInt(document.getElementById('mRoomUnits').value),
-        capacity: parseInt(document.getElementById('mRoomCapacity').value),
-        size: parseInt(document.getElementById('mRoomSize').value) || 25,
-        bed: document.getElementById('mRoomBed').value.trim() || '1 King Bed',
+        totalUnits: parseInt(document.getElementById('mRoomUnits').value) || 4,
+        capacity: capInt,
+        size: capInt >= 4 ? 50 : (capInt >= 3 ? 38 : 28),
+        bed: capInt >= 4 ? '2 King Beds' : (capInt >= 3 ? '1 King Bed + 1 Single Bed' : '1 King Bed'),
         description: document.getElementById('mRoomDesc').value.trim(),
-        facilities: document.getElementById('mRoomFacilities').value.split(',').map(s => s.trim()).filter(Boolean),
-        photos: photosRaw.length ? photosRaw : undefined
+        facilities: checkedFacs,
+        photos: [photo]
       };
 
       const btn = document.getElementById('btnSubmitRoom');
@@ -501,7 +714,7 @@
         showToast('Gagal menyimpan data kamar', 'error');
       } finally {
         btn.disabled = false;
-        btn.textContent = 'Simpan Kamar';
+        btn.innerHTML = isEdit ? '<i class="fas fa-check"></i> Simpan Perubahan' : '<i class="fas fa-plus"></i> Simpan Kamar';
       }
     });
 
