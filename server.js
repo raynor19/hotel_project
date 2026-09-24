@@ -124,9 +124,10 @@ app.use((req, res, next) => {
   if (!req.session) req.session = {};
   if (!req.session.user) {
     const cookies = parseCookies(req);
-    if (cookies.hotelku_auth) {
+    if (cookies.orven_auth || cookies.hotelku_auth) {
+    const authVal = cookies.orven_auth || cookies.hotelku_auth;
       try {
-        const u = JSON.parse(cookies.hotelku_auth);
+        const u = JSON.parse(authVal);
         if (u && (u.id || u.email)) {
           req.session.user = {
             id: u.id,
@@ -144,8 +145,8 @@ app.use((req, res, next) => {
 
 // Default initial users
 let users = [
-  { id: 1, name: 'Hendra Wijaya (GM)', email: 'admin@hotelku.com', password: 'admin123', role: 'admin', phone: '081122334455' },
-  { id: 2, name: 'Siti Rahma (Front Desk)', email: 'resepsionis@hotelku.com', password: 'resepsionis123', role: 'receptionist', phone: '082233445566' },
+  { id: 1, name: 'Hendra Wijaya (GM)', email: 'admin@orvenhotel.com', password: 'admin123', role: 'admin', phone: '081122334455' },
+  { id: 2, name: 'Siti Rahma (Front Desk)', email: 'resepsionis@orvenhotel.com', password: 'resepsionis123', role: 'receptionist', phone: '082233445566' },
   { id: 3, name: 'Budi Santoso', email: 'tamu@demo.com', password: 'tamu123', role: 'guest', phone: '081234567890' },
   { id: 4, name: 'Sari Dewi', email: 'sari@demo.com', password: 'sari123', role: 'guest', phone: '089876543210' }
 ];
@@ -183,13 +184,13 @@ function loadUsers() {
 loadUsers();
 
 let hotelSettings = {
-  hotelName: 'HotelKu Yogyakarta',
+  hotelName: 'Orven Yogyakarta',
   tagline: 'Kemewahan Etnik Klasik di Jantung Yogyakarta',
   address: 'Jl. Gowongan Kidul No. 50, Jetis, Yogyakarta 55232',
   phone: '+62 274 123 4567',
   whatsapp: '+62 812 3456 7890',
-  email: 'info@hotelku.com',
-  promoBanner: '✨ Diskon Spesial Liburan 20% untuk Reservasi Langsung Melalui Website Resmi HotelKu!',
+  email: 'info@orvenhotel.com',
+  promoBanner: '✨ Diskon Spesial Liburan 20% untuk Reservasi Langsung Melalui Website Resmi Orven!',
   promoActive: true,
   checkInTime: '14:00 WIB',
   checkOutTime: '12:00 WIB',
@@ -350,7 +351,7 @@ let rooms = [
     capacity: 4,
     size: 85,
     bed: '1 King Bed + 2 Single Beds',
-    description: 'Pengalaman menginap tertinggi di HotelKu. Suite terluas dengan ruang tamu grand, ruang makan pribadi, dapur kecil, dan pemandangan panorama Yogyakarta. Termasuk butler service 24 jam.',
+    description: 'Pengalaman menginap tertinggi di Orven. Suite terluas dengan ruang tamu grand, ruang makan pribadi, dapur kecil, dan pemandangan panorama Yogyakarta. Termasuk butler service 24 jam.',
     facilities: ['WiFi Gratis', 'AC', 'Smart TV 75"', 'Jacuzzi', 'Sauna Pribadi', 'Rain Shower', 'Mini Bar', 'Dapur Kecil', 'Ruang Makan', 'Ruang Tamu Grand', 'Brankas', 'Mesin Kopi', 'Butler Service 24 Jam', 'Airport Transfer'],
     photos: [
       'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?auto=format&fit=crop&w=1200&q=80',
@@ -404,7 +405,7 @@ let rooms = [
     capacity: 6,
     size: 110,
     bed: '2 Super King Beds + 2 Single Beds',
-    description: 'Penthouse termegah di lantai paling atas HotelKu dengan teras rooftop luas, panorama 360 derajat kota Yogyakarta dan Gunung Merapi. Menawarkan kemewahan tak tertandingi dengan butler 24 jam.',
+    description: 'Penthouse termegah di lantai paling atas Orven dengan teras rooftop luas, panorama 360 derajat kota Yogyakarta dan Gunung Merapi. Menawarkan kemewahan tak tertandingi dengan butler 24 jam.',
     facilities: ['Rooftop Private Terrace', 'WiFi Ultra Cepat', 'AC Central', 'Smart TV 85" 4K', 'Jacuzzi Rooftop', 'Private Mini Bar & Wine', 'Dapur Modern', 'Ruang Tamu & Makan Grand', 'VIP Butler 24 Jam', 'Airport Limousine'],
     photos: [
       'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=1200&q=80',
@@ -788,7 +789,7 @@ function apiAuth(req, res, next) {
       u = {
         id: cleanId || ++userCounter,
         name: req.headers['x-user-name'] ? decodeURIComponent(req.headers['x-user-name']) : 'Tamu',
-        email: cleanMail || `tamu_${cleanId || Date.now()}@hotelku.com`,
+        email: cleanMail || `tamu_${cleanId || Date.now()}@orvenhotel.com`,
         role: req.headers['x-user-role'] || 'guest',
         phone: req.headers['x-user-phone'] ? decodeURIComponent(req.headers['x-user-phone']) : ''
       };
@@ -843,7 +844,7 @@ function apiAdmin(req, res, next) {
         req.session.user = {
           id: cleanId || 1,
           name: req.headers['x-user-name'] ? decodeURIComponent(req.headers['x-user-name']) : 'Administrator',
-          email: cleanMail || 'admin@hotelku.com',
+          email: cleanMail || 'admin@orvenhotel.com',
           role: 'admin'
         };
       }
@@ -882,7 +883,7 @@ function apiStaff(req, res, next) {
         req.session.user = {
           id: cleanId || 2,
           name: req.headers['x-user-name'] ? decodeURIComponent(req.headers['x-user-name']) : 'Staf Hotel',
-          email: cleanMail || 'resepsionis@hotelku.com',
+          email: cleanMail || 'resepsionis@orvenhotel.com',
           role: fallbackRole
         };
       }
@@ -980,7 +981,7 @@ app.get('/auth/callback', async (req, res) => {
           }
 
           req.session.user = { id: user.id, name: user.name, email: user.email, role: user.role, phone: user.phone || '' };
-          res.cookie('hotelku_auth', JSON.stringify(req.session.user), {
+          res.cookie('orven_auth', $1); res.cookie('hotelku_auth', JSON.stringify(req.session.user), {
             maxAge: 30 * 24 * 60 * 60 * 1000,
             httpOnly: false,
             sameSite: 'lax',
@@ -992,7 +993,7 @@ app.get('/auth/callback', async (req, res) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login Berhasil — HotelKu</title>
+  <title>Login Berhasil — Orven</title>
   <style>
     body { font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: linear-gradient(135deg, #1A1A1A 0%, #2A241E 100%); color: #fff; }
     .card { background: rgba(35, 30, 26, 0.95); border: 1px solid rgba(196, 162, 101, 0.3); padding: 40px; border-radius: 16px; text-align: center; max-width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
@@ -1160,7 +1161,7 @@ app.post('/api/register', async (req, res) => {
   if (req.session) {
     req.session.user = null;
   }
-  res.clearCookie('hotelku_auth', { path: '/' });
+  res.clearCookie('orven_auth', { path: '/' }); res.clearCookie('hotelku_auth', { path: '/' });
 
   // Tamu tidak langsung login otomatis, melainkan dialihkan ke menu Masuk (login)
   res.json({
@@ -1378,7 +1379,7 @@ app.post('/api/admin/rooms', apiAdmin, (req, res) => {
     capacity: cleanCapacity,
     size: cleanSize,
     bed: bed ? bed.trim() : '1 King Bed',
-    description: description ? description.trim() : 'Kamar nyaman dan mewah di HotelKu.',
+    description: description ? description.trim() : 'Kamar nyaman dan mewah di Orven.',
     facilities: Array.isArray(facilities) ? facilities : (facilities ? facilities.split(',').map(s => s.trim()).filter(Boolean) : ['WiFi Gratis', 'AC']),
     photos: Array.isArray(photos) && photos.length ? photos : [
       'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80',
@@ -1587,7 +1588,7 @@ app.post('/api/reservations', apiAuth, async (req, res) => {
       existingUser = {
         id: ++userCounter,
         name: guestName.trim(),
-        email: cleanEmail || `tamu_${Date.now()}@hotelku.com`,
+        email: cleanEmail || `tamu_${Date.now()}@orvenhotel.com`,
         password: 'tamu' + Math.floor(1000 + Math.random() * 9000),
         role: 'guest',
         phone: (guestPhone || '').trim()
@@ -1928,7 +1929,7 @@ app.get('/api/notifications/guest-alerts', apiAuth, (req, res) => {
     checkoutReminder = {
       reservationId: inHouseRsv.id,
       guestName: inHouseRsv.guestName,
-      roomName: room ? room.name : 'Kamar HotelKu',
+      roomName: room ? room.name : 'Kamar Orven',
       roomType: room ? room.type : '',
       unitNumber: unit ? unit.unitNumber : (inHouseRsv.unitNumber || '101'),
       checkOutTime: officialCheckoutTime,
@@ -2073,7 +2074,7 @@ app.get('/api/receptionist/approaching-checkout', apiStaff, (req, res) => {
     const unit = roomUnits.find(u => u.roomId === r.roomId && u.status === 'occupied' && u.guestName === r.guestName);
     return {
       ...r,
-      roomName: room ? room.name : 'Kamar HotelKu',
+      roomName: room ? room.name : 'Kamar Orven',
       roomType: room ? room.type : '',
       unitNumber: unit ? unit.unitNumber : (r.unitNumber || '101'),
       isApproaching: true
@@ -2179,7 +2180,7 @@ app.post('/api/reviews', apiAuth, (req, res) => {
   }
 
   const reviewerUserId = (req.session?.user && req.session.user.id) || rsv.userId;
-  const reviewerUserName = (req.session?.user && req.session.user.name) || rsv.guestName || 'Tamu HotelKu';
+  const reviewerUserName = (req.session?.user && req.session.user.name) || rsv.guestName || 'Tamu Orven';
 
   const newReview = {
     id: reviews.length + 1,
@@ -2456,7 +2457,7 @@ app.get('/api/receptionist/dashboard', apiStaff, async (req, res) => {
       const unit = roomUnits.find(u => u.roomId === r.roomId && u.status === 'occupied' && u.guestName === r.guestName);
       return {
         ...r,
-        roomName: room ? room.name : 'Kamar HotelKu',
+        roomName: room ? room.name : 'Kamar Orven',
         unitNumber: unit ? unit.unitNumber : (r.unitNumber || '101')
       };
     });
@@ -2485,13 +2486,13 @@ app.get('/api/receptionist/dashboard', apiStaff, async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`\n========================================`);
-  console.log(`   🏨 HotelKu Server with Full RBAC!`);
+  console.log(`   🏨 Orven Server with Full RBAC!`);
   console.log(`   🌐 http://localhost:${PORT}`);
   console.log(`   📋 Login: http://localhost:${PORT}/login`);
   console.log(`========================================`);
   console.log(`\nDemo Credentials:`);
-  console.log(`  🔑 Admin       : admin@hotelku.com / admin123`);
-  console.log(`  🛎️ Resepsionis : resepsionis@hotelku.com / resepsionis123`);
+  console.log(`  🔑 Admin       : admin@orvenhotel.com / admin123`);
+  console.log(`  🛎️ Resepsionis : resepsionis@orvenhotel.com / resepsionis123`);
   console.log(`  🧳 Tamu        : tamu@demo.com / tamu123\n`);
 });
 

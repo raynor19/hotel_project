@@ -1,5 +1,5 @@
 /* ============================================================
-   HOTELKU — Pages JavaScript
+   ORVEN — Pages JavaScript
    (Rooms, Carousel, Reservations, Admin)
    ============================================================ */
 
@@ -10,7 +10,7 @@
   const origFetch = window.fetch;
   window.fetch = function(url, options = {}) {
     try {
-      const savedUserStr = localStorage.getItem('hotelku_user');
+      const savedUserStr = localStorage.getItem('orven_user') || localStorage.getItem('hotelku_user');
       if (savedUserStr && typeof url === 'string' && url.startsWith('/api')) {
         const savedUser = JSON.parse(savedUserStr);
         if (savedUser && (savedUser.id || savedUser.role)) {
@@ -305,7 +305,7 @@ async function initNavbar() {
 
     // Jika sesi server terputus/kosong tapi di localStorage ada user yang tersimpan, pulihkan otomatis
     if (!data.success) {
-      const savedUserStr = localStorage.getItem('hotelku_user');
+      const savedUserStr = localStorage.getItem('orven_user') || localStorage.getItem('hotelku_user');
       if (savedUserStr) {
         try {
           const savedUser = JSON.parse(savedUserStr);
@@ -326,7 +326,7 @@ async function initNavbar() {
 
     if (data.success) {
       const user = data.user;
-      localStorage.setItem('hotelku_user', JSON.stringify(user));
+      localStorage.setItem('orven_user', JSON.stringify(user)); localStorage.setItem('hotelku_user', JSON.stringify(user));
 
       // Show/hide elements based on role
       document.querySelectorAll('.logged-out-only').forEach(el => el.classList.add('hide'));
@@ -350,7 +350,7 @@ async function initNavbar() {
       const logoutBtn = document.getElementById('navLogout');
       if (logoutBtn) {
         logoutBtn.onclick = async () => {
-          localStorage.removeItem('hotelku_user');
+          localStorage.removeItem('orven_user'); localStorage.removeItem('hotelku_user');
           localStorage.removeItem('hotelku_my_rsv');
           try {
             for (let i = localStorage.length - 1; i >= 0; i--) {
@@ -361,7 +361,7 @@ async function initNavbar() {
             }
           } catch(e) {}
           try {
-            document.cookie = 'hotelku_auth=; path=/; max-age=0; SameSite=Lax';
+            document.cookie = 'orven_auth=; path=/; max-age=0; SameSite=Lax'; document.cookie = 'hotelku_auth=; path=/; max-age=0; SameSite=Lax';
           } catch(e) {}
           await fetch('/api/logout', { method: 'POST' });
           window.location.href = '/login';
@@ -1251,7 +1251,7 @@ async function initReservationForm() {
       box.innerHTML = `
         <div style="text-align: center;">
           <div style="font-weight: 700; color: #1a1a1a; font-size: 0.95rem; margin-bottom: 4px;">
-            <i class="fas fa-qrcode" style="color:#C4A265;"></i> Scan Kode QRIS HotelKu
+            <i class="fas fa-qrcode" style="color:#C4A265;"></i> Scan Kode QRIS Orven
           </div>
           <p style="font-size: 0.8rem; color: #6b7280; margin: 0 0 14px 0;">
             Buka aplikasi m-Banking (BCA, Mandiri, BRI, BNI) atau E-Wallet (GoPay, OVO, DANA, ShopeePay) lalu arahkan kamera ke QR Code berikut:
@@ -1259,7 +1259,7 @@ async function initReservationForm() {
 
           <div class="qris-qr-container">
             <div style="font-size: 0.75rem; font-weight: 800; letter-spacing: 1px; color: #0a0a0a; margin-bottom: 8px;">
-              QRIS PEMBAYARAN HOTELKU YOGYAKARTA
+              QRIS PEMBAYARAN ORVEN YOGYAKARTA
             </div>
             <!-- Dynamic Vector QR Mockup -->
             <div style="background: #fff; padding: 12px; border: 2px solid #111; border-radius: 8px; display: inline-block;">
@@ -1277,7 +1277,7 @@ async function initReservationForm() {
                 <rect x="5" y="67" width="28" height="28" fill="#111"/>
                 <rect x="9" y="71" width="20" height="20" fill="#fff"/>
                 <rect x="13" y="75" width="12" height="12" fill="#111"/>
-                <!-- Center HotelKu Logo Badge -->
+                <!-- Center Orven Logo Badge -->
                 <rect x="40" y="40" width="20" height="20" rx="4" fill="#C4A265"/>
                 <text x="50" y="54" font-size="11" font-weight="bold" fill="#fff" text-anchor="middle">✦</text>
                 <!-- Matrix Patterns -->
@@ -1298,7 +1298,7 @@ async function initReservationForm() {
               </svg>
             </div>
             <div style="font-size: 0.72rem; color: #4b5563; margin-top: 10px;">
-              NMID: <strong>ID102455588801</strong> · HotelKu Official Merchant
+              NMID: <strong>ID102455588801</strong> · Orven Official Merchant
             </div>
           </div>
 
@@ -1327,9 +1327,9 @@ async function initReservationForm() {
           </div>
 
           <div style="font-size: 0.8rem; color: #4b5563; line-height: 1.6;">
-            <div>Atas Nama: <strong>HotelKu Official Booking</strong></div>
+            <div>Atas Nama: <strong>Orven Official Booking</strong></div>
             <div style="font-size: 0.75rem; color: #6b7280; margin-top: 4px;">
-              Petunjuk: Masuk ke menu m-Banking / ATM > Transfer > Virtual Account > Masukkan nomor di atas > Konfirmasi nama HotelKu.
+              Petunjuk: Masuk ke menu m-Banking / ATM > Transfer > Virtual Account > Masukkan nomor di atas > Konfirmasi nama Orven.
             </div>
           </div>
         </div>
@@ -2337,19 +2337,19 @@ function openWhatsappPreview(type, data) {
 
   if (type === 'room_ready') {
     body.innerHTML = `
-      Halo <strong>Bpk/Ibu ${data.guestName}</strong>, salam hangat dari HotelKu Yogyakarta! 🌿<br><br>
+      Halo <strong>Bpk/Ibu ${data.guestName}</strong>, salam hangat dari Orven Yogyakarta! 🌿<br><br>
       Kabar gembira, kamar Anda <strong>${data.roomName} (Unit ${data.unitNumber})</strong> telah selesai disiapkan dan siap huni lebih awal (<strong>Early Check-In Privilege</strong>)! ✨<br><br>
       Anda dapat langsung menuju meja resepsionis untuk serah terima kunci kamar tanpa perlu mengantre di lobi.<br><br>
-      Kami menantikan kedatangan Anda di HotelKu Yogyakarta! 🛎️
+      Kami menantikan kedatangan Anda di Orven Yogyakarta! 🛎️
     `;
   } else {
     body.innerHTML = `
-      Selamat pagi <strong>Bpk/Ibu ${data.guestName}</strong> dari HotelKu Yogyakarta! ☀️<br><br>
+      Selamat pagi <strong>Bpk/Ibu ${data.guestName}</strong> dari Orven Yogyakarta! ☀️<br><br>
       Kami mengingatkan bahwa waktu check-out untuk kamar <strong>${data.roomName} (Unit ${data.unitNumber})</strong> adalah hari ini pukul <strong>${data.checkOutTime}</strong> (tersisa 2 jam lagi).<br><br>
       Mohon persiapkan barang bawaan Anda agar kepulangan berjalan lancar.<br><br>
       ✦ Butuh waktu berkemas lebih? Ajukan <em>Late Check-Out</em>.<br>
       ✦ Butuh bantuan porter koper? Panggil <em>Bellboy</em> melalui aplikasi.<br><br>
-      Terima kasih telah memilih menginap di HotelKu Yogyakarta! 🙏
+      Terima kasih telah memilih menginap di Orven Yogyakarta! 🙏
     `;
   }
 

@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="100%" height="100%">
+  <defs>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F2DE9C" />
+      <stop offset="35%" stop-color="#D4B87A" />
+      <stop offset="70%" stop-color="#C4A265" />
+      <stop offset="100%" stop-color="#997738" />
+    </linearGradient>
+    <linearGradient id="goldLight" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#AA8844" />
+      <stop offset="50%" stop-color="#F7E6B5" />
+      <stop offset="100%" stop-color="#C4A265" />
+    </linearGradient>
+    <filter id="goldGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#C4A265" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Circular Luxury Border -->
+  <circle cx="120" cy="120" r="106" fill="none" stroke="url(#goldGradient)" stroke-width="2.5" stroke-dasharray="4 3" opacity="0.6"/>
+  <circle cx="120" cy="120" r="98" fill="none" stroke="url(#goldGradient)" stroke-width="1.8"/>
+
+  <!-- Compass / Star Accents -->
+  <g fill="url(#goldLight)">
+    <polygon points="120,8 123,17 120,22 117,17" />
+    <polygon points="120,232 123,223 120,218 117,223" />
+    <polygon points="8,120 17,123 22,120 17,117" />
+    <polygon points="232,120 223,123 218,120 223,117" />
+  </g>
+
+  <!-- Crown / Coronet Top -->
+  <path d="M96 66 L104 78 L120 62 L136 78 L144 66 L148 84 L92 84 Z" fill="url(#goldLight)" filter="url(#goldGlow)"/>
+  <circle cx="96" cy="63" r="2.5" fill="#FFF2CC"/>
+  <circle cx="120" cy="58" r="3.2" fill="#FFF2CC"/>
+  <circle cx="144" cy="63" r="2.5" fill="#FFF2CC"/>
+
+  <!-- Monogram Letter "O" -->
+  <g filter="url(#goldGlow)">
+    <!-- Outer Ellipse of O -->
+    <path d="M120 78 C82 78 58 100 58 140 C58 180 82 202 120 202 C158 202 182 180 182 140 C182 100 158 78 120 78 Z 
+             M120 94 C146 94 163 111 163 140 C163 169 146 186 120 186 C94 186 77 169 77 140 C77 111 94 94 120 94 Z" 
+          fill="url(#goldGradient)" fill-rule="evenodd"/>
+    
+    <!-- Central Facet Diamond Sparkle -->
+    <polygon points="120,118 127,140 120,162 113,140" fill="url(#goldLight)"/>
+    <polygon points="106,140 120,134 134,140 120,146" fill="url(#goldGradient)"/>
+    <circle cx="120" cy="140" r="3" fill="#FFFFFF"/>
+  </g>
+</svg>

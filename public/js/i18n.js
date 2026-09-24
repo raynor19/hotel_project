@@ -1,5 +1,5 @@
 /* ============================================================
-   HOTELKU — Global i18n Language Switcher Module
+   ORVEN — Global i18n Language Switcher Module
    (Instant Dynamic Translation Engine with Japanese & Chinese Support)
    ============================================================ */
 
@@ -68,7 +68,7 @@
       navProfile: 'My Profile',
       navSignIn: 'Login',
       navRegister: 'Register',
-      heroSub: '✦ WELCOME TO HOTELKU ✦',
+      heroSub: '✦ WELCOME TO ORVEN ✦',
       heroTitle: 'Luxury Stay Experience in the Heart of Yogyakarta',
       heroDesc: 'Experience the harmonious blend of modern luxury and warm Javanese heritage hospitality in downtown Yogyakarta.',
       btnSeeRooms: 'View All Rooms',
@@ -118,7 +118,7 @@
       navProfile: '个人资料',
       navSignIn: '登录',
       navRegister: '注册',
-      heroSub: '✦ 欢迎莅临 HOTELKU ✦',
+      heroSub: '✦ 欢迎莅临 ORVEN ✦',
       heroTitle: '日惹市中心的高端奢华下榻体验',
       heroDesc: '尽享现代典雅奢华与爪哇传统待客之道的完美交融。',
       btnSeeRooms: '查看所有客房',
@@ -259,7 +259,7 @@
 
     // --- Stepper & Booking Form ---
     '✦ FORMULIR RESERVASI ✦': { en: '✦ RESERVATION FORM ✦', ja: '✦ ご予約フォーム ✦', zh: '✦ 预订表单 ✦', ar: '✦ نموذج الحجز ✦' },
-    'Pemesanan Kamar HotelKu': { en: 'HotelKu Room Booking', ja: 'ホテルク客室予約', zh: 'HotelKu 客房预订', ar: 'حجز غرفة في فندق هوتيلكو' },
+    'Pemesanan Kamar Orven': { en: 'Orven Room Booking', ja: 'ホテルク客室予約', zh: 'Orven 客房预订', ar: 'حجز غرفة في فندق هوتيلكو' },
     'Lengkapi data diri dan lakukan pembayaran untuk konfirmasi instan pemesanan kamar Anda': {
       en: 'Complete your information and make a payment for instant reservation confirmation',
       ja: '必要事項を入力し、お支払いを完了すると即時に予約確認が行われます',
@@ -399,10 +399,10 @@
     'Cari tipe kamar atau fasilitas (contoh: Deluxe, Jacuzzi, Balcony)...': { en: 'Search room types or amenities (e.g. Deluxe, Jacuzzi, Balcony)...', ja: '部屋タイプや設備で検索...', zh: '搜索房型或设施...', ar: 'ابحث عن نوع الغرفة أو المرافق...' },
     'Alasan penolakan...': { en: 'Reason for rejection...', ja: '却下の理由...', zh: '拒绝原因...', ar: 'سبب الرفض...' },
     // --- Admin Check-Out Page ---
-    'Proses Check-Out — Admin HotelKu': {
-      en: 'Check-Out Process — HotelKu Admin',
+    'Proses Check-Out — Admin Orven': {
+      en: 'Check-Out Process — Orven Admin',
       ja: 'チェックアウト処理 — ホテルク管理',
-      zh: '办理退房 — HotelKu 管理端',
+      zh: '办理退房 — Orven 管理端',
       ar: 'إجراءات تسجيل المغادرة — إدارة هوتيلكو'
     },
     '✦ KEBERANGKATAN TAMU ✦': {
@@ -449,10 +449,10 @@
     },
 
     // --- Admin Check-In Page ---
-    'Proses Check-In — Admin HotelKu': {
-      en: 'Check-In Process — HotelKu Admin',
+    'Proses Check-In — Admin Orven': {
+      en: 'Check-In Process — Orven Admin',
       ja: 'チェックイン処理 — ホテルク管理',
-      zh: '办理入住 — HotelKu 管理端',
+      zh: '办理入住 — Orven 管理端',
       ar: 'إجراءات تسجيل الوصول — إدارة هوتيلكو'
     },
     '✦ KEDATANGAN TAMU ✦': {
@@ -493,10 +493,10 @@
     },
 
     // --- Admin Reservations Page ---
-    'Kelola Reservasi — Admin HotelKu': {
-      en: 'Manage Bookings — HotelKu Admin',
+    'Kelola Reservasi — Admin Orven': {
+      en: 'Manage Bookings — Orven Admin',
       ja: '予約管理 — ホテルク管理',
-      zh: '预订管理 — HotelKu 管理端',
+      zh: '预订管理 — Orven 管理端',
       ar: 'إدارة الحجوزات — إدارة هوتيلكو'
     },
     '✦ MANAJEMEN RESERVASI ✦': {
@@ -637,8 +637,8 @@
       zh: '全面报表与数据分析',
       ar: 'التقارير والإحصائيات الشاملة'
     },
-    'Akses penuh ke performa finansial, tingkat okupansi hunian, dan rekapitulasi bisnis HotelKu': {
-      en: 'Full access to financial performance, occupancy rates, and HotelKu business summaries',
+    'Akses penuh ke performa finansial, tingkat okupansi hunian, dan rekapitulasi bisnis Orven': {
+      en: 'Full access to financial performance, occupancy rates, and Orven business summaries',
       ja: '売上推移、客室稼働率、ホテル事業全体の総括データへアクセス',
       zh: '全面了解酒店财务收益表现、客房入住率以及业务统计汇总',
       ar: 'وصول كامل للأداء المالي، معدلات إشغال الغرف، وملخصات أعمال هوتيلكو'
@@ -753,10 +753,10 @@
       zh: '预订确认',
       ar: 'تأكيد الحجز'
     },
-    'HotelKu Yogyakarta Management': {
-      en: 'HotelKu Yogyakarta Management',
+    'Orven Yogyakarta Management': {
+      en: 'Orven Yogyakarta Management',
       ja: 'ホテルク・ジョグジャカルタ 運営',
-      zh: 'HotelKu 日惹酒店管理',
+      zh: 'Orven 日惹酒店管理',
       ar: 'إدارة هوتيلكو يوجياكارتا'
     },
     'Front Desk Check-Out': {

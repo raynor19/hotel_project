@@ -1,5 +1,5 @@
 /* ============================================================
-   HOTELKU — Frontend JavaScript
+   ORVEN — Frontend JavaScript
    ============================================================ */
 
 // ==================== GLOBAL AUTH FETCH INTERCEPTOR ====================
@@ -422,9 +422,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // Isolasi akun: Hapus cache reservasi akun sebelumnya agar tidak bocor ke akun baru
             localStorage.removeItem('hotelku_my_rsv');
             localStorage.removeItem('hotelku_guest_rsv');
-            localStorage.setItem('hotelku_user', JSON.stringify(data.user));
+            localStorage.setItem('orven_user', JSON.stringify(data.user));
             try {
-              document.cookie = `hotelku_auth=${encodeURIComponent(JSON.stringify(data.user))}; path=/; max-age=${30*24*60*60}; SameSite=Lax`;
+              document.cookie = `orven_auth=${encodeURIComponent(JSON.stringify(data.user))}; path=/; max-age=${30*24*60*60}; SameSite=Lax`;
             } catch(e) {}
           }
           
