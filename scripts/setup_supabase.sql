@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS rooms (
 -- 3. TABEL RESERVASI (RESERVATIONS)
 CREATE TABLE IF NOT EXISTS reservations (
   id VARCHAR(50) PRIMARY KEY,
-  room_id BIGINT REFERENCES rooms(id),
+  room_id BIGINT REFERENCES rooms(id) ON DELETE SET NULL,
   user_id BIGINT,
   guest_name VARCHAR(255) NOT NULL,
   guest_phone VARCHAR(50),
@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS reservations (
 CREATE TABLE IF NOT EXISTS reviews (
   id BIGSERIAL PRIMARY KEY,
   reservation_id VARCHAR(50),
-  room_id BIGINT REFERENCES rooms(id),
+  room_id BIGINT REFERENCES rooms(id) ON DELETE CASCADE,
   user_id BIGINT,
   user_name VARCHAR(255) NOT NULL,
   rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),

@@ -1,0 +1,148 @@
+[
+  {
+    "id": 1,
+    "name": "Standard Room",
+    "type": "Standard",
+    "price": 350000,
+    "capacity": 2,
+    "size": 24,
+    "bed": "1 Queen Bed",
+    "description": "Kamar nyaman dengan desain minimalis modern, dilengkapi fasilitas lengkap untuk kenyamanan Anda.",
+    "facilities": [
+      "WiFi Gratis",
+      "AC",
+      "TV LED 32\"",
+      "Kamar Mandi Dalam",
+      "Air Panas",
+      "Meja Kerja"
+    ],
+    "photos": [
+      "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=1200&q=80"
+    ],
+    "totalUnits": 4,
+    "occupiedUnits": 1
+  },
+  {
+    "id": 2,
+    "name": "Deluxe Room",
+    "type": "Deluxe",
+    "price": 550000,
+    "capacity": 2,
+    "size": 32,
+    "bed": "1 King Bed",
+    "description": "Kamar luas dengan sentuhan etnik Jawa yang elegan. Dilengkapi balkon pribadi dengan pemandangan taman.",
+    "facilities": [
+      "WiFi Gratis",
+      "AC",
+      "Smart TV 43\"",
+      "Bathtub",
+      "Air Panas",
+      "Mini Bar",
+      "Balkon",
+      "Brankas"
+    ],
+    "photos": [
+      "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80"
+    ],
+    "totalUnits": 4,
+    "occupiedUnits": 1
+  },
+  {
+    "id": 3,
+    "name": "Superior Room",
+    "type": "Superior",
+    "price": 750000,
+    "capacity": 2,
+    "size": 38,
+    "bed": "1 King Bed",
+    "description": "Kamar superior dengan dekorasi batik premium dan furnitur kayu jati. Ruangan luas dengan area duduk terpisah.",
+    "facilities": [
+      "WiFi Gratis",
+      "AC",
+      "Smart TV 50\"",
+      "Bathtub & Shower",
+      "Air Panas",
+      "Mini Bar",
+      "Sofa",
+      "Brankas",
+      "Jubah Mandi"
+    ],
+    "photos": [
+      "https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&w=1200&q=80"
+    ],
+    "totalUnits": 3,
+    "occupiedUnits": 1
+  },
+  {
+    "id": 4,
+    "name": "Junior Suite",
+    "type": "Suite",
+    "price": 1200000,
+    "capacity": 3,
+    "size": 48,
+    "bed": "1 Super King + 1 Daybed",
+    "description": "Suite mewah dengan ruang tamu terpisah bernuansa keraton Yogyakarta.",
+    "facilities": [
+      "WiFi Gratis High-Speed",
+      "AC Multi-Zone",
+      "Smart TV 55\"",
+      "Jacuzzi Pribadi",
+      "Espresso Machine",
+      "Walk-in Closet",
+      "Layanan Butler"
+    ],
+    "photos": [
+      "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80"
+    ],
+    "totalUnits": 2,
+    "occupiedUnits": 0
+  },
+  {
+    "id": 5,
+    "name": "Executive Suite",
+    "type": "Suite",
+    "price": 1850000,
+    "capacity": 4,
+    "size": 65,
+    "bed": "2 King Beds",
+    "description": "Suite eksekutif dengan panorama kota Yogyakarta yang memukau. Dua kamar tidur luas dengan ruang makan pribadi.",
+    "facilities": [
+      "WiFi Gratis High-Speed",
+      "AC Multi-Zone",
+      "2x Smart TV 55\"",
+      "Jacuzzi & Sauna Pribadi",
+      "Dapur Bersih & Kulkas",
+      "Balkon Luas",
+      "Layanan Butler 24 Jam"
+    ],
+    "photos": [
+      "https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=1200&q=80"
+    ],
+    "totalUnits": 2,
+    "occupiedUnits": 1
+  },
+  {
+    "id": 6,
+    "name": "Presidential Suite",
+    "type": "Suite",
+    "price": 3500000,
+    "capacity": 4,
+    "size": 110,
+    "bed": "2 Super King Beds",
+    "description": "Puncak kemewahan HotelKu. Dilengkapi kolam renang mini pribadi (plunge pool), ruang pertemuan VIP, dan interior ukiran kayu jati Jepara pilihan.",
+    "facilities": [
+      "Akses Private Lift",
+      "Private Plunge Pool",
+      "Dining Room 8 Kursi",
+      "Home Theater 65\"",
+      "Master Bathroom Marmer",
+      "Butler & Chef Pribadi 24 Jam",
+      "Airport Transfer Alphard"
+    ],
+    "photos": [
+      "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1200&q=80"
+    ],
+    "totalUnits": 1,
+    "occupiedUnits": 0
+  }
+]

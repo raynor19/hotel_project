@@ -1,0 +1,184 @@
+[
+  {
+    "unitNumber": "101",
+    "roomId": 1,
+    "floor": 1,
+    "status": "occupied",
+    "guestName": "Budi Santoso"
+  },
+  {
+    "unitNumber": "102",
+    "roomId": 1,
+    "floor": 1,
+    "status": "available",
+    "guestName": ""
+  },
+  {
+    "unitNumber": "103",
+    "roomId": 1,
+    "floor": 1,
+    "status": "cleaning",
+    "guestName": ""
+  },
+  {
+    "unitNumber": "104",
+    "roomId": 1,
+    "floor": 1,
+    "status": "available",
+    "guestName": ""
+  },
+  {
+    "unitNumber": "201",
+    "roomId": 2,
+    "floor": 2,
+    "status": "occupied",
+    "guestName": "Sari Dewi"
+  },
+  {
+    "unitNumber": "202",
+    "roomId": 2,
+    "floor": 2,
+    "status": "available",
+    "guestName": ""
+  },
+  {
+    "unitNumber": "203",
+    "roomId": 2,
+    "floor": 2,
+    "status": "cleaning",
+    "guestName": ""
+  },
+  {
+    "unitNumber": "204",
+    "roomId": 2,
+    "floor": 2,
+    "status": "available",
+    "guestName": ""
+  },
+  {
+    "unitNumber": "301",
+    "roomId": 3,
+    "floor": 3,
+    "status": "occupied",
+    "guestName": "Ahmad Fauzi"
+  },
+  {
+    "unitNumber": "302",
+    "roomId": 3,
+    "floor": 3,
+    "status": "available",
+    "guestName": ""
+  },
+  {
+    "unitNumber": "303",
+    "roomId": 3,
+    "floor": 3,
+    "status": "maintenance",
+    "guestName": ""
+  },
+  {
+    "unitNumber": "401",
+    "roomId": 4,
+    "floor": 4,
+    "status": "available",
+    "guestName": ""
+  },
+  {
+    "unitNumber": "402",
+    "roomId": 4,
+    "floor": 4,
+    "status": "available",
+    "guestName": ""
+  },
+  {
+    "unitNumber": "501",
+    "roomId": 5,
+    "floor": 5,
+    "status": "available",
+    "guestName": ""
+  },
+  {
+    "unitNumber": "502",
+    "roomId": 5,
+    "floor": 5,
+    "status": "available",
+    "guestName": ""
+  },
+  {
+    "unitNumber": "601",
+    "roomId": 6,
+    "floor": 6,
+    "status": "available",
+    "guestName": ""
+  },
+  {
+    "unitNumber": "701",
+    "roomId": 7,
+    "floor": 7,
+    "status": "available",
+    "guestName": ""
+  },
+  {
+    "unitNumber": "702",
+    "roomId": 7,
+    "floor": 7,
+    "status": "available",
+    "guestName": ""
+  },
+  {
+    "unitNumber": "703",
+    "roomId": 7,
+    "floor": 7,
+    "status": "available",
+    "guestName": ""
+  },
+  {
+    "unitNumber": "V01",
+    "roomId": 8,
+    "floor": 1,
+    "status": "available",
+    "guestName": ""
+  },
+  {
+    "unitNumber": "V02",
+    "roomId": 8,
+    "floor": 1,
+    "status": "available",
+    "guestName": ""
+  },
+  {
+    "unitNumber": "801",
+    "roomId": 9,
+    "floor": 8,
+    "status": "available",
+    "guestName": ""
+  },
+  {
+    "unitNumber": "205",
+    "roomId": 10,
+    "floor": 2,
+    "status": "available",
+    "guestName": ""
+  },
+  {
+    "unitNumber": "206",
+    "roomId": 10,
+    "floor": 2,
+    "status": "available",
+    "guestName": ""
+  },
+  {
+    "unitNumber": "207",
+    "roomId": 10,
+    "floor": 2,
+    "status": "available",
+    "guestName": ""
+  },
+  {
+    "unitNumber": "208",
+    "roomId": 10,
+    "floor": 2,
+    "status": "available",
+    "guestName": ""
+  }
+]

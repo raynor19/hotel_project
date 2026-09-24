@@ -86,8 +86,8 @@ class JsonFileStore extends session.Store {
 }
 
 // Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({
   store: new JsonFileStore(),
@@ -466,6 +466,48 @@ let roomUnits = [
   { unitNumber: '208', roomId: 10, floor: 2, status: 'available', guestName: '' }
 ];
 
+const ROOMS_FILE = path.join(DATA_DIR, 'rooms.json');
+const ROOM_UNITS_FILE = path.join(DATA_DIR, 'room_units.json');
+
+function saveRooms(roomToSync, deletedRoomId) {
+  try {
+    fs.writeFileSync(ROOMS_FILE, JSON.stringify(rooms, null, 2), 'utf-8');
+    fs.writeFileSync(ROOM_UNITS_FILE, JSON.stringify(roomUnits, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('Error saving rooms.json:', err.message);
+  }
+  if (roomToSync) {
+    db.upsertRoom(roomToSync).catch(e => console.error('[Supabase] Sync room error:', e.message));
+  }
+  if (deletedRoomId) {
+    db.deleteRoom(deletedRoomId).catch(e => console.error('[Supabase] Delete room error:', e.message));
+  }
+}
+
+function loadRooms() {
+  try {
+    if (fs.existsSync(ROOMS_FILE)) {
+      const data = JSON.parse(fs.readFileSync(ROOMS_FILE, 'utf-8'));
+      if (Array.isArray(data) && data.length > 0) {
+        rooms = data;
+        roomCounter = Math.max(...rooms.map(r => r.id || 0), 10);
+      }
+    } else {
+      saveRooms();
+    }
+    if (fs.existsSync(ROOM_UNITS_FILE)) {
+      const uData = JSON.parse(fs.readFileSync(ROOM_UNITS_FILE, 'utf-8'));
+      if (Array.isArray(uData) && uData.length > 0) {
+        roomUnits = uData;
+      }
+    }
+  } catch (err) {
+    console.error('Error loading rooms.json:', err.message);
+  }
+}
+
+loadRooms();
+
 let reservationCounter = 4;
 let reservations = [
   {
@@ -584,6 +626,10 @@ async function initDatabase() {
       const suRooms = await db.getRooms();
       if (suRooms && suRooms.length > 0) {
         rooms = suRooms;
+        roomCounter = Math.max(...rooms.map(r => r.id || 0), 10);
+        try {
+          fs.writeFileSync(ROOMS_FILE, JSON.stringify(rooms, null, 2), 'utf-8');
+        } catch (e) {}
       }
       const suRsv = await db.getReservations();
       if (suRsv && suRsv.length > 0) {
@@ -1311,21 +1357,26 @@ app.post('/api/admin/rooms', apiAdmin, (req, res) => {
     return res.status(400).json({ success: false, message: 'Nama kamar, harga, dan kapasitas wajib diisi' });
   }
 
+  const cleanPrice = parseInt(price);
+  const cleanCapacity = parseInt(capacity);
+  const cleanTotalUnits = parseInt(totalUnits) || 3;
+  const cleanSize = parseInt(size) || 25;
+
   const newRoom = {
     id: ++roomCounter,
-    name,
+    name: name.trim(),
     type: type || 'Standard',
-    price: parseInt(price),
-    capacity: parseInt(capacity),
-    size: parseInt(size) || 25,
-    bed: bed || '1 King Bed',
-    description: description || 'Kamar nyaman dan mewah di HotelKu.',
-    facilities: Array.isArray(facilities) ? facilities : (facilities ? facilities.split(',').map(s => s.trim()) : ['WiFi Gratis', 'AC']),
+    price: cleanPrice,
+    capacity: cleanCapacity,
+    size: cleanSize,
+    bed: bed ? bed.trim() : '1 King Bed',
+    description: description ? description.trim() : 'Kamar nyaman dan mewah di HotelKu.',
+    facilities: Array.isArray(facilities) ? facilities : (facilities ? facilities.split(',').map(s => s.trim()).filter(Boolean) : ['WiFi Gratis', 'AC']),
     photos: Array.isArray(photos) && photos.length ? photos : [
       'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80',
       'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1200&q=80'
     ],
-    totalUnits: parseInt(totalUnits) || 3,
+    totalUnits: cleanTotalUnits,
     occupiedUnits: 0
   };
 
@@ -1342,39 +1393,78 @@ app.post('/api/admin/rooms', apiAdmin, (req, res) => {
     });
   }
 
+  saveRooms(newRoom);
+
   res.json({ success: true, message: `Kamar baru "${newRoom.name}" berhasil ditambahkan!`, room: newRoom });
 });
 
-// Admin: Edit Kamar (Termasuk ubah harga, foto, deskripsi, fasilitas)
+// Admin: Edit Kamar (Termasuk ubah harga, foto, deskripsi, fasilitas, unit)
 app.put('/api/admin/rooms/:id', apiAdmin, (req, res) => {
-  const room = rooms.find(r => r.id === parseInt(req.params.id));
+  const targetId = parseInt(req.params.id);
+  const room = rooms.find(r => r.id === targetId);
   if (!room) return res.status(404).json({ success: false, message: 'Kamar tidak ditemukan' });
 
   const { name, type, price, capacity, size, bed, description, facilities, photos, totalUnits } = req.body;
 
-  if (name) room.name = name;
+  if (name) room.name = name.trim();
   if (type) room.type = type;
   if (price !== undefined) room.price = parseInt(price);
   if (capacity !== undefined) room.capacity = parseInt(capacity);
   if (size !== undefined) room.size = parseInt(size);
-  if (bed) room.bed = bed;
-  if (description) room.description = description;
-  if (facilities) room.facilities = Array.isArray(facilities) ? facilities : facilities.split(',').map(s => s.trim());
+  if (bed) room.bed = bed.trim();
+  if (description !== undefined) room.description = description.trim();
+  if (facilities) room.facilities = Array.isArray(facilities) ? facilities : facilities.split(',').map(s => s.trim()).filter(Boolean);
   if (photos && Array.isArray(photos) && photos.length) room.photos = photos;
-  if (totalUnits !== undefined) room.totalUnits = parseInt(totalUnits);
+
+  if (totalUnits !== undefined) {
+    const newTotal = parseInt(totalUnits);
+    if (!isNaN(newTotal) && newTotal > 0 && newTotal !== room.totalUnits) {
+      const oldTotal = room.totalUnits;
+      room.totalUnits = newTotal;
+      if (newTotal > oldTotal) {
+        for (let i = oldTotal + 1; i <= newTotal; i++) {
+          roomUnits.push({
+            unitNumber: `${room.id}0${i}`,
+            roomId: room.id,
+            floor: room.id,
+            status: 'available',
+            guestName: ''
+          });
+        }
+      } else if (newTotal < oldTotal) {
+        const currentUnits = roomUnits.filter(u => u.roomId === room.id);
+        const excess = currentUnits.slice(newTotal);
+        roomUnits = roomUnits.filter(u => !excess.includes(u));
+      }
+    }
+  }
+
+  saveRooms(room);
 
   res.json({ success: true, message: `Data kamar "${room.name}" berhasil diperbarui!`, room });
 });
 
 // Admin: Hapus Kamar
 app.delete('/api/admin/rooms/:id', apiAdmin, (req, res) => {
-  const idx = rooms.findIndex(r => r.id === parseInt(req.params.id));
+  const targetId = parseInt(req.params.id);
+  const idx = rooms.findIndex(r => r.id === targetId);
   if (idx === -1) return res.status(404).json({ success: false, message: 'Kamar tidak ditemukan' });
+
+  // Cegah hapus kamar jika ada reservasi aktif
+  const hasActiveRsv = reservations.some(r => r.roomId === targetId && ['pending', 'approved', 'checked-in'].includes(r.status));
+  if (hasActiveRsv) {
+    return res.status(400).json({
+      success: false,
+      message: `Tidak dapat menghapus kamar "${rooms[idx].name}" karena masih ada reservasi aktif (pending, disetujui, atau sedang menginap).`
+    });
+  }
 
   const deletedName = rooms[idx].name;
   rooms.splice(idx, 1);
   // remove units
-  roomUnits = roomUnits.filter(u => u.roomId !== parseInt(req.params.id));
+  roomUnits = roomUnits.filter(u => u.roomId !== targetId);
+
+  saveRooms(null, targetId);
 
   res.json({ success: true, message: `Tipe kamar "${deletedName}" berhasil dihapus dari sistem` });
 });

@@ -251,6 +251,22 @@ const db = {
     return mapRoomFromDb(data);
   },
 
+  async deleteRoom(id) {
+    const client = getClient();
+    if (!client) return false;
+    try {
+      const { error } = await client.from('rooms').delete().eq('id', id);
+      if (error) {
+        console.error('[Supabase] deleteRoom error:', error.message);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      console.error('[Supabase] deleteRoom exception:', err.message);
+      return false;
+    }
+  },
+
   // RESERVATIONS
   async getReservations() {
     const client = getClient();

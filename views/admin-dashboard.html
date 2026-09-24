@@ -138,6 +138,44 @@
       </a>
     </div>
 
+    <!-- Manajemen Kamar Hotel (CRUD Tambah, Edit, Hapus) -->
+    <div style="background: #fff; border-radius: 12px; padding: 32px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); margin-bottom: 32px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+        <div>
+          <h3 style="font-family: 'Playfair Display', serif; font-size: 1.3rem; margin-bottom: 4px;">
+            <i class="fas fa-bed" style="color: #C4A265; margin-right: 8px;"></i>Kelola & Manajemen Kamar
+          </h3>
+          <p style="font-size: 0.85rem; color: #888; margin: 0;">Tambah kamar baru, ubah harga, sesuaikan foto/pov kamar, dan kelola kapasitas unit</p>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <button class="btn btn-primary" onclick="openCreateRoomModal()" style="display: inline-flex; align-items: center; gap: 8px; font-weight: 600; padding: 10px 18px;">
+            <i class="fas fa-plus"></i> Tambah Kamar Baru
+          </button>
+          <a href="/admin/rooms" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 6px;">
+            <i class="fas fa-external-link-alt"></i> Halaman Khusus Kamar
+          </a>
+        </div>
+      </div>
+
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem;" id="roomsTable">
+          <thead>
+            <tr style="border-bottom: 2px solid #f0f0f0; color: #888; font-size: 0.8rem; text-transform: uppercase;">
+              <th style="padding: 12px 14px;">Foto</th>
+              <th style="padding: 12px 14px;">Nama Kamar & Tipe</th>
+              <th style="padding: 12px 14px;">Kapasitas / Kasur</th>
+              <th style="padding: 12px 14px; text-align: right;">Harga / Malam</th>
+              <th style="padding: 12px 14px; text-align: center;">Total Unit</th>
+              <th style="padding: 12px 14px; text-align: center;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="roomsTableBody">
+            <tr><td colspan="6" style="text-align: center; padding: 30px; color: #888;"><i class="fas fa-spinner fa-spin"></i> Memuat data kamar...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- Revenue Breakdown by Room Type -->
     <div style="background: #fff; border-radius: 12px; padding: 32px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); margin-bottom: 32px;">
       <h3 style="font-family: 'Playfair Display', serif; font-size: 1.3rem; margin-bottom: 6px;">Kontribusi Pendapatan per Tipe Kamar</h3>
@@ -159,13 +197,330 @@
     </div>
   </main>
 
+  <!-- Modal Room Form (Create / Edit) -->
+  <div id="roomModal" class="modal-overlay hide" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+    <div class="modal-box" style="max-width: 650px; max-height: 90vh; overflow-y: auto; background: #fff; border-radius: 12px; padding: 28px; width: 100%; box-shadow: 0 10px 40px rgba(0,0,0,0.25);">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 id="roomModalTitle" style="font-family: 'Playfair Display', serif; font-size: 1.3rem; margin: 0; display: flex; align-items: center; gap: 8px;">
+          <i class="fas fa-bed" style="color: #C4A265;"></i> Tambah Kamar Baru
+        </h3>
+        <button type="button" onclick="closeRoomModal()" style="background: none; border: none; font-size: 1.5rem; line-height: 1; cursor: pointer; color: #999;">&times;</button>
+      </div>
+
+      <form id="roomForm">
+        <input type="hidden" id="editRoomId" value="">
+
+        <div class="form-row" style="display: grid; grid-template-columns: 2fr 1fr; gap: 14px; margin-bottom: 14px;">
+          <div class="form-group">
+            <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Nama Kamar *</label>
+            <input type="text" id="mRoomName" required placeholder="Contoh: Royal Deluxe Suite" style="width: 100%; padding: 10px 12px; border: 1.5px solid #ddd; border-radius: 6px; font-family: inherit;">
+          </div>
+          <div class="form-group">
+            <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Kategori Tipe *</label>
+            <select id="mRoomType" style="width: 100%; padding: 10px 12px; border: 1.5px solid #ddd; border-radius: 6px; font-family: inherit;">
+              <option value="Standard">Standard</option>
+              <option value="Deluxe">Deluxe</option>
+              <option value="Superior">Superior</option>
+              <option value="Suite">Suite</option>
+              <option value="Family">Family</option>
+              <option value="Villa">Villa</option>
+              <option value="Presidential">Presidential</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+          <div class="form-group">
+            <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Harga per Malam (Rp) *</label>
+            <input type="number" id="mRoomPrice" required placeholder="550000" min="50000" style="width: 100%; padding: 10px 12px; border: 1.5px solid #ddd; border-radius: 6px; font-family: inherit;">
+          </div>
+          <div class="form-group">
+            <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Total Unit Kamar *</label>
+            <input type="number" id="mRoomUnits" required placeholder="4" min="1" max="50" style="width: 100%; padding: 10px 12px; border: 1.5px solid #ddd; border-radius: 6px; font-family: inherit;">
+          </div>
+        </div>
+
+        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+          <div class="form-group">
+            <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Kapasitas Tamu (Orang) *</label>
+            <input type="number" id="mRoomCapacity" required placeholder="2" min="1" max="10" style="width: 100%; padding: 10px 12px; border: 1.5px solid #ddd; border-radius: 6px; font-family: inherit;">
+          </div>
+          <div class="form-group">
+            <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Ukuran Kamar (m²)</label>
+            <input type="number" id="mRoomSize" placeholder="32" min="10" style="width: 100%; padding: 10px 12px; border: 1.5px solid #ddd; border-radius: 6px; font-family: inherit;">
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Tipe Ranjang</label>
+          <input type="text" id="mRoomBed" placeholder="Contoh: 1 King Bed atau 2 Twin Beds" style="width: 100%; padding: 10px 12px; border: 1.5px solid #ddd; border-radius: 6px; font-family: inherit;">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Deskripsi Singkat</label>
+          <textarea id="mRoomDesc" style="width: 100%; min-height: 65px; padding: 10px 12px; border: 1.5px solid #ddd; border-radius: 6px; font-family: inherit; font-size: 0.85rem;" placeholder="Deskripsikan kenyamanan, nuansa dan fasilitas unggulan kamar..."></textarea>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">Fasilitas (Pisahkan dengan koma)</label>
+          <input type="text" id="mRoomFacilities" placeholder="WiFi Gratis, AC, Smart TV, Bathtub, Air Panas, Mini Bar" style="width: 100%; padding: 10px 12px; border: 1.5px solid #ddd; border-radius: 6px; font-family: inherit;">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label style="display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px;">URL Foto POV Kamar (1 URL per baris atau Upload)</label>
+          <div style="display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="applyPhotoPreset('standard')" style="font-size: 0.75rem; padding: 4px 8px;">+ Preset Standard</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="applyPhotoPreset('deluxe')" style="font-size: 0.75rem; padding: 4px 8px;">+ Preset Deluxe</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="applyPhotoPreset('suite')" style="font-size: 0.75rem; padding: 4px 8px;">+ Preset Suite</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="applyPhotoPreset('villa')" style="font-size: 0.75rem; padding: 4px 8px;">+ Preset Villa</button>
+            <label class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 4px 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin: 0;">
+              <i class="fas fa-upload"></i> Upload Foto
+              <input type="file" id="mRoomFileInput" accept="image/*" multiple style="display: none;" onchange="handleImageUpload(event)">
+            </label>
+          </div>
+          <textarea id="mRoomPhotos" style="width: 100%; min-height: 70px; padding: 10px 12px; border: 1.5px solid #ddd; border-radius: 6px; font-family: inherit; font-size: 0.8rem;" placeholder="https://images.unsplash.com/...&#10;https://images.unsplash.com/..."></textarea>
+          <div id="mRoomPhotoPreview" style="display: flex; gap: 8px; margin-top: 8px; overflow-x: auto; padding-bottom: 4px;"></div>
+        </div>
+
+        <div class="modal-actions" style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn btn-outline" onclick="closeRoomModal()" style="padding: 10px 20px;">Batal</button>
+          <button type="submit" class="btn btn-primary" style="padding: 10px 24px;" id="btnSubmitRoom">Simpan Kamar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="/js/i18n.js?v=7"></script>
   <script src="/js/pages.js?v=7"></script>
   <script>
+    let cachedRooms = [];
+
+    const photoPresets = {
+      standard: [
+        'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=1200&q=80'
+      ],
+      deluxe: [
+        'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1200&q=80'
+      ],
+      suite: [
+        'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=1200&q=80'
+      ],
+      villa: [
+        'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80'
+      ]
+    };
+
     document.addEventListener('DOMContentLoaded', async () => {
       await initNavbar();
-      await loadAdminReports();
+      await Promise.all([loadAdminReports(), loadAdminRooms()]);
+
+      const photoArea = document.getElementById('mRoomPhotos');
+      if (photoArea) {
+        photoArea.addEventListener('input', updatePhotoPreview);
+      }
     });
+
+    async function loadAdminRooms() {
+      try {
+        const res = await fetch(`/api/rooms?_t=${Date.now()}`);
+        const data = await res.json();
+        if (data.success) {
+          cachedRooms = data.rooms;
+          renderRoomsTable(cachedRooms);
+        }
+      } catch (err) {
+        showToast('Gagal memuat daftar kamar', 'error');
+      }
+    }
+
+    function renderRoomsTable(rooms) {
+      const tbody = document.getElementById('roomsTableBody');
+      if (!tbody) return;
+      if (!rooms || rooms.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px; color: #888;">Belum ada tipe kamar yang terdaftar.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = rooms.map(r => `
+        <tr style="border-bottom: 1px solid #f8f8f8;">
+          <td style="padding: 12px; width: 90px;">
+            <img src="${(r.photos && r.photos[0]) || 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=600&q=80'}" style="width: 80px; height: 56px; object-fit: cover; border-radius: 6px;" alt="${r.name}">
+          </td>
+          <td style="padding: 12px;">
+            <div style="font-weight: 700; color: #1a1a1a;">${r.name}</div>
+            <span class="room-type-badge" style="margin-top: 4px;">${r.type}</span>
+          </td>
+          <td style="padding: 12px; color: #666;">
+            <div><i class="fas fa-user" style="color: #C4A265;"></i> ${r.capacity} Tamu</div>
+            <div style="font-size: 0.8rem; color: #888;">${r.bed || '-'} (${r.size || '-'} m²)</div>
+          </td>
+          <td style="padding: 12px; text-align: right; font-weight: 700; color: #A68B4B; font-size: 1rem;">
+            ${formatCurrency(r.price)}
+          </td>
+          <td style="padding: 12px; text-align: center; font-weight: 600;">
+            ${r.totalUnits} unit
+          </td>
+          <td style="padding: 12px; text-align: center; white-space: nowrap;">
+            <button class="btn btn-outline btn-sm" style="padding: 6px 12px; margin-right: 6px; color: #2980b9; border-color: #2980b9;" onclick="openEditRoomModal(${r.id})">
+              <i class="fas fa-edit"></i> Edit
+            </button>
+            <button class="btn-reject" style="padding: 6px 12px; font-size: 0.75rem;" onclick="deleteRoom(${r.id}, '${r.name}')">
+              <i class="fas fa-trash"></i> Hapus
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    const roomModal = document.getElementById('roomModal');
+
+    function openCreateRoomModal() {
+      document.getElementById('editRoomId').value = '';
+      document.getElementById('roomModalTitle').innerHTML = '<i class="fas fa-plus" style="color: #C4A265;"></i> Tambah Kamar Baru';
+      document.getElementById('roomForm').reset();
+      applyPhotoPreset('deluxe');
+      roomModal.style.display = 'flex';
+      updatePhotoPreview();
+    }
+
+    function openEditRoomModal(id) {
+      const room = cachedRooms.find(r => r.id === id);
+      if (!room) return;
+
+      document.getElementById('editRoomId').value = room.id;
+      document.getElementById('roomModalTitle').innerHTML = '<i class="fas fa-edit" style="color: #C4A265;"></i> Edit Kamar: ' + room.name;
+      document.getElementById('mRoomName').value = room.name;
+      document.getElementById('mRoomType').value = room.type;
+      document.getElementById('mRoomPrice').value = room.price;
+      document.getElementById('mRoomUnits').value = room.totalUnits;
+      document.getElementById('mRoomCapacity').value = room.capacity;
+      document.getElementById('mRoomSize').value = room.size || '';
+      document.getElementById('mRoomBed').value = room.bed || '';
+      document.getElementById('mRoomDesc').value = room.description || '';
+      document.getElementById('mRoomFacilities').value = (room.facilities || []).join(', ');
+      document.getElementById('mRoomPhotos').value = (room.photos || []).join('\n');
+      roomModal.style.display = 'flex';
+      updatePhotoPreview();
+    }
+
+    function closeRoomModal() {
+      roomModal.style.display = 'none';
+    }
+
+    roomModal.addEventListener('click', (e) => {
+      if (e.target === roomModal) closeRoomModal();
+    });
+
+    function applyPhotoPreset(presetKey) {
+      const urls = photoPresets[presetKey] || [];
+      const current = document.getElementById('mRoomPhotos').value.trim();
+      if (!current) {
+        document.getElementById('mRoomPhotos').value = urls.join('\n');
+      } else {
+        document.getElementById('mRoomPhotos').value = current + '\n' + urls.join('\n');
+      }
+      updatePhotoPreview();
+    }
+
+    function handleImageUpload(e) {
+      const files = Array.from(e.target.files);
+      if (!files.length) return;
+
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (uploadEvent) => {
+          const base64 = uploadEvent.target.result;
+          const current = document.getElementById('mRoomPhotos').value.trim();
+          document.getElementById('mRoomPhotos').value = current ? current + '\n' + base64 : base64;
+          updatePhotoPreview();
+        };
+        reader.readAsDataURL(file);
+      });
+      e.target.value = '';
+    }
+
+    function updatePhotoPreview() {
+      const previewContainer = document.getElementById('mRoomPhotoPreview');
+      if (!previewContainer) return;
+      const raw = document.getElementById('mRoomPhotos').value.split('\n').map(s => s.trim()).filter(Boolean);
+      if (raw.length === 0) {
+        previewContainer.innerHTML = '';
+        return;
+      }
+      previewContainer.innerHTML = raw.slice(0, 6).map(url => `
+        <img src="${url}" style="width: 50px; height: 38px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;" onerror="this.style.display='none'">
+      `).join('');
+    }
+
+    document.getElementById('roomForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const editId = document.getElementById('editRoomId').value;
+      const isEdit = Boolean(editId);
+
+      const photosRaw = document.getElementById('mRoomPhotos').value.split('\n').map(s => s.trim()).filter(Boolean);
+      const payload = {
+        name: document.getElementById('mRoomName').value.trim(),
+        type: document.getElementById('mRoomType').value,
+        price: parseInt(document.getElementById('mRoomPrice').value),
+        totalUnits: parseInt(document.getElementById('mRoomUnits').value),
+        capacity: parseInt(document.getElementById('mRoomCapacity').value),
+        size: parseInt(document.getElementById('mRoomSize').value) || 25,
+        bed: document.getElementById('mRoomBed').value.trim() || '1 King Bed',
+        description: document.getElementById('mRoomDesc').value.trim(),
+        facilities: document.getElementById('mRoomFacilities').value.split(',').map(s => s.trim()).filter(Boolean),
+        photos: photosRaw.length ? photosRaw : undefined
+      };
+
+      const btn = document.getElementById('btnSubmitRoom');
+      btn.disabled = true;
+      btn.textContent = 'Menyimpan...';
+
+      try {
+        const url = isEdit ? `/api/admin/rooms/${editId}` : '/api/admin/rooms';
+        const method = isEdit ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          showToast(data.message, 'success');
+          closeRoomModal();
+          await Promise.all([loadAdminRooms(), loadAdminReports()]);
+        } else {
+          showToast(data.message, 'error');
+        }
+      } catch (err) {
+        showToast('Gagal menyimpan data kamar', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Simpan Kamar';
+      }
+    });
+
+    async function deleteRoom(id, name) {
+      if (!confirm(`Apakah Anda yakin ingin menghapus tipe kamar "${name}"? Seluruh unit terkait akan ikut dihapus.`)) return;
+
+      try {
+        const res = await fetch(`/api/admin/rooms/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message, 'success');
+          await Promise.all([loadAdminRooms(), loadAdminReports()]);
+        } else {
+          showToast(data.message, 'error');
+        }
+      } catch (err) {
+        showToast('Gagal menghapus kamar', 'error');
+      }
+    }
 
     async function loadAdminReports() {
       try {

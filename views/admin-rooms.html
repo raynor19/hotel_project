@@ -165,8 +165,19 @@
         </div>
 
         <div class="form-group">
-          <label>URL Foto POV Kamar (Satu baris per URL foto)</label>
+          <label>URL Foto POV Kamar (Satu baris per URL foto atau Upload)</label>
+          <div style="display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;">
+            <button type="button" class="btn btn-outline btn-sm" onclick="applyPhotoPreset('standard')" style="font-size: 0.75rem; padding: 4px 8px;">+ Preset Standard</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="applyPhotoPreset('deluxe')" style="font-size: 0.75rem; padding: 4px 8px;">+ Preset Deluxe</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="applyPhotoPreset('suite')" style="font-size: 0.75rem; padding: 4px 8px;">+ Preset Suite</button>
+            <button type="button" class="btn btn-outline btn-sm" onclick="applyPhotoPreset('villa')" style="font-size: 0.75rem; padding: 4px 8px;">+ Preset Villa</button>
+            <label class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 4px 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; margin: 0;">
+              <i class="fas fa-upload"></i> Upload Foto
+              <input type="file" id="mRoomFileInput" accept="image/*" multiple style="display: none;" onchange="handleImageUpload(event)">
+            </label>
+          </div>
           <textarea id="mRoomPhotos" style="width: 100%; min-height: 80px; padding: 10px; border: 1.5px solid #e0e0e0; border-radius: 4px; font-family: inherit; font-size: 0.8rem;" placeholder="https://images.unsplash.com/...&#10;https://images.unsplash.com/..."></textarea>
+          <div id="mRoomPhotoPreview" style="display: flex; gap: 8px; margin-top: 8px; overflow-x: auto; padding-bottom: 4px;"></div>
           <span style="font-size: 0.75rem; color: #888;">Foto ini akan otomatis menjadi carousel yang bisa digeser oleh tamu.</span>
         </div>
 
@@ -183,14 +194,38 @@
   <script>
     let cachedRooms = [];
 
+    const photoPresets = {
+      standard: [
+        'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1611892440504-42a792e24d32?auto=format&fit=crop&w=1200&q=80'
+      ],
+      deluxe: [
+        'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1200&q=80'
+      ],
+      suite: [
+        'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?auto=format&fit=crop&w=1200&q=80'
+      ],
+      villa: [
+        'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=1200&q=80'
+      ]
+    };
+
     document.addEventListener('DOMContentLoaded', async () => {
       await initNavbar();
       await loadAdminRooms();
+
+      const photoArea = document.getElementById('mRoomPhotos');
+      if (photoArea) {
+        photoArea.addEventListener('input', updatePhotoPreview);
+      }
     });
 
     async function loadAdminRooms() {
       try {
-        const res = await fetch('/api/rooms');
+        const res = await fetch(`/api/rooms?_t=${Date.now()}`);
         const data = await res.json();
         if (data.success) {
           cachedRooms = data.rooms;
@@ -211,7 +246,7 @@
       tbody.innerHTML = rooms.map(r => `
         <tr style="border-bottom: 1px solid #f8f8f8;">
           <td style="padding: 12px; width: 100px;">
-            <img src="${r.photos[0]}" style="width: 80px; height: 56px; object-fit: cover; border-radius: 6px;" alt="${r.name}">
+            <img src="${(r.photos && r.photos[0]) || 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=600&q=80'}" style="width: 80px; height: 56px; object-fit: cover; border-radius: 6px;" alt="${r.name}">
           </td>
           <td style="padding: 12px;">
             <div style="font-weight: 700; color: #1a1a1a;">${r.name}</div>
@@ -219,7 +254,7 @@
           </td>
           <td style="padding: 12px; color: #666;">
             <div><i class="fas fa-user" style="color: #C4A265;"></i> ${r.capacity} Tamu</div>
-            <div style="font-size: 0.8rem; color: #888;">${r.bed} (${r.size} m²)</div>
+            <div style="font-size: 0.8rem; color: #888;">${r.bed || '-'} (${r.size || '-'} m²)</div>
           </td>
           <td style="padding: 12px; text-align: right; font-weight: 700; color: #A68B4B; font-size: 1rem;">
             ${formatCurrency(r.price)}
@@ -245,8 +280,50 @@
       document.getElementById('editRoomId').value = '';
       document.getElementById('roomModalTitle').innerHTML = '<i class="fas fa-plus" style="color: #C4A265; margin-right: 8px;"></i>Tambah Kamar Baru';
       document.getElementById('roomForm').reset();
-      document.getElementById('mRoomPhotos').value = 'https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&w=1200&q=80\nhttps://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&w=1200&q=80';
+      applyPhotoPreset('deluxe');
       roomModal.style.display = 'flex';
+      updatePhotoPreview();
+    }
+
+    function applyPhotoPreset(presetKey) {
+      const urls = photoPresets[presetKey] || [];
+      const current = document.getElementById('mRoomPhotos').value.trim();
+      if (!current) {
+        document.getElementById('mRoomPhotos').value = urls.join('\n');
+      } else {
+        document.getElementById('mRoomPhotos').value = current + '\n' + urls.join('\n');
+      }
+      updatePhotoPreview();
+    }
+
+    function handleImageUpload(e) {
+      const files = Array.from(e.target.files);
+      if (!files.length) return;
+
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = (uploadEvent) => {
+          const base64 = uploadEvent.target.result;
+          const current = document.getElementById('mRoomPhotos').value.trim();
+          document.getElementById('mRoomPhotos').value = current ? current + '\n' + base64 : base64;
+          updatePhotoPreview();
+        };
+        reader.readAsDataURL(file);
+      });
+      e.target.value = '';
+    }
+
+    function updatePhotoPreview() {
+      const previewContainer = document.getElementById('mRoomPhotoPreview');
+      if (!previewContainer) return;
+      const raw = document.getElementById('mRoomPhotos').value.split('\n').map(s => s.trim()).filter(Boolean);
+      if (raw.length === 0) {
+        previewContainer.innerHTML = '';
+        return;
+      }
+      previewContainer.innerHTML = raw.slice(0, 6).map(url => `
+        <img src="${url}" style="width: 50px; height: 38px; object-fit: cover; border-radius: 4px; border: 1px solid #ddd;" onerror="this.style.display='none'">
+      `).join('');
     }
 
     function openEditRoomModal(id) {
@@ -266,6 +343,7 @@
       document.getElementById('mRoomFacilities').value = (room.facilities || []).join(', ');
       document.getElementById('mRoomPhotos').value = (room.photos || []).join('\n');
       roomModal.style.display = 'flex';
+      updatePhotoPreview();
     }
 
     function closeRoomModal() {
