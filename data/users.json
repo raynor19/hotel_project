@@ -16,14 +16,6 @@
     "phone": "082233445566"
   },
   {
-    "id": 3,
-    "name": "Budi Santoso",
-    "email": "tamu@demo.com",
-    "password": "tamu123",
-    "role": "guest",
-    "phone": "081234567890"
-  },
-  {
     "id": 4,
     "name": "Sari Dewi",
     "email": "sari@demo.com",
@@ -176,14 +168,6 @@
     "phone": ""
   },
   {
-    "id": 10008,
-    "name": "Andini Ramadhani",
-    "email": "andin.rmdhni0810@gmail.com",
-    "password": "google_oauth_hunyvjn2vjj",
-    "role": "guest",
-    "phone": ""
-  },
-  {
     "id": 10009,
     "name": "Raynor Athaillah",
     "email": "raynorathaillah@gmail.com",
@@ -192,11 +176,11 @@
     "phone": ""
   },
   {
-    "id": 10010,
-    "name": "ana",
-    "email": "ana19@gmail.com",
-    "password": "ana123",
-    "role": "guest",
-    "phone": "081288551055"
+    "id": 10011,
+    "name": "Natasha Romanof",
+    "email": "natasha@gmail.com",
+    "password": "natasha123",
+    "role": "receptionist",
+    "phone": "081288025444"
   }
 ]

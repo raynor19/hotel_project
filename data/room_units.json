@@ -17,7 +17,7 @@
     "unitNumber": "103",
     "roomId": 1,
     "floor": 1,
-    "status": "cleaning",
+    "status": "available",
     "guestName": ""
   },
   {
@@ -45,7 +45,7 @@
     "unitNumber": "203",
     "roomId": 2,
     "floor": 2,
-    "status": "cleaning",
+    "status": "available",
     "guestName": ""
   },
   {
@@ -178,13 +178,6 @@
     "unitNumber": "208",
     "roomId": 10,
     "floor": 2,
-    "status": "available",
-    "guestName": ""
-  },
-  {
-    "unitNumber": "1301",
-    "roomId": 13,
-    "floor": 13,
     "status": "available",
     "guestName": ""
   }
