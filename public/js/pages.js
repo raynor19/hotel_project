@@ -1031,6 +1031,12 @@ async function initReservationForm() {
                 <input type="date" id="rsvCheckout" name="checkOut" min="${minCoStr}" value="${initCo}" required>
               </div>
             </div>
+            <!-- Live Availability Notice -->
+            <div id="dateAvailabilityBox" style="margin-top: -6px; margin-bottom: 14px;">
+              <span id="dateAvailabilityBadge" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; font-weight: 600; padding: 6px 12px; border-radius: 6px; background: #ecfdf5; color: #047857; transition: all 0.2s ease;">
+                <span id="dateAvailabilityText"><i class="fas fa-check-circle"></i> Memeriksa ketersediaan unit...</span>
+              </span>
+            </div>
             <div class="form-group">
               <label><i class="fas fa-user"></i> Nama Tamu yang Menginap</label>
               <input type="text" id="rsvName" name="guestName" value="${defaultName}" placeholder="Masukkan nama lengkap Anda" required>
@@ -1241,6 +1247,55 @@ async function initReservationForm() {
     updateCost();
   });
   updateCost();
+
+  // Real-time Availability & Slot Verification
+  const dateAvailBadge = document.getElementById('dateAvailabilityBadge');
+  const dateAvailText = document.getElementById('dateAvailabilityText');
+  const btnGoToPay = document.getElementById('btnGoToPayment');
+
+  async function checkDateAvailability() {
+    if (!ciInput || !coInput || !ciInput.value || !coInput.value || !dateAvailBadge) return;
+    try {
+      dateAvailBadge.style.background = '#f3f4f6';
+      dateAvailBadge.style.color = '#4b5563';
+      dateAvailText.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengecek ketersediaan unit...';
+
+      const res = await fetch(`/api/rooms/${roomId}/availability?checkIn=${encodeURIComponent(ciInput.value)}&checkOut=${encodeURIComponent(coInput.value)}`);
+      const data = await res.json();
+
+      if (data && data.success) {
+        if (data.available) {
+          dateAvailBadge.style.background = '#ecfdf5';
+          dateAvailBadge.style.color = '#047857';
+          dateAvailText.innerHTML = `<i class="fas fa-check-circle"></i> Tersedia <strong>${data.availableUnits} dari ${data.totalUnits} unit</strong> untuk tanggal ini`;
+          if (btnGoToPay) {
+            btnGoToPay.disabled = false;
+            btnGoToPay.style.opacity = '1';
+            btnGoToPay.style.cursor = 'pointer';
+            btnGoToPay.innerHTML = 'Lanjut ke Pembayaran <i class="fas fa-arrow-right"></i>';
+          }
+        } else {
+          dateAvailBadge.style.background = '#fef2f2';
+          dateAvailBadge.style.color = '#b91c1c';
+          dateAvailText.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Maaf, seluruh unit kamar (${data.totalUnits} unit) sudah habis dipesan & di-ACC untuk tanggal ini.`;
+          if (btnGoToPay) {
+            btnGoToPay.disabled = true;
+            btnGoToPay.style.opacity = '0.5';
+            btnGoToPay.style.cursor = 'not-allowed';
+            btnGoToPay.innerHTML = '<i class="fas fa-ban"></i> Kamar Penuh pada Tanggal Ini';
+          }
+        }
+      }
+    } catch (e) {
+      dateAvailBadge.style.background = '#ecfdf5';
+      dateAvailBadge.style.color = '#047857';
+      dateAvailText.innerHTML = '<i class="fas fa-check-circle"></i> Unit tersedia';
+    }
+  }
+
+  ciInput.addEventListener('change', checkDateAvailability);
+  coInput.addEventListener('change', checkDateAvailability);
+  checkDateAvailability();
 
   // Dynamic Payment Method Detail Box
   function renderPaymentDetailBox(method) {

@@ -154,11 +154,6 @@ let users = [
 let userCounter = 4;
 
 function saveUsers(userToSync) {
-  try {
-    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('Error saving users.json:', err.message);
-  }
   const toSync = userToSync || (users.length > 0 ? users[users.length - 1] : null);
   if (toSync) {
     db.upsertUser(toSync).catch(e => console.error('[Supabase] Sync user error:', e.message));
@@ -173,8 +168,6 @@ function loadUsers() {
         users = data;
         userCounter = Math.max(...users.map(u => u.id || 0), 4);
       }
-    } else {
-      saveUsers();
     }
   } catch (err) {
     console.error('Error loading users.json:', err.message);
@@ -223,11 +216,6 @@ let reviews = [
 ];
 
 function saveReviews(revToSync) {
-  try {
-    fs.writeFileSync(REVIEWS_FILE, JSON.stringify(reviews, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('Error saving reviews.json:', err.message);
-  }
   const toSync = revToSync || (reviews.length > 0 ? reviews[reviews.length - 1] : null);
   if (toSync) {
     db.insertReview(toSync).catch(e => console.error('[Supabase] Sync review error:', e.message));
@@ -241,8 +229,6 @@ function loadReviews() {
       if (Array.isArray(data) && data.length > 0) {
         reviews = data;
       }
-    } else {
-      saveReviews();
     }
   } catch (err) {
     console.error('Error loading reviews.json:', err.message);
@@ -471,12 +457,6 @@ const ROOMS_FILE = path.join(DATA_DIR, 'rooms.json');
 const ROOM_UNITS_FILE = path.join(DATA_DIR, 'room_units.json');
 
 function saveRooms(roomToSync, deletedRoomId) {
-  try {
-    fs.writeFileSync(ROOMS_FILE, JSON.stringify(rooms, null, 2), 'utf-8');
-    fs.writeFileSync(ROOM_UNITS_FILE, JSON.stringify(roomUnits, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('Error saving rooms.json:', err.message);
-  }
   if (roomToSync) {
     db.upsertRoom(roomToSync).catch(e => console.error('[Supabase] Sync room error:', e.message));
   }
@@ -493,8 +473,6 @@ function loadRooms() {
         rooms = data;
         roomCounter = Math.max(...rooms.map(r => r.id || 0), 10);
       }
-    } else {
-      saveRooms();
     }
     if (fs.existsSync(ROOM_UNITS_FILE)) {
       const uData = JSON.parse(fs.readFileSync(ROOM_UNITS_FILE, 'utf-8'));
@@ -578,11 +556,6 @@ let reservations = [
 ];
 
 function saveReservations(rsvToSync) {
-  try {
-    fs.writeFileSync(RESERVATIONS_FILE, JSON.stringify(reservations, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('Error saving reservations.json:', err.message);
-  }
   const toSync = rsvToSync || (reservations.length > 0 ? reservations[reservations.length - 1] : null);
   if (toSync) {
     db.upsertReservation(toSync).catch(e => console.error('[Supabase] Sync reservation error:', e.message));
@@ -598,8 +571,6 @@ function loadReservations() {
         const ids = reservations.map(r => parseInt(String(r.id).replace('RSV-', '')) || 0);
         reservationCounter = Math.max(...ids, 4);
       }
-    } else {
-      saveReservations();
     }
   } catch (err) {
     console.error('Error loading reservations.json:', err.message);
@@ -628,9 +599,6 @@ async function initDatabase() {
       if (suRooms && suRooms.length > 0) {
         rooms = suRooms;
         roomCounter = Math.max(...rooms.map(r => r.id || 0), 10);
-        try {
-          fs.writeFileSync(ROOMS_FILE, JSON.stringify(rooms, null, 2), 'utf-8');
-        } catch (e) {}
       }
       const suRsv = await db.getReservations();
       if (suRsv && suRsv.length > 0) {
@@ -1322,18 +1290,71 @@ app.put('/api/profile', apiAuth, (req, res) => {
 });
 
 // ================================================================
+//  AVAILABILITY & DATE-COLLISION CHECKER (Anti-Double Booking)
+// ================================================================
+
+function getRoomAvailability(roomId, checkIn, checkOut, excludeReservationId = null) {
+  const room = rooms.find(r => r.id === parseInt(roomId));
+  if (!room) return { available: false, totalUnits: 0, bookedUnits: 0, availableUnits: 0 };
+
+  const targetStart = new Date(checkIn);
+  const targetEnd = new Date(checkOut);
+
+  if (isNaN(targetStart.getTime()) || isNaN(targetEnd.getTime()) || targetEnd <= targetStart) {
+    return { 
+      available: Math.max(0, room.totalUnits - room.occupiedUnits) > 0, 
+      totalUnits: room.totalUnits, 
+      bookedUnits: room.occupiedUnits, 
+      availableUnits: Math.max(0, room.totalUnits - room.occupiedUnits) 
+    };
+  }
+
+  // Reservasi aktif yang mengunci slot kamar: status 'approved' (ACC) dan 'checked-in'
+  const overlappingReservations = reservations.filter(r => {
+    if (r.roomId !== parseInt(roomId)) return false;
+    if (excludeReservationId && r.id === excludeReservationId) return false;
+    if (!['approved', 'checked-in'].includes(r.status)) return false;
+
+    const rsvStart = new Date(r.checkIn);
+    const rsvEnd = new Date(r.checkOut);
+
+    // Rumus bentrok rentang tanggal (Interval Overlap):
+    // rsvStart < targetEnd AND rsvEnd > targetStart
+    return rsvStart < targetEnd && rsvEnd > targetStart;
+  });
+
+  const bookedUnits = overlappingReservations.length;
+  const availableUnits = Math.max(0, room.totalUnits - bookedUnits);
+
+  return {
+    available: availableUnits > 0,
+    totalUnits: room.totalUnits,
+    bookedUnits,
+    availableUnits,
+    overlappingCount: bookedUnits
+  };
+}
+
+// ================================================================
 //  ROOMS API (Public & Admin CRUD)
 // ================================================================
 
 app.get('/api/rooms', (req, res) => {
-  const { search, type } = req.query;
+  const { search, type, checkIn, checkOut } = req.query;
+  const today = new Date().toISOString().split('T')[0];
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+  const qCi = checkIn || today;
+  const qCo = checkOut || tomorrow;
+
   let result = rooms.map(r => {
     const roomReviews = reviews.filter(rev => rev.roomId === r.id);
     const reviewCount = roomReviews.length;
     const avgRating = reviewCount > 0 ? (roomReviews.reduce((sum, rev) => sum + rev.rating, 0) / reviewCount).toFixed(1) : '5.0';
+    const avail = getRoomAvailability(r.id, qCi, qCo);
     return {
       ...r,
-      availableUnits: r.totalUnits - r.occupiedUnits,
+      availableUnits: avail.availableUnits,
+      bookedUnits: avail.bookedUnits,
       avgRating,
       reviewCount
     };
@@ -1353,10 +1374,49 @@ app.get('/api/rooms', (req, res) => {
 app.get('/api/rooms/:id', (req, res) => {
   const room = rooms.find(r => r.id === parseInt(req.params.id));
   if (!room) return res.status(404).json({ success: false, message: 'Kamar tidak ditemukan' });
+
+  const { checkIn, checkOut } = req.query;
+  const today = new Date().toISOString().split('T')[0];
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+  const qCi = checkIn || today;
+  const qCo = checkOut || tomorrow;
+
   const roomReviews = reviews.filter(rev => rev.roomId === room.id);
   const reviewCount = roomReviews.length;
   const avgRating = reviewCount > 0 ? (roomReviews.reduce((sum, rev) => sum + rev.rating, 0) / reviewCount).toFixed(1) : '5.0';
-  res.json({ success: true, room: { ...room, availableUnits: room.totalUnits - room.occupiedUnits, avgRating, reviewCount } });
+  const avail = getRoomAvailability(room.id, qCi, qCo);
+
+  res.json({ 
+    success: true, 
+    room: { 
+      ...room, 
+      availableUnits: avail.availableUnits, 
+      bookedUnits: avail.bookedUnits,
+      avgRating, 
+      reviewCount 
+    } 
+  });
+});
+
+app.get('/api/rooms/:id/availability', (req, res) => {
+  const { checkIn, checkOut } = req.query;
+  const room = rooms.find(r => r.id === parseInt(req.params.id));
+  if (!room) return res.status(404).json({ success: false, message: 'Kamar tidak ditemukan' });
+
+  const today = new Date().toISOString().split('T')[0];
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+  const qCi = checkIn || today;
+  const qCo = checkOut || tomorrow;
+
+  const availability = getRoomAvailability(room.id, qCi, qCo);
+  res.json({
+    success: true,
+    roomId: room.id,
+    roomName: room.name,
+    checkIn: qCi,
+    checkOut: qCo,
+    ...availability
+  });
 });
 
 // Admin: Tambah Kamar Baru
@@ -1549,8 +1609,13 @@ app.post('/api/reservations', apiAuth, async (req, res) => {
 
   if (totalNights < 1) return res.status(400).json({ success: false, message: 'Tanggal check-out harus setelah check-in' });
 
-  if (room.totalUnits - room.occupiedUnits <= 0) {
-    return res.status(400).json({ success: false, message: 'Maaf, seluruh unit kamar tipe ini sedang penuh' });
+  // Validasi ketersediaan unit kamar berbasis tanggal (Anti-Overbooking / Slot Locking)
+  const availability = getRoomAvailability(roomId, checkIn, checkOut);
+  if (!availability.available) {
+    return res.status(400).json({ 
+      success: false, 
+      message: `Maaf, seluruh unit kamar tipe "${room.name}" sudah habis dipesan untuk tanggal ${checkIn} s/d ${checkOut} (telah di-ACC oleh tamu lain). Silakan pilih jadwal menginap lain.` 
+    });
   }
 
   // Prioritaskan user ID dari sesi login atau body/header
@@ -1761,6 +1826,15 @@ app.put('/api/reservations/:id/approve', apiStaff, async (req, res) => {
     return res.status(400).json({ success: false, message: `Reservasi tidak dalam status pending (Status saat ini: ${rsv.status})` });
   }
 
+  // Validasi ketersediaan sebelum ACC: pastikan slot unit masih tersedia dan tidak overbooked
+  const availability = getRoomAvailability(rsv.roomId, rsv.checkIn, rsv.checkOut, rsv.id);
+  if (!availability.available) {
+    return res.status(400).json({
+      success: false,
+      message: `Gagal menyetujui (ACC): Seluruh unit kamar "${rsv.roomName || 'tipe ini'}" sudah penuh terisi untuk jadwal ${rsv.checkIn} s/d ${rsv.checkOut}. Tolak reservasi ini atau jadwalkan ulang.`
+    });
+  }
+
   rsv.status = 'approved';
   rsv.approvedAt = new Date().toISOString();
   rsv.rejectionReason = '';
@@ -1806,6 +1880,14 @@ app.put('/api/reservations/:id/approve-checkin', apiStaff, async (req, res) => {
   }
   if (rsv.status !== 'pending' && rsv.status !== 'approved') {
     return res.status(400).json({ success: false, message: 'Reservasi tidak dalam status yang dapat di-check in' });
+  }
+
+  const availability = getRoomAvailability(rsv.roomId, rsv.checkIn, rsv.checkOut, rsv.id);
+  if (!availability.available) {
+    return res.status(400).json({
+      success: false,
+      message: `Gagal Check-In: Seluruh unit kamar sudah penuh terisi untuk jadwal ${rsv.checkIn} s/d ${rsv.checkOut}.`
+    });
   }
 
   rsv.status = 'checked-in';
