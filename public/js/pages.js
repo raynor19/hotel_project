@@ -1502,15 +1502,89 @@ async function initReservationForm() {
     window.scrollTo({ top: 120, behavior: 'smooth' });
   });
 
-  // Step 2: Confirm & Pay -> Submit to Server
+  // Step 2: Confirm & Pay -> Submit to Server (With Midtrans Snap Sandbox)
   const btnConfirmPay = document.getElementById('btnConfirmPayment');
   btnConfirmPay.addEventListener('click', async () => {
     btnConfirmPay.disabled = true;
-    btnConfirmPay.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memverifikasi Pembayaran...';
 
-    const paymentRef = 'PAY-' + Date.now().toString().slice(-6);
-    const paymentStatus = selectedMethod === 'Bayar di Hotel' ? 'pay_at_hotel' : 'paid';
+    // A. Bayar di Hotel (Front Desk)
+    if (selectedMethod === 'Bayar di Hotel') {
+      btnConfirmPay.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan Reservasi...';
+      const hotelRef = 'HOTEL-' + Date.now().toString().slice(-6);
+      await executeReservationSubmit('pay_at_hotel', 'Bayar di Hotel', hotelRef);
+      return;
+    }
 
+    // B. Pembayaran Online via Midtrans Snap (QRIS, VA, Kartu Kredit)
+    btnConfirmPay.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyiapkan Midtrans Snap...';
+
+    try {
+      // 1. Minta Token Transaksi Midtrans dari Backend
+      const tokenRes = await fetch('/api/payment/midtrans-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          roomId: parseInt(roomId),
+          checkIn: ciInput.value,
+          checkOut: coInput.value,
+          guestName: document.getElementById('rsvName').value.trim(),
+          guestPhone: document.getElementById('rsvPhone').value.trim(),
+          guestEmail: document.getElementById('rsvEmail').value.trim(),
+          notes: document.getElementById('rsvNotes').value.trim()
+        })
+      });
+
+      const tokenData = await tokenRes.json();
+      if (!tokenData.success || !tokenData.token) {
+        throw new Error(tokenData.message || 'Gagal memproses sesi pembayaran Midtrans');
+      }
+
+      // 2. Cek ketersediaan window.snap
+      if (typeof window.snap === 'undefined') {
+        showToast('Sedang memuat Midtrans Snap... silakan coba 2 detik lagi', 'warning');
+        btnConfirmPay.disabled = false;
+        btnConfirmPay.innerHTML = '<i class="fas fa-check-circle"></i> Konfirmasi & Bayar Sekarang';
+        return;
+      }
+
+      // 3. Tampilkan Jendela Resmi Midtrans Snap
+      window.snap.pay(tokenData.token, {
+        onSuccess: async function(result) {
+          console.log('[Midtrans Snap] Pembayaran Berhasil:', result);
+          btnConfirmPay.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memverifikasi Pelunasan...';
+          const pRef = result.transaction_id || result.order_id || tokenData.orderId;
+          const pMethod = result.payment_type ? result.payment_type.toUpperCase() : selectedMethod;
+          await executeReservationSubmit('paid', pMethod, pRef);
+        },
+        onPending: async function(result) {
+          console.log('[Midtrans Snap] Menunggu Pembayaran (Pending):', result);
+          btnConfirmPay.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan Tagihan...';
+          const pRef = result.transaction_id || result.order_id || tokenData.orderId;
+          const pMethod = result.payment_type ? result.payment_type.toUpperCase() : selectedMethod;
+          await executeReservationSubmit('pending', pMethod, pRef, true);
+        },
+        onError: function(result) {
+          console.error('[Midtrans Snap] Error:', result);
+          showToast('Transaksi Midtrans gagal diproses atau dibatalkan', 'error');
+          btnConfirmPay.disabled = false;
+          btnConfirmPay.innerHTML = '<i class="fas fa-check-circle"></i> Konfirmasi & Bayar Sekarang';
+        },
+        onClose: function() {
+          showToast('Jendela pembayaran Midtrans ditutup sebelum selesai', 'info');
+          btnConfirmPay.disabled = false;
+          btnConfirmPay.innerHTML = '<i class="fas fa-check-circle"></i> Konfirmasi & Bayar Sekarang';
+        }
+      });
+
+    } catch (err) {
+      console.error('[Midtrans Checkout Error]:', err);
+      showToast(err.message || 'Terjadi gangguan saat memanggil Midtrans', 'error');
+      btnConfirmPay.disabled = false;
+      btnConfirmPay.innerHTML = '<i class="fas fa-check-circle"></i> Konfirmasi & Bayar Sekarang';
+    }
+  });
+
+  async function executeReservationSubmit(paymentStatus, paymentMethod, paymentRef, isPending) {
     try {
       const savedUserStr = localStorage.getItem('hotelku_user');
       let currentUserId = null;
@@ -1531,7 +1605,7 @@ async function initReservationForm() {
           guestPhone: document.getElementById('rsvPhone').value.trim(),
           guestEmail: document.getElementById('rsvEmail').value.trim(),
           notes: document.getElementById('rsvNotes').value.trim(),
-          paymentMethod: selectedMethod,
+          paymentMethod: paymentMethod,
           paymentStatus: paymentStatus,
           paymentRef: paymentRef
         })
@@ -1555,7 +1629,6 @@ async function initReservationForm() {
               roomPhoto: data.reservation.roomPhoto || (room.photos && room.photos[0] ? room.photos[0] : 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?auto=format&fit=crop&w=1200&q=80')
             };
             let myStored = JSON.parse(localStorage.getItem('hotelku_my_rsv') || '[]');
-            // Filter to only retain items belonging to the current user
             const activeUid = rsvObj.userId ? parseInt(rsvObj.userId) : null;
             const activeEmail = (rsvObj.guestEmail || '').trim().toLowerCase();
             myStored = myStored.filter(r => {
@@ -1579,8 +1652,9 @@ async function initReservationForm() {
           guestName: document.getElementById('rsvName').value.trim(),
           roomName: room.name,
           amount: currentTotalAmount,
-          method: selectedMethod,
-          paymentRef: paymentRef
+          method: paymentMethod,
+          paymentRef: paymentRef,
+          isPending: !!isPending
         });
 
       } else {
@@ -1593,7 +1667,7 @@ async function initReservationForm() {
       btnConfirmPay.disabled = false;
       btnConfirmPay.innerHTML = '<i class="fas fa-check-circle"></i> Konfirmasi & Bayar Sekarang';
     }
-  });
+  }
 }
 
 // Modal Pop-Up Konfirmasi Pembayaran Berhasil & Diteruskan ke Resepsionis
@@ -1601,28 +1675,46 @@ function showPaymentSuccessModal(details) {
   const existing = document.getElementById('paymentSuccessModalOverlay');
   if (existing) existing.remove();
 
+  const isPending = !!details.isPending;
+  const isPayAtHotel = details.method === 'Bayar di Hotel';
+
+  let iconHtml = '<div style="width:72px; height:72px; border-radius:50%; background:linear-gradient(135deg, #10b981, #059669); color:#fff; display:inline-flex; align-items:center; justify-content:center; font-size:2.2rem; margin-bottom:18px; box-shadow:0 8px 24px rgba(16,185,129,0.35);"><i class="fas fa-check"></i></div>';
+  let titleText = 'Pembayaran Berhasil Lunas!';
+  let descText = `Terima kasih <strong>${details.guestName}</strong>. Pembayaran sebesar <strong>${formatCurrency(details.amount)}</strong> via <strong>${details.method}</strong> telah diverifikasi secara instan.`;
+  let step1Html = `<span style="font-size:0.82rem; color:#065f46; font-weight:700;">1. Pembayaran Lunas (Ref: ${details.paymentRef})</span>`;
+
+  if (isPending) {
+    iconHtml = '<div style="width:72px; height:72px; border-radius:50%; background:linear-gradient(135deg, #f59e0b, #d97706); color:#fff; display:inline-flex; align-items:center; justify-content:center; font-size:2.2rem; margin-bottom:18px; box-shadow:0 8px 24px rgba(245,158,11,0.35);"><i class="fas fa-hourglass-half"></i></div>';
+    titleText = 'Menunggu Pembayaran';
+    descText = `Reservasi Anda telah dicatat. Silakan selesaikan pembayaran sebesar <strong>${formatCurrency(details.amount)}</strong> via <strong>${details.method}</strong> (Kode Tagihan: <strong>${details.paymentRef}</strong>).`;
+    step1Html = `<span style="font-size:0.82rem; color:#b45309; font-weight:700;">1. Tagihan Dibuat (Menunggu Pembayaran)</span>`;
+  } else if (isPayAtHotel) {
+    iconHtml = '<div style="width:72px; height:72px; border-radius:50%; background:linear-gradient(135deg, #3b82f6, #1d4ed8); color:#fff; display:inline-flex; align-items:center; justify-content:center; font-size:2.2rem; margin-bottom:18px; box-shadow:0 8px 24px rgba(59,130,246,0.35);"><i class="fas fa-hotel"></i></div>';
+    titleText = 'Reservasi Berhasil Diajukan!';
+    descText = `Terima kasih <strong>${details.guestName}</strong>. Reservasi Anda telah masuk. Pembayaran sebesar <strong>${formatCurrency(details.amount)}</strong> dapat diselesaikan di meja resepsionis saat check-in.`;
+    step1Html = `<span style="font-size:0.82rem; color:#1e40af; font-weight:700;">1. Metode: Bayar di Hotel (Front Desk)</span>`;
+  }
+
   const overlay = document.createElement('div');
   overlay.id = 'paymentSuccessModalOverlay';
   overlay.style.cssText = 'position:fixed; inset:0; background:rgba(10,10,10,0.75); backdrop-filter:blur(6px); z-index:999999; display:flex; align-items:center; justify-content:center; padding:20px; animation:fadeIn 0.3s ease;';
 
   overlay.innerHTML = `
     <div style="background:#fff; border-radius:16px; max-width:480px; width:100%; padding:32px 28px; text-align:center; box-shadow:0 25px 50px -12px rgba(0,0,0,0.35); position:relative;">
-      <div style="width:72px; height:72px; border-radius:50%; background:linear-gradient(135deg, #10b981, #059669); color:#fff; display:inline-flex; align-items:center; justify-content:center; font-size:2.2rem; margin-bottom:18px; box-shadow:0 8px 24px rgba(16,185,129,0.35);">
-        <i class="fas fa-check"></i>
-      </div>
+      ${iconHtml}
       
       <h2 style="font-family:'Playfair Display', serif; font-size:1.5rem; color:#1a1a1a; margin:0 0 6px 0;">
-        Pembayaran Berhasil!
+        ${titleText}
       </h2>
       <p style="font-size:0.88rem; color:#4b5563; margin:0 0 20px 0; line-height:1.5;">
-        Terima kasih <strong>${details.guestName}</strong>. Pembayaran sebesar <strong>${formatCurrency(details.amount)}</strong> via <strong>${details.method}</strong> telah diverifikasi.
+        ${descText}
       </p>
 
       <!-- Status Flow Card -->
       <div style="background:#fdfbf7; border:1px solid #ebdcc5; border-radius:10px; padding:16px; margin-bottom:24px; text-align:left;">
         <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
           <span style="width:24px; height:24px; border-radius:50%; background:#10b981; color:#fff; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700;">✓</span>
-          <span style="font-size:0.82rem; color:#065f46; font-weight:700;">1. Pembayaran Lunas (Ref: ${details.paymentRef})</span>
+          ${step1Html}
         </div>
         <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
           <span style="width:24px; height:24px; border-radius:50%; background:#f59e0b; color:#fff; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700;"><i class="fas fa-spinner fa-spin"></i></span>

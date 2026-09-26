@@ -8,6 +8,20 @@ const db = require('./db/supabase');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// ================================================================
+//  MIDTRANS PAYMENT GATEWAY CONFIGURATION (SANDBOX)
+// ================================================================
+const midtransClient = require('midtrans-client');
+const MIDTRANS_SERVER_KEY = process.env.MIDTRANS_SERVER_KEY || '';
+const MIDTRANS_CLIENT_KEY = process.env.MIDTRANS_CLIENT_KEY || 'Mid-client-NTCrGIBk3xMUQhxQ';
+const MIDTRANS_IS_PRODUCTION = process.env.MIDTRANS_IS_PRODUCTION === 'true';
+
+const midtransSnap = new midtransClient.Snap({
+  isProduction: MIDTRANS_IS_PRODUCTION,
+  serverKey: MIDTRANS_SERVER_KEY,
+  clientKey: MIDTRANS_CLIENT_KEY
+});
+
 // Trust reverse proxy (wajib untuk deploy di Render, Vercel, Railway, Heroku agar session cookie HTTPS berfungsi di HP)
 app.set('trust proxy', 1);
 
@@ -1727,6 +1741,119 @@ app.post('/api/reservations', apiAuth, async (req, res) => {
     reservation,
     user: req.session.user
   });
+});
+
+// ================================================================
+//  MIDTRANS SNAP API ENDPOINTS
+// ================================================================
+
+// 1. Get Midtrans Public Config
+app.get('/api/payment/config', (req, res) => {
+  res.json({
+    success: true,
+    clientKey: MIDTRANS_CLIENT_KEY,
+    isProduction: MIDTRANS_IS_PRODUCTION
+  });
+});
+
+// 2. Create Midtrans Snap Transaction Token
+app.post('/api/payment/midtrans-token', async (req, res) => {
+  try {
+    const { roomId, checkIn, checkOut, guestName, guestPhone, guestEmail } = req.body;
+    const room = rooms.find(r => r.id === parseInt(roomId));
+    if (!room) {
+      return res.status(404).json({ success: false, message: 'Kamar tidak ditemukan' });
+    }
+
+    const start = new Date(checkIn);
+    const end = new Date(checkOut);
+    const totalNights = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)));
+    const totalPrice = totalNights * room.price;
+
+    const orderId = 'ORV-' + Date.now() + '-' + Math.floor(100 + Math.random() * 900);
+
+    const transactionParameters = {
+      transaction_details: {
+        order_id: orderId,
+        gross_amount: totalPrice
+      },
+      customer_details: {
+        first_name: (guestName || 'Tamu').trim(),
+        email: (guestEmail || 'guest@orvenhotel.com').trim(),
+        phone: (guestPhone || '08123456789').trim()
+      },
+      item_details: [
+        {
+          id: 'ROOM-' + room.id,
+          price: room.price,
+          quantity: totalNights,
+          name: `${room.name} (${totalNights} Malam)`.substring(0, 50)
+        }
+      ]
+    };
+
+    const transaction = await midtransSnap.createTransaction(transactionParameters);
+    res.json({
+      success: true,
+      token: transaction.token,
+      redirect_url: transaction.redirect_url,
+      orderId: orderId,
+      totalPrice: totalPrice,
+      clientKey: MIDTRANS_CLIENT_KEY
+    });
+  } catch (err) {
+    console.error('[Midtrans Token Error]:', err);
+    res.status(500).json({
+      success: false,
+      message: err.message || 'Gagal membuat sesi pembayaran Midtrans'
+    });
+  }
+});
+
+// 3. Webhook / Notification Callback from Midtrans
+app.post('/api/payment/notification', async (req, res) => {
+  try {
+    const notificationJson = req.body;
+    const statusResponse = await midtransSnap.transaction.notification(notificationJson);
+    const orderId = statusResponse.order_id;
+    const transactionStatus = statusResponse.transaction_status;
+    const paymentType = statusResponse.payment_type;
+
+    console.log(`[Midtrans Webhook] Order: ${orderId}, Status: ${transactionStatus}, Type: ${paymentType}`);
+
+    const rsv = reservations.find(r => r.paymentRef === orderId);
+    if (rsv) {
+      if (transactionStatus === 'capture' || transactionStatus === 'settlement') {
+        rsv.paymentStatus = 'paid';
+        rsv.paidAt = new Date().toISOString();
+        if (paymentType) rsv.paymentMethod = paymentType.toUpperCase();
+      } else if (transactionStatus === 'pending') {
+        rsv.paymentStatus = 'pending';
+      } else if (transactionStatus === 'deny' || transactionStatus === 'cancel' || transactionStatus === 'expire') {
+        rsv.paymentStatus = 'failed';
+      }
+      saveReservations(rsv);
+      try {
+        await db.upsertReservation(rsv);
+      } catch (e) {}
+    }
+
+    res.status(200).send('OK');
+  } catch (err) {
+    console.error('[Midtrans Notification Error]:', err.message || err);
+    res.status(200).send('OK');
+  }
+});
+
+// 4. Manual / Direct Status Check from Midtrans
+app.get('/api/payment/status/:orderId', async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const status = await midtransSnap.transaction.status(orderId);
+    res.json({ success: true, status });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message || 'Gagal mengecek status' });
+  }
 });
 
 // List reservations (Staff sees all, Guest sees own)
