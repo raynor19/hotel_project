@@ -1056,123 +1056,31 @@ async function initReservationForm() {
               <label><i class="fas fa-sticky-note"></i> Catatan Khusus (Opsional)</label>
               <textarea id="rsvNotes" name="notes" placeholder="Permintaan khusus, misalnya: minta kamar lantai atas atau non-smoking room"></textarea>
             </div>
-            <button type="submit" class="btn-reserve" id="btnGoToPayment" style="background: linear-gradient(135deg, #C4A265, #A88344); color: #fff; font-weight: 700; border: none; padding: 14px; border-radius: 8px; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; box-shadow: 0 4px 15px rgba(196,162,101,0.35);">
-              Lanjut ke Pembayaran <i class="fas fa-arrow-right"></i>
+            <!-- Midtrans Payment Guarantee Badge -->
+            <div style="background: #fdfbf7; border: 1.5px solid #ebdcc5; border-radius: 8px; padding: 12px 16px; margin: 18px 0; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: #8A6D3B; font-weight: 700;">
+                <i class="fas fa-shield-alt" style="font-size: 1.1rem; color: #10b981;"></i>
+                <span>Metode Pembayaran Online Midtrans:</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px; font-size: 0.75rem; font-weight: 700;">
+                <span style="background: #fee2e2; color: #991b1b; padding: 3px 8px; border-radius: 4px;"><i class="fas fa-qrcode"></i> QRIS</span>
+                <span style="background: #eff6ff; color: #1e40af; padding: 3px 8px; border-radius: 4px;"><i class="fas fa-university"></i> BCA VA</span>
+                <span style="background: #fef3c7; color: #92400e; padding: 3px 8px; border-radius: 4px;"><i class="fas fa-university"></i> Mandiri</span>
+                <span style="background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 4px;"><i class="fas fa-university"></i> BRI VA</span>
+              </div>
+            </div>
+
+            <button type="submit" class="btn-reserve" id="btnGoToPayment" style="background: linear-gradient(135deg, #C4A265, #A88344); color: #fff; font-weight: 700; border: none; padding: 15px; border-radius: 8px; font-size: 1.05rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; box-shadow: 0 4px 15px rgba(196,162,101,0.35); transition: all 0.2s ease;">
+              <i class="fas fa-lock"></i> Lanjut ke Pembayaran <i class="fas fa-arrow-right"></i>
             </button>
+
+            <div style="text-align: center; margin-top: 14px;">
+              <button type="button" id="btnPayAtHotelDirect" style="background: transparent; border: none; color: #6b7280; font-size: 0.85rem; font-weight: 600; cursor: pointer; text-decoration: underline; padding: 6px 12px; display: inline-flex; align-items: center; gap: 6px;">
+                <i class="fas fa-hotel"></i> Atau Pesan Dulu & Bayar di Meja Resepsionis (Saat Check-in)
+              </button>
+            </div>
           </form>
         </div>
-
-        <!-- STEP 2: Payment Container (Initially Hidden) -->
-        <div id="step2PaymentContainer" style="display: none;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h2 style="margin: 0;"><i class="fas fa-credit-card" style="color:#C4A265;margin-right:10px;"></i>Langkah 2: Pilih Metode Pembayaran</h2>
-            <span style="font-size: 0.78rem; background: #ecfdf5; color: #065f46; padding: 4px 10px; border-radius: 20px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
-              <i class="fas fa-shield-alt"></i> Pembayaran Aman
-            </span>
-          </div>
-
-          <!-- Total Bill Callout Banner -->
-          <div style="background: #fdfbf7; border: 1.5px solid #ebdcc5; border-radius: 10px; padding: 16px 20px; margin-bottom: 22px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-            <div>
-              <span style="font-size: 0.78rem; color: #8A6D3B; font-weight: 700; text-transform: uppercase;">Total yang Harus Dibayar</span>
-              <div style="font-size: 1.5rem; font-weight: 800; color: #1a1a1a; font-family: 'Playfair Display', serif;" id="payTotalBanner">${formatCurrency(room.price)}</div>
-            </div>
-            <div style="text-align: right; font-size: 0.8rem; color: #6b7280;">
-              <div><strong id="payNightsBanner">1 malam</strong> menginap</div>
-              <div style="font-size: 0.75rem; color: #9ca3af;">Sudah termasuk pajak & layanan</div>
-            </div>
-          </div>
-
-          <!-- Pilihan Metode Pembayaran -->
-          <div class="payment-methods-list" id="paymentMethodsList">
-            <!-- 1. QRIS -->
-            <div class="payment-method-item selected" data-method="QRIS">
-              <div class="pm-left">
-                <div class="pm-radio"></div>
-                <div class="pm-info">
-                  <h4>QRIS (Instant Pay / Semua E-Wallet)</h4>
-                  <p>BCA Mobile, GoPay, OVO, DANA, ShopeePay, Livin'</p>
-                </div>
-              </div>
-              <div class="pm-icons">
-                <span class="pm-badge" style="background:#fee2e2;color:#991b1b;"><i class="fas fa-qrcode"></i> QRIS</span>
-              </div>
-            </div>
-
-            <!-- 2. Virtual Account Bank -->
-            <div class="payment-method-item" data-method="BCA Virtual Account">
-              <div class="pm-left">
-                <div class="pm-radio"></div>
-                <div class="pm-info">
-                  <h4>BCA Virtual Account</h4>
-                  <p>Verifikasi instan 24 jam bebas biaya admin</p>
-                </div>
-              </div>
-              <div class="pm-icons">
-                <span class="pm-badge" style="background:#eff6ff;color:#1e40af;"><i class="fas fa-university"></i> BCA VA</span>
-              </div>
-            </div>
-
-            <!-- 3. Mandiri Virtual Account -->
-            <div class="payment-method-item" data-method="Mandiri Virtual Account">
-              <div class="pm-left">
-                <div class="pm-radio"></div>
-                <div class="pm-info">
-                  <h4>Mandiri Virtual Account</h4>
-                  <p>Transfer via Livin' by Mandiri atau ATM</p>
-                </div>
-              </div>
-              <div class="pm-icons">
-                <span class="pm-badge" style="background:#fef3c7;color:#92400e;"><i class="fas fa-university"></i> Mandiri</span>
-              </div>
-            </div>
-
-            <!-- 4. BRI Virtual Account -->
-            <div class="payment-method-item" data-method="BRI Virtual Account">
-              <div class="pm-left">
-                <div class="pm-radio"></div>
-                <div class="pm-info">
-                  <h4>BRI Virtual Account (BRIVA)</h4>
-                  <p>Transfer instan via BRImo, ATM BRI, atau AgenBRILink</p>
-                </div>
-              </div>
-              <div class="pm-icons">
-                <span class="pm-badge" style="background:#e0f2fe;color:#0369a1;"><i class="fas fa-university"></i> BRI VA</span>
-              </div>
-            </div>
-
-            <!-- 5. Bayar di Hotel -->
-            <div class="payment-method-item" data-method="Bayar di Hotel">
-              <div class="pm-left">
-                <div class="pm-radio"></div>
-                <div class="pm-info">
-                  <h4>Bayar di Hotel (Front Desk)</h4>
-                  <p>Bayar tunai atau EDC saat Anda check-in di hotel</p>
-                </div>
-              </div>
-              <div class="pm-icons">
-                <span class="pm-badge" style="background:#f3f4f6;color:#374151;"><i class="fas fa-hotel"></i> Resepsionis</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Dynamic Payment Details Box -->
-          <div class="payment-details-box" id="paymentDetailsBox">
-            <!-- Box Content populated by JS based on selection -->
-          </div>
-
-          <!-- Action Buttons (Centered) -->
-          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; margin-top: 28px; width: 100%; text-align: center;">
-            <button type="button" id="btnConfirmPayment" style="background: linear-gradient(135deg, #059669, #10b981); color: #fff; font-weight: 700; border: none; padding: 15px 36px; border-radius: 8px; font-size: 1.05rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: 100%; max-width: 440px; margin: 0 auto; box-shadow: 0 4px 15px rgba(16,185,129,0.35); transition: all 0.2s ease;">
-              <i class="fas fa-check-circle" style="font-size: 1.15rem;"></i>
-              <span>Konfirmasi & Bayar Sekarang</span>
-            </button>
-            <button type="button" class="btn btn-outline" id="btnBackToStep1" style="background: transparent; border: none; color: #6b7280; font-size: 0.88rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 14px; text-decoration: underline; margin: 0 auto;">
-              <i class="fas fa-arrow-left"></i> Kembali & Ubah Data Pemesanan
-            </button>
-          </div>
-        </div>
-
       </div>
 
       <!-- Right: Sticky Room Summary -->
@@ -1297,201 +1205,25 @@ async function initReservationForm() {
   coInput.addEventListener('change', checkDateAvailability);
   checkDateAvailability();
 
-  // Dynamic Payment Method Detail Box
-  function renderPaymentDetailBox(method) {
-    const box = document.getElementById('paymentDetailsBox');
-    if (!box) return;
-
-    if (method === 'QRIS') {
-      box.innerHTML = `
-        <div style="text-align: center;">
-          <div style="font-weight: 700; color: #1a1a1a; font-size: 0.95rem; margin-bottom: 4px;">
-            <i class="fas fa-qrcode" style="color:#C4A265;"></i> Scan Kode QRIS Orven
-          </div>
-          <p style="font-size: 0.8rem; color: #6b7280; margin: 0 0 14px 0;">
-            Buka aplikasi m-Banking (BCA, Mandiri, BRI, BNI) atau E-Wallet (GoPay, OVO, DANA, ShopeePay) lalu arahkan kamera ke QR Code berikut:
-          </p>
-
-          <div class="qris-qr-container">
-            <div style="font-size: 0.75rem; font-weight: 800; letter-spacing: 1px; color: #0a0a0a; margin-bottom: 8px;">
-              QRIS PEMBAYARAN ORVEN YOGYAKARTA
-            </div>
-            <!-- Dynamic Vector QR Mockup -->
-            <div style="background: #fff; padding: 12px; border: 2px solid #111; border-radius: 8px; display: inline-block;">
-              <svg width="180" height="180" viewBox="0 0 100 100" style="display:block;">
-                <rect width="100" height="100" fill="#ffffff"/>
-                <!-- Top Left Marker -->
-                <rect x="5" y="5" width="28" height="28" fill="#111"/>
-                <rect x="9" y="9" width="20" height="20" fill="#fff"/>
-                <rect x="13" y="13" width="12" height="12" fill="#111"/>
-                <!-- Top Right Marker -->
-                <rect x="67" y="5" width="28" height="28" fill="#111"/>
-                <rect x="71" y="9" width="20" height="20" fill="#fff"/>
-                <rect x="75" y="13" width="12" height="12" fill="#111"/>
-                <!-- Bottom Left Marker -->
-                <rect x="5" y="67" width="28" height="28" fill="#111"/>
-                <rect x="9" y="71" width="20" height="20" fill="#fff"/>
-                <rect x="13" y="75" width="12" height="12" fill="#111"/>
-                <!-- Center Orven Logo Badge -->
-                <rect x="40" y="40" width="20" height="20" rx="4" fill="#C4A265"/>
-                <text x="50" y="54" font-size="11" font-weight="bold" fill="#fff" text-anchor="middle">✦</text>
-                <!-- Matrix Patterns -->
-                <rect x="37" y="10" width="6" height="6" fill="#111"/>
-                <rect x="47" y="15" width="8" height="6" fill="#111"/>
-                <rect x="57" y="8" width="6" height="8" fill="#111"/>
-                <rect x="10" y="37" width="6" height="6" fill="#111"/>
-                <rect x="20" y="47" width="6" height="6" fill="#111"/>
-                <rect x="67" y="37" width="6" height="6" fill="#111"/>
-                <rect x="77" y="47" width="8" height="6" fill="#111"/>
-                <rect x="87" y="37" width="6" height="8" fill="#111"/>
-                <rect x="37" y="67" width="6" height="6" fill="#111"/>
-                <rect x="47" y="77" width="8" height="6" fill="#111"/>
-                <rect x="57" y="87" width="6" height="6" fill="#111"/>
-                <rect x="67" y="67" width="6" height="8" fill="#111"/>
-                <rect x="77" y="77" width="6" height="6" fill="#111"/>
-                <rect x="87" y="87" width="6" height="6" fill="#111"/>
-              </svg>
-            </div>
-            <div style="font-size: 0.72rem; color: #4b5563; margin-top: 10px;">
-              NMID: <strong>ID102455588801</strong> · Orven Official Merchant
-            </div>
-          </div>
-
-          <div style="margin-top: 12px; font-size: 0.8rem; color: #b45309; background: #fef3c7; padding: 8px 12px; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px;">
-            <i class="fas fa-stopwatch"></i> Selesaikan pembayaran dalam <strong>14:59</strong> menit
-          </div>
-        </div>
-      `;
-    } else if (method.includes('Virtual Account')) {
-      const bankName = method.includes('BCA') ? 'BCA' : (method.includes('BRI') ? 'BRI' : 'Mandiri');
-      const vaNum = bankName === 'BCA' ? '8277 0812 3456 7890' : (bankName === 'BRI' ? '1234 5081 2345 6789' : '8890 0812 3456 7890');
-      box.innerHTML = `
-        <div>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <span style="font-weight: 700; color: #1a1a1a; font-size: 0.95rem;">
-              <i class="fas fa-university" style="color:#C4A265;"></i> Nomor ${bankName} Virtual Account
-            </span>
-            <span style="font-size: 0.72rem; background: #e0e7ff; color: #3730a3; padding: 2px 8px; border-radius: 4px; font-weight: 700;">Verifikasi Otomatis</span>
-          </div>
-
-          <div class="va-copy-box">
-            <span style="font-family: monospace; font-size: 1.25rem; font-weight: 800; color: #1e3a8a; letter-spacing: 1px;" id="vaNumberDisplay">${vaNum}</span>
-            <button type="button" onclick="navigator.clipboard.writeText('${vaNum.replace(/\\s+/g, '')}'); showToast('Nomor VA berhasil disalin ke clipboard!', 'success');" style="background: #C4A265; color: #fff; border: none; padding: 6px 14px; border-radius: 4px; font-size: 0.8rem; font-weight: 700; cursor: pointer;">
-              <i class="fas fa-copy"></i> Salin
-            </button>
-          </div>
-
-          <div style="font-size: 0.8rem; color: #4b5563; line-height: 1.6;">
-            <div>Atas Nama: <strong>Orven Official Booking</strong></div>
-            <div style="font-size: 0.75rem; color: #6b7280; margin-top: 4px;">
-              Petunjuk: Masuk ke menu m-Banking (${bankName === 'BRI' ? 'BRImo' : (bankName === 'BCA' ? 'BCA Mobile' : "Livin' by Mandiri")}) / ATM > Transfer > Virtual Account > Masukkan nomor di atas > Konfirmasi nama Orven.
-            </div>
-          </div>
-        </div>
-      `;
-    } else {
-      // Bayar di Hotel
-      box.innerHTML = `
-        <div style="text-align: center; padding: 10px;">
-          <div style="width: 48px; height: 48px; border-radius: 50%; background: #fef3c7; color: #d97706; display: inline-flex; align-items: center; justify-content: center; font-size: 1.3rem; margin-bottom: 8px;">
-            <i class="fas fa-hotel"></i>
-          </div>
-          <div style="font-weight: 700; color: #1a1a1a; font-size: 0.95rem; margin-bottom: 4px;">
-            Pembayaran Langsung di Meja Resepsionis
-          </div>
-          <p style="font-size: 0.8rem; color: #6b7280; margin: 0; line-height: 1.5;">
-            Anda dapat menyelesaikan pelunasan kamar saat tiba di hotel pada tanggal <strong>${formatDate(ciInput.value)}</strong> menggunakan Uang Tunai, Kartu Debit, atau Kartu Kredit.
-          </p>
-          <div style="margin-top: 10px; font-size: 0.75rem; color: #047857; background: #ecfdf5; padding: 6px 12px; border-radius: 6px; display: inline-block;">
-            <i class="fas fa-info-circle"></i> Reservasi Anda tetap akan dikirim ke Resepsionis untuk reservasi unit kamar.
-          </div>
-        </div>
-      `;
-    }
-  }
-
-  // Initial render for default QRIS
-  renderPaymentDetailBox(selectedMethod);
-
-  // Method Selection Listener
-  document.querySelectorAll('.payment-method-item').forEach(item => {
-    item.addEventListener('click', () => {
-      document.querySelectorAll('.payment-method-item').forEach(i => i.classList.remove('selected'));
-      item.classList.add('selected');
-      selectedMethod = item.dataset.method;
-      renderPaymentDetailBox(selectedMethod);
-    });
-  });
-
-  // Step 1 Submit -> Advance to Step 2 (Payment)
+  // Direct Payment via Midtrans Snap Sandbox (No manual Step 2!)
   const step1Form = document.getElementById('rsvStep1Form');
-  const step1Container = document.getElementById('step1DataContainer');
-  const step2Container = document.getElementById('step2PaymentContainer');
-  const stepInd1 = document.getElementById('stepIndicator1');
-  const stepInd2 = document.getElementById('stepIndicator2');
-  const stepDiv1 = document.getElementById('stepDivider1');
+  const btnPay = document.getElementById('btnGoToPayment');
 
-  step1Form.addEventListener('submit', (e) => {
+  step1Form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    // Validate inputs
     const guestName = document.getElementById('rsvName').value.trim();
     const guestPhone = document.getElementById('rsvPhone').value.trim();
     const guestEmail = document.getElementById('rsvEmail').value.trim();
+    const notes = document.getElementById('rsvNotes').value.trim();
 
     if (!guestName || !guestPhone || !guestEmail) {
       showToast('Mohon lengkapi seluruh data pemesanan', 'error');
       return;
     }
 
-    // Smooth transition to Step 2
-    step1Container.style.display = 'none';
-    step2Container.style.display = 'block';
-
-    stepInd1.classList.remove('active');
-    stepInd1.classList.add('completed');
-    stepInd1.querySelector('.step-num').innerHTML = '<i class="fas fa-check"></i>';
-    
-    stepDiv1.classList.add('active');
-    stepInd2.classList.add('active');
-
-    updateCost();
-    renderPaymentDetailBox(selectedMethod);
-
-    window.scrollTo({ top: 120, behavior: 'smooth' });
-    showToast('Data tamu terverifikasi. Silakan pilih metode pembayaran Anda.', 'info');
-  });
-
-  // Back to Step 1
-  document.getElementById('btnBackToStep1').addEventListener('click', () => {
-    step2Container.style.display = 'none';
-    step1Container.style.display = 'block';
-
-    stepInd1.classList.remove('completed');
-    stepInd1.classList.add('active');
-    stepInd1.querySelector('.step-num').textContent = '1';
-
-    stepDiv1.classList.remove('active');
-    stepInd2.classList.remove('active');
-
-    window.scrollTo({ top: 120, behavior: 'smooth' });
-  });
-
-  // Step 2: Confirm & Pay -> Submit to Server (With Midtrans Snap Sandbox)
-  const btnConfirmPay = document.getElementById('btnConfirmPayment');
-  btnConfirmPay.addEventListener('click', async () => {
-    btnConfirmPay.disabled = true;
-
-    // A. Bayar di Hotel (Front Desk)
-    if (selectedMethod === 'Bayar di Hotel') {
-      btnConfirmPay.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan Reservasi...';
-      const hotelRef = 'HOTEL-' + Date.now().toString().slice(-6);
-      await executeReservationSubmit('pay_at_hotel', 'Bayar di Hotel', hotelRef);
-      return;
-    }
-
-    // B. Pembayaran Online via Midtrans Snap (QRIS, VA, Kartu Kredit)
-    btnConfirmPay.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyiapkan Midtrans Snap...';
+    btnPay.disabled = true;
+    btnPay.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyiapkan Midtrans Sandbox...';
 
     try {
       // 1. Minta Token Transaksi Midtrans dari Backend
@@ -1502,10 +1234,10 @@ async function initReservationForm() {
           roomId: parseInt(roomId),
           checkIn: ciInput.value,
           checkOut: coInput.value,
-          guestName: document.getElementById('rsvName').value.trim(),
-          guestPhone: document.getElementById('rsvPhone').value.trim(),
-          guestEmail: document.getElementById('rsvEmail').value.trim(),
-          notes: document.getElementById('rsvNotes').value.trim()
+          guestName: guestName,
+          guestPhone: guestPhone,
+          guestEmail: guestEmail,
+          notes: notes
         })
       });
 
@@ -1514,50 +1246,70 @@ async function initReservationForm() {
         throw new Error(tokenData.message || 'Gagal memproses sesi pembayaran Midtrans');
       }
 
-      // 2. Cek ketersediaan window.snap
+      // 2. Cek ketersediaan script Snap.js
       if (typeof window.snap === 'undefined') {
         showToast('Sedang memuat Midtrans Snap... silakan coba 2 detik lagi', 'warning');
-        btnConfirmPay.disabled = false;
-        btnConfirmPay.innerHTML = '<i class="fas fa-check-circle"></i> Konfirmasi & Bayar Sekarang';
+        btnPay.disabled = false;
+        btnPay.innerHTML = '<i class="fas fa-lock"></i> Lanjut ke Pembayaran <i class="fas fa-arrow-right"></i>';
         return;
       }
 
-      // 3. Tampilkan Jendela Resmi Midtrans Snap
+      // 3. Tampilkan Jendela Resmi Midtrans Snap secara LANGSUNG!
       window.snap.pay(tokenData.token, {
         onSuccess: async function(result) {
           console.log('[Midtrans Snap] Pembayaran Berhasil:', result);
-          btnConfirmPay.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memverifikasi Pelunasan...';
+          btnPay.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memverifikasi Pelunasan...';
           const pRef = result.transaction_id || result.order_id || tokenData.orderId;
-          const pMethod = result.payment_type ? result.payment_type.toUpperCase() : selectedMethod;
+          const pMethod = result.payment_type ? result.payment_type.toUpperCase() : 'MIDTRANS';
           await executeReservationSubmit('paid', pMethod, pRef);
         },
         onPending: async function(result) {
           console.log('[Midtrans Snap] Menunggu Pembayaran (Pending):', result);
-          btnConfirmPay.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan Tagihan...';
+          btnPay.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan Tagihan...';
           const pRef = result.transaction_id || result.order_id || tokenData.orderId;
-          const pMethod = result.payment_type ? result.payment_type.toUpperCase() : selectedMethod;
+          const pMethod = result.payment_type ? result.payment_type.toUpperCase() : 'MIDTRANS';
           await executeReservationSubmit('pending', pMethod, pRef, true);
         },
         onError: function(result) {
           console.error('[Midtrans Snap] Error:', result);
           showToast('Transaksi Midtrans gagal diproses atau dibatalkan', 'error');
-          btnConfirmPay.disabled = false;
-          btnConfirmPay.innerHTML = '<i class="fas fa-check-circle"></i> Konfirmasi & Bayar Sekarang';
+          btnPay.disabled = false;
+          btnPay.innerHTML = '<i class="fas fa-lock"></i> Lanjut ke Pembayaran <i class="fas fa-arrow-right"></i>';
         },
         onClose: function() {
           showToast('Jendela pembayaran Midtrans ditutup sebelum selesai', 'info');
-          btnConfirmPay.disabled = false;
-          btnConfirmPay.innerHTML = '<i class="fas fa-check-circle"></i> Konfirmasi & Bayar Sekarang';
+          btnPay.disabled = false;
+          btnPay.innerHTML = '<i class="fas fa-lock"></i> Lanjut ke Pembayaran <i class="fas fa-arrow-right"></i>';
         }
       });
 
     } catch (err) {
       console.error('[Midtrans Checkout Error]:', err);
       showToast(err.message || 'Terjadi gangguan saat memanggil Midtrans', 'error');
-      btnConfirmPay.disabled = false;
-      btnConfirmPay.innerHTML = '<i class="fas fa-check-circle"></i> Konfirmasi & Bayar Sekarang';
+      btnPay.disabled = false;
+      btnPay.innerHTML = '<i class="fas fa-lock"></i> Lanjut ke Pembayaran <i class="fas fa-arrow-right"></i>';
     }
   });
+
+  // Handle Pay at Hotel Direct
+  const btnHotel = document.getElementById('btnPayAtHotelDirect');
+  if (btnHotel) {
+    btnHotel.addEventListener('click', async () => {
+      const guestName = document.getElementById('rsvName').value.trim();
+      const guestPhone = document.getElementById('rsvPhone').value.trim();
+      const guestEmail = document.getElementById('rsvEmail').value.trim();
+
+      if (!guestName || !guestPhone || !guestEmail) {
+        showToast('Mohon lengkapi seluruh data pemesanan terlebih dahulu', 'error');
+        return;
+      }
+
+      btnHotel.disabled = true;
+      btnHotel.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan Reservasi...';
+      const hotelRef = 'HOTEL-' + Date.now().toString().slice(-6);
+      await executeReservationSubmit('pay_at_hotel', 'Bayar di Hotel', hotelRef);
+    });
+  }
 
   async function executeReservationSubmit(paymentStatus, paymentMethod, paymentRef, isPending) {
     try {
