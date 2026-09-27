@@ -1127,17 +1127,17 @@ async function initReservationForm() {
               </div>
             </div>
 
-            <!-- 4. Kartu Kredit / Debit -->
-            <div class="payment-method-item" data-method="Kartu Kredit / Debit">
+            <!-- 4. BRI Virtual Account -->
+            <div class="payment-method-item" data-method="BRI Virtual Account">
               <div class="pm-left">
                 <div class="pm-radio"></div>
                 <div class="pm-info">
-                  <h4>Kartu Kredit / Debit Online</h4>
-                  <p>Visa, Mastercard, JCB, American Express</p>
+                  <h4>BRI Virtual Account (BRIVA)</h4>
+                  <p>Transfer instan via BRImo, ATM BRI, atau AgenBRILink</p>
                 </div>
               </div>
               <div class="pm-icons">
-                <span class="pm-badge"><i class="fab fa-cc-visa"></i> <i class="fab fa-cc-mastercard"></i></span>
+                <span class="pm-badge" style="background:#e0f2fe;color:#0369a1;"><i class="fas fa-university"></i> BRI VA</span>
               </div>
             </div>
 
@@ -1363,8 +1363,8 @@ async function initReservationForm() {
         </div>
       `;
     } else if (method.includes('Virtual Account')) {
-      const bankName = method.includes('BCA') ? 'BCA' : 'Mandiri';
-      const vaNum = bankName === 'BCA' ? '8277 0812 3456 7890' : '8890 0812 3456 7890';
+      const bankName = method.includes('BCA') ? 'BCA' : (method.includes('BRI') ? 'BRI' : 'Mandiri');
+      const vaNum = bankName === 'BCA' ? '8277 0812 3456 7890' : (bankName === 'BRI' ? '1234 5081 2345 6789' : '8890 0812 3456 7890');
       box.innerHTML = `
         <div>
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
@@ -1384,33 +1384,8 @@ async function initReservationForm() {
           <div style="font-size: 0.8rem; color: #4b5563; line-height: 1.6;">
             <div>Atas Nama: <strong>Orven Official Booking</strong></div>
             <div style="font-size: 0.75rem; color: #6b7280; margin-top: 4px;">
-              Petunjuk: Masuk ke menu m-Banking / ATM > Transfer > Virtual Account > Masukkan nomor di atas > Konfirmasi nama Orven.
+              Petunjuk: Masuk ke menu m-Banking (${bankName === 'BRI' ? 'BRImo' : (bankName === 'BCA' ? 'BCA Mobile' : "Livin' by Mandiri")}) / ATM > Transfer > Virtual Account > Masukkan nomor di atas > Konfirmasi nama Orven.
             </div>
-          </div>
-        </div>
-      `;
-    } else if (method.includes('Kartu Kredit')) {
-      box.innerHTML = `
-        <div>
-          <div style="font-weight: 700; color: #1a1a1a; font-size: 0.95rem; margin-bottom: 12px;">
-            <i class="fas fa-credit-card" style="color:#C4A265;"></i> Informasi Kartu Kredit / Debit Online
-          </div>
-          <div class="form-group" style="margin-bottom: 12px;">
-            <label style="font-size:0.75rem; font-weight:700; color:#374151;">Nomor Kartu (16 Digit)</label>
-            <input type="text" placeholder="4111 2222 3333 4444" maxlength="19" style="width:100%; padding:10px 14px; border:1.5px solid #d1d5db; border-radius:6px; font-family:monospace; font-size:0.95rem;">
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-            <div class="form-group" style="margin-bottom: 0;">
-              <label style="font-size:0.75rem; font-weight:700; color:#374151;">Masa Berlaku (MM/YY)</label>
-              <input type="text" placeholder="12/28" maxlength="5" style="width:100%; padding:10px 14px; border:1.5px solid #d1d5db; border-radius:6px; font-size:0.9rem;">
-            </div>
-            <div class="form-group" style="margin-bottom: 0;">
-              <label style="font-size:0.75rem; font-weight:700; color:#374151;">CVV / CVC (3 Digit)</label>
-              <input type="password" placeholder="•••" maxlength="4" style="width:100%; padding:10px 14px; border:1.5px solid #d1d5db; border-radius:6px; font-size:0.9rem;">
-            </div>
-          </div>
-          <div style="font-size: 0.72rem; color: #6b7280; margin-top: 10px;">
-            <i class="fas fa-lock" style="color:#10b981;"></i> Dilindungi enkripsi 256-bit SSL & 3D Secure Verification.
           </div>
         </div>
       `;

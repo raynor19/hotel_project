@@ -1789,6 +1789,14 @@ app.post('/api/payment/midtrans-token', async (req, res) => {
           quantity: totalNights,
           name: `${room.name} (${totalNights} Malam)`.substring(0, 50)
         }
+      ],
+      enabled_payments: [
+        'qris',
+        'gopay',
+        'shopeepay',
+        'bca_va',
+        'echannel',
+        'bri_va'
       ]
     };
 
